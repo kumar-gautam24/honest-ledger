@@ -19,7 +19,7 @@ class SectionHeader extends StatelessWidget {
           Expanded(
             child: Text(label.toUpperCase(), style: AppTypography.eyebrow(c)),
           ),
-          if (action != null) action!,
+          ?action,
         ],
       ),
     );

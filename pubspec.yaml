@@ -40,3 +40,14 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+# Dark-first branded splash on the "ink" base color.
+flutter_native_splash:
+  color: "#0E1116"
+  color_dark: "#0E1116"
+  android_12:
+    color: "#0E1116"
+    color_dark: "#0E1116"
+  android: true
+  ios: true
+  web: false

@@ -1,5 +1,7 @@
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../database/app_database.dart';
 import '../haptics/haptic_service.dart';
 
 /// Global service locator. Holds app-lifetime singletons (services, database,
@@ -7,11 +9,19 @@ import '../haptics/haptic_service.dart';
 /// collaborators from here via `sl<T>()`.
 final GetIt sl = GetIt.instance;
 
-/// Registers the always-on core services. Feature/data registrations are added
-/// in later phases (Drift database, Dio client, repositories).
+/// Registers always-on singletons. Feature repositories/datasources are added
+/// to this in their own phases.
 Future<void> configureDependencies() async {
   if (!sl.isRegistered<HapticService>()) {
     sl.registerSingleton<HapticService>(HapticService());
+  }
+  if (!sl.isRegistered<SharedPreferences>()) {
+    sl.registerSingleton<SharedPreferences>(
+      await SharedPreferences.getInstance(),
+    );
+  }
+  if (!sl.isRegistered<AppDatabase>()) {
+    sl.registerSingleton<AppDatabase>(AppDatabase());
   }
 }
 
