@@ -1,42 +1,77 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../shared/widgets/widgets.dart';
+import '../../../recurring/presentation/widgets/recurring_snapshot.dart';
+import '../controllers/money_leak_providers.dart';
+import '../widgets/borrowing_card.dart';
 
-/// Home tab — the money-leak dashboard. Phase 0 shows the signature hero with no
-/// data yet; Phase 1 wires it to real borrowings and the repayment ledger.
-class MoneyLeakScreen extends StatelessWidget {
+/// Home tab — the money-leak dashboard. The signature "wasted" hero sits above
+/// the list of borrowings.
+class MoneyLeakScreen extends ConsumerWidget {
   const MoneyLeakScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(lifetimeStatsProvider);
+    final summaries = ref.watch(borrowingSummariesProvider);
+
     return AppScaffold(
       title: 'Recurring',
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/home/add'),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Add'),
+      ),
       body: ListView(
-        padding: AppSpacing.screen,
+        padding: AppSpacing.screen.copyWith(bottom: 96),
         children: [
-          const _WastedHero(amount: 0, count: 0),
+          _WastedHero(
+            wasted: stats.totalWasted,
+            projected: stats.projectedWaste,
+            count: stats.count,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          const RecurringSnapshot(),
           const SizedBox(height: AppSpacing.xl),
           const SectionHeader('Borrowings'),
-          EmptyState(
-            icon: Icons.trending_down_rounded,
-            title: 'Nothing tracked yet',
-            message:
-                'Add a borrowing — a Slice draw, a card EMI, a quick loan — '
-                'and watch what it’s really costing you.',
-            actionLabel: 'Add borrowing',
-            onAction: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Borrowing entry arrives in the next phase.',
-                    style: context.text.bodyMedium?.copyWith(color: c.textHi),
+          summaries.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.only(top: AppSpacing.xl),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, _) => Text(
+              "Couldn't load borrowings.",
+              style: context.text.bodyMedium,
+            ),
+            data: (list) => list.isEmpty
+                ? EmptyState(
+                    icon: Icons.trending_down_rounded,
+                    title: 'Nothing tracked yet',
+                    message:
+                        'Add a borrowing — a Slice draw, a card EMI, a quick '
+                        'loan — and watch what it’s really costing you.',
+                    actionLabel: 'Add borrowing',
+                    onAction: () => context.push('/home/add'),
+                  )
+                : Column(
+                    children: [
+                      for (final (i, s) in list.indexed) ...[
+                        EntranceFade(
+                          index: i,
+                          child: BorrowingCard(
+                            summary: s,
+                            onTap: () => context
+                                .push('/home/borrowing/${s.borrowing.id}'),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                      ],
+                    ],
                   ),
-                ),
-              );
-            },
           ),
         ],
       ),
@@ -44,18 +79,23 @@ class MoneyLeakScreen extends StatelessWidget {
   }
 }
 
-/// The signature element: the lifetime "wasted" figure as a printed ledger
-/// line, with a brass rule above (statement total) and a fill underline.
+/// The signature element: lifetime "wasted" as a ledger total with a brass rule
+/// above and a fill underline, the figure rolling up on change.
 class _WastedHero extends StatelessWidget {
-  const _WastedHero({required this.amount, required this.count});
+  const _WastedHero({
+    required this.wasted,
+    required this.projected,
+    required this.count,
+  });
 
-  final num amount;
+  final double wasted;
+  final double projected;
   final int count;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final isLeaking = amount > 0;
+    final isLeaking = wasted > 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -68,7 +108,7 @@ class _WastedHero extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AnimatedCounter(
-                value: amount,
+                value: wasted,
                 formatter: Money.format,
                 style: AppTypography.moneyHero(
                   c,
@@ -90,7 +130,10 @@ class _WastedHero extends StatelessWidget {
         Text(
           count == 0
               ? 'across no borrowings — for now'
-              : 'across $count ${count == 1 ? 'borrowing' : 'borrowings'}',
+              : projected > wasted
+                  ? '${Money.format(projected)} expected across $count '
+                      '${count == 1 ? 'borrowing' : 'borrowings'}'
+                  : 'across $count ${count == 1 ? 'borrowing' : 'borrowings'}',
           style: context.text.bodyMedium,
         ),
       ],

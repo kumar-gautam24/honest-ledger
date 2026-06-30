@@ -3,7 +3,18 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/di/injector.dart';
 import '../../core/haptics/haptic_service.dart';
+import '../../features/emi_calculator/presentation/screens/amortization_screen.dart';
+import '../../features/emi_calculator/presentation/screens/emi_calculator_screen.dart';
+import '../../features/lenders/domain/entities/lender.dart';
+import '../../features/lenders/presentation/screens/add_edit_lender_screen.dart';
+import '../../features/lenders/presentation/screens/lender_catalog_screen.dart';
+import '../../features/money_leak/domain/entities/borrowing.dart';
+import '../../features/money_leak/presentation/screens/add_edit_borrowing_screen.dart';
+import '../../features/money_leak/presentation/screens/borrowing_detail_screen.dart';
 import '../../features/money_leak/presentation/screens/money_leak_screen.dart';
+import '../../features/no_cost_emi/presentation/screens/no_cost_emi_screen.dart';
+import '../../features/recurring/domain/entities/recurring_item.dart';
+import '../../features/recurring/presentation/screens/add_edit_recurring_screen.dart';
 import '../../features/recurring/presentation/screens/recurring_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/tools/presentation/screens/tools_screen.dart';
@@ -21,12 +32,53 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/home',
               builder: (_, _) => const MoneyLeakScreen(),
+              routes: [
+                GoRoute(
+                  path: 'add',
+                  builder: (_, _) => const AddEditBorrowingScreen(),
+                ),
+                GoRoute(
+                  path: 'borrowing/:id',
+                  builder: (_, state) => BorrowingDetailScreen(
+                    borrowingId: state.pathParameters['id']!,
+                  ),
+                  routes: [
+                    GoRoute(
+                      path: 'edit',
+                      builder: (_, state) => AddEditBorrowingScreen(
+                        existing: state.extra as Borrowing?,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ],
         ),
         StatefulShellBranch(
           routes: [
-            GoRoute(path: '/tools', builder: (_, _) => const ToolsScreen()),
+            GoRoute(
+              path: '/tools',
+              builder: (_, _) => const ToolsScreen(),
+              routes: [
+                GoRoute(
+                  path: 'emi',
+                  builder: (_, _) => const EmiCalculatorScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'schedule',
+                      builder: (_, state) => AmortizationScreen(
+                        args: state.extra as ScheduleArgs,
+                      ),
+                    ),
+                  ],
+                ),
+                GoRoute(
+                  path: 'no-cost',
+                  builder: (_, _) => const NoCostEmiScreen(),
+                ),
+              ],
+            ),
           ],
         ),
         StatefulShellBranch(
@@ -34,6 +86,14 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/recurring',
               builder: (_, _) => const RecurringScreen(),
+              routes: [
+                GoRoute(
+                  path: 'add',
+                  builder: (_, state) => AddEditRecurringScreen(
+                    existing: state.extra as RecurringItem?,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -42,6 +102,20 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/settings',
               builder: (_, _) => const SettingsScreen(),
+              routes: [
+                GoRoute(
+                  path: 'lenders',
+                  builder: (_, _) => const LenderCatalogScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'add',
+                      builder: (_, state) => AddEditLenderScreen(
+                        existing: state.extra as Lender?,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ],
         ),

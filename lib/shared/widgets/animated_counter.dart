@@ -36,7 +36,7 @@ class _AnimatedCounterState extends State<AnimatedCounter> {
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (reduceMotion) {
+    if (reduceMotion || _old == widget.value) {
       return Text(widget.formatter(widget.value), style: widget.style);
     }
     return TweenAnimationBuilder<double>(

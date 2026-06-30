@@ -49,6 +49,13 @@ abstract final class AppTheme {
       textTheme: textTheme,
       extensions: [c],
       splashFactory: InkSparkle.splashFactory,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
+        },
+      ),
       dividerTheme: DividerThemeData(
         color: c.hairline,
         thickness: 1,

@@ -67,8 +67,26 @@ class Repayments extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Recurring obligations: subscriptions, bills, and EMI schedules.
+@DataClassName('RecurringItemRow')
+class RecurringItems extends Table {
+  TextColumn get id => text()();
+  TextColumn get title => text()();
+  TextColumn get type => text().withDefault(const Constant('subscription'))();
+  RealColumn get amount => real()();
+  TextColumn get frequency => text().withDefault(const Constant('monthly'))();
+  DateTimeColumn get nextDueDate => dateTime()();
+  TextColumn get category => text().nullable()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  TextColumn get notes => text().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// The single local database shared across features.
-@DriftDatabase(tables: [Lenders, Borrowings, Repayments])
+@DriftDatabase(tables: [Lenders, Borrowings, Repayments, RecurringItems])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _open());
 
@@ -76,10 +94,14 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          if (from < 2) await m.createTable(recurringItems);
+        },
         beforeOpen: (details) async {
           await customStatement('PRAGMA foreign_keys = ON');
         },

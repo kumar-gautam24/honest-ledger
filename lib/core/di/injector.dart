@@ -1,6 +1,13 @@
 import 'package:get_it/get_it.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../features/lenders/data/lender_repository_impl.dart';
+import '../../features/lenders/domain/repositories/lender_repository.dart';
+import '../../features/money_leak/data/borrowing_repository_impl.dart';
+import '../../features/money_leak/domain/repositories/borrowing_repository.dart';
+import '../../features/recurring/data/recurring_repository_impl.dart';
+import '../../features/recurring/domain/repositories/recurring_repository.dart';
 import '../database/app_database.dart';
 import '../haptics/haptic_service.dart';
 
@@ -9,9 +16,13 @@ import '../haptics/haptic_service.dart';
 /// collaborators from here via `sl<T>()`.
 final GetIt sl = GetIt.instance;
 
-/// Registers always-on singletons. Feature repositories/datasources are added
-/// to this in their own phases.
-Future<void> configureDependencies() async {
+/// Registers always-on singletons and seeds first-run data.
+///
+/// Pass [database] in tests to use an in-memory Drift database.
+Future<void> configureDependencies({AppDatabase? database}) async {
+  // Locale data for INR/date formatting (DateFormat with 'en_IN').
+  await initializeDateFormatting();
+
   if (!sl.isRegistered<HapticService>()) {
     sl.registerSingleton<HapticService>(HapticService());
   }
@@ -20,9 +31,28 @@ Future<void> configureDependencies() async {
       await SharedPreferences.getInstance(),
     );
   }
+  // Apply the persisted haptics preference before any UI uses it.
+  sl<HapticService>().enabled =
+      sl<SharedPreferences>().getBool('haptics_enabled') ?? true;
   if (!sl.isRegistered<AppDatabase>()) {
-    sl.registerSingleton<AppDatabase>(AppDatabase());
+    sl.registerSingleton<AppDatabase>(database ?? AppDatabase());
   }
+  if (!sl.isRegistered<LenderRepository>()) {
+    sl.registerSingleton<LenderRepository>(
+      LenderRepositoryImpl(sl<AppDatabase>()),
+    );
+  }
+  if (!sl.isRegistered<BorrowingRepository>()) {
+    sl.registerSingleton<BorrowingRepository>(
+      BorrowingRepositoryImpl(sl<AppDatabase>()),
+    );
+  }
+  if (!sl.isRegistered<RecurringRepository>()) {
+    sl.registerSingleton<RecurringRepository>(
+      RecurringRepositoryImpl(sl<AppDatabase>()),
+    );
+  }
+  await seedLendersIfEmpty(sl<AppDatabase>());
 }
 
 /// Fires a light tap if haptics are available. Safe to call from widgets even
