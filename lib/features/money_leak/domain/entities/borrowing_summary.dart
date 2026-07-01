@@ -18,6 +18,8 @@ class BorrowingSummary {
     required this.outstanding,
     required this.wastedSoFar,
     required this.projectedExtra,
+    required this.projectedSaved,
+    required this.neverClears,
     required this.schedule,
   });
 
@@ -41,6 +43,16 @@ class BorrowingSummary {
   /// Expected total waste over the whole borrowing (scheduled − principal).
   final double projectedExtra;
 
+  /// Extra the user has avoided versus the day-one baseline: interest saved by
+  /// prepaying a flexible loan, or forgone future interest from foreclosing an
+  /// EMI. Zero when nothing has been saved.
+  final double projectedSaved;
+
+  /// A flexible loan whose planned monthly payment can't cover the monthly
+  /// interest, so the balance never amortises. `projectedExtra` is then only
+  /// the cost incurred so far, not a true lifetime figure.
+  final bool neverClears;
+
   /// The dated installment plan. Empty for a flexible loan.
   final List<EmiInstallment> schedule;
 
@@ -59,7 +71,6 @@ class BorrowingSummary {
       );
       final scheduledTotal = schedule.fold<double>(0, (s, e) => s + e.total);
       final outstanding = scheduledTotal - totalRepaid;
-      final projectedExtra = scheduledTotal - b.principal;
       // Interest + GST + fees actually incurred = the non-principal portion of
       // every installment already cleared. (A repayment's amount is mostly
       // principal early on, so counting `repaid − principal` would wrongly read
@@ -71,14 +82,27 @@ class BorrowingSummary {
       final wastedSoFar = schedule
           .where((e) => paidNums.contains(e.number))
           .fold<double>(0, (s, e) => s + (e.total - e.principal));
+      final fullExtra = scheduledTotal - b.principal;
+      final foreclosed = b.isClosed && paidNums.length < schedule.length;
+      // A foreclosed EMI stops accruing future interest: its true extra is the
+      // non-principal already paid plus the foreclosure fee.
+      final displayExtra = foreclosed
+          ? wastedSoFar + b.foreclosureFee
+          : (fullExtra < 0 ? 0.0 : fullExtra);
+      final projectedSaved = foreclosed
+          ? (fullExtra - (wastedSoFar + b.foreclosureFee))
+              .clamp(0.0, double.infinity)
+          : 0.0;
       return BorrowingSummary(
         borrowing: b,
         repayments: repayments,
         totalRepaid: totalRepaid,
         scheduledTotal: scheduledTotal,
-        outstanding: outstanding < 0 ? 0 : outstanding,
+        outstanding: b.isClosed ? 0 : (outstanding < 0 ? 0 : outstanding),
         wastedSoFar: wastedSoFar,
-        projectedExtra: projectedExtra < 0 ? 0 : projectedExtra,
+        projectedExtra: displayExtra,
+        projectedSaved: projectedSaved,
+        neverClears: false,
         schedule: schedule,
       );
     }
@@ -91,6 +115,36 @@ class BorrowingSummary {
       payments: [for (final r in repayments) (r.date, r.amount)],
     );
     final scheduledTotal = b.principal + b.processingFee + b.gstOnFee;
+    final fees = b.processingFee + b.gstOnFee;
+    final planned = b.minPayment;
+    final interestPast = FinanceMath.accruedInterestFlexible(
+      principal: b.principal,
+      annualRatePct: b.interestRatePct,
+      startDate: b.startDate,
+      payments: [for (final r in repayments) (r.date, r.amount)],
+    );
+    final future = planned > 0
+        ? FinanceMath.projectedInterestFlexible(
+            principal: outstanding,
+            annualRatePct: b.interestRatePct,
+            monthlyPayment: planned,
+          )
+        : double.infinity;
+    final neverClears = outstanding > 0 && planned > 0 && !future.isFinite;
+    final projectedExtra =
+        future.isFinite ? fees + interestPast + future : fees + interestPast;
+    // Day-one baseline: paying the planned amount from the start, no prepays.
+    final baseline = planned > 0
+        ? fees +
+            FinanceMath.projectedInterestFlexible(
+              principal: b.principal,
+              annualRatePct: b.interestRatePct,
+              monthlyPayment: planned,
+            )
+        : double.infinity;
+    final projectedSaved = (baseline.isFinite && projectedExtra.isFinite)
+        ? (baseline - projectedExtra).clamp(0.0, double.infinity)
+        : 0.0;
     return BorrowingSummary(
       borrowing: b,
       repayments: repayments,
@@ -99,7 +153,9 @@ class BorrowingSummary {
       outstanding: outstanding,
       wastedSoFar:
           FinanceMath.extraPaid(principal: b.principal, totalRepaid: totalRepaid),
-      projectedExtra: (scheduledTotal - b.principal).clamp(0, double.infinity),
+      projectedExtra: projectedExtra,
+      projectedSaved: projectedSaved,
+      neverClears: neverClears,
       schedule: const [],
     );
   }
@@ -174,6 +230,12 @@ class BorrowingSummary {
   /// e.g. `3/12` for an EMI; null for a flexible loan.
   String? get installmentLabel =>
       isEmi ? '$paidInstallments/$totalInstallments' : null;
+
+  /// Principal still owed across unpaid installments — the cash needed to
+  /// foreclose a fixed EMI. Zero for a flexible loan.
+  double get remainingPrincipal => schedule
+      .where((e) => !isInstallmentPaid(e.number))
+      .fold<double>(0, (s, e) => s + e.principal);
 }
 
 /// Roll-up across every borrowing — drives the dashboard hero.

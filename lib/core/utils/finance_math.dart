@@ -303,6 +303,39 @@ abstract final class FinanceMath {
     return balance < 0 ? 0 : balance;
   }
 
+  /// Interest incurred on a [flexible loan]'s reducing balance from [startDate]
+  /// to [asOf], given the actual [payments] made. Mirrors [outstandingFlexible]'s
+  /// month-by-month accrual but sums the interest instead of the balance.
+  static double accruedInterestFlexible({
+    required double principal,
+    required double annualRatePct,
+    required DateTime startDate,
+    required List<(DateTime, double)> payments,
+    DateTime? asOf,
+  }) {
+    final r = annualRatePct / 12 / 100;
+    final end = asOf ?? DateTime.now();
+    final sorted = [...payments]..sort((a, b) => a.$1.compareTo(b.$1));
+    var balance = principal;
+    var accrued = 0.0;
+    var pi = 0;
+    var cursor = startDate;
+    while (cursor.isBefore(end)) {
+      final next = cursor.addMonths(1);
+      while (pi < sorted.length && sorted[pi].$1.isBefore(next)) {
+        balance -= sorted[pi].$2;
+        pi++;
+      }
+      if (balance > 0 && r > 0) {
+        final interest = balance * r;
+        accrued += interest;
+        balance += interest;
+      }
+      cursor = next;
+    }
+    return accrued < 0 ? 0 : accrued;
+  }
+
   /// Total interest paid to clear [principal] by paying a fixed [monthlyPayment]
   /// against a reducing balance. Returns [double.infinity] when the payment is
   /// too small to ever amortise. Drives the "interest saved by paying more" hint.

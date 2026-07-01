@@ -15,6 +15,7 @@ import '../../domain/entities/borrowing_summary.dart';
 import '../../domain/entities/repayment.dart';
 import '../controllers/money_leak_providers.dart';
 import '../widgets/add_repayment_sheet.dart';
+import '../widgets/foreclose_sheet.dart';
 
 const _uuid = Uuid();
 
@@ -75,8 +76,11 @@ class BorrowingDetailScreen extends ConsumerWidget {
               ),
             ),
             PopupMenuButton<String>(
-              onSelected: (v) => _onMenu(context, ref, repo, b, v),
+              onSelected: (v) => _onMenu(context, ref, repo, summary, v),
               itemBuilder: (_) => [
+                if (summary.isEmi && !b.isClosed)
+                  const PopupMenuItem(
+                      value: 'foreclose', child: Text('Foreclose')),
                 PopupMenuItem(
                   value: 'status',
                   child: Text(b.isClosed ? 'Mark active' : 'Mark closed'),
@@ -189,9 +193,14 @@ class BorrowingDetailScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     repo,
-    Borrowing b,
+    BorrowingSummary summary,
     String action,
   ) async {
+    final b = summary.borrowing;
+    if (action == 'foreclose') {
+      await showForecloseSheet(context, ref, summary);
+      return;
+    }
     if (action == 'status') {
       sl<HapticService>().select();
       await repo.upsertBorrowing(
@@ -549,7 +558,7 @@ class _LoanSummaryCard extends StatelessWidget {
           if (b.minPayment > 0) ...[
             const SizedBox(height: AppSpacing.lg),
             Text(
-              'Minimum payment ${Money.format(b.minPayment)}',
+              'Planned monthly payment ${Money.format(b.minPayment)}',
               style: context.text.bodySmall,
             ),
           ],

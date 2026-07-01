@@ -100,21 +100,8 @@ class _EmiBody extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.md),
-            // Ember only for money actually wasted; a projection reads muted.
-            if (summary.wastedSoFar > 0)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: MoneyText(summary.wastedSoFar, signed: true, color: c.cost),
-              )
-            else if (summary.projectedExtra > 0)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('WILL COST', style: AppTypography.eyebrow(c)),
-                  const SizedBox(height: AppSpacing.xs),
-                  MoneyText(summary.projectedExtra, signed: true, color: c.textMid),
-                ],
-              ),
+            if (!b.isClosed || summary.projectedSaved > 0)
+              _ProjectedExtra(summary: summary),
           ],
         ),
         const SizedBox(height: AppSpacing.md),
@@ -199,10 +186,17 @@ class _LoanBody extends StatelessWidget {
           b.isClosed
               ? 'Repaid ${Money.format(summary.totalRepaid)}'
               : b.minPayment > 0
-                  ? 'Repaid ${Money.format(summary.totalRepaid)} · Min ${Money.format(b.minPayment)}'
+                  ? 'Repaid ${Money.format(summary.totalRepaid)} · Plan ${Money.format(b.minPayment)}'
                   : 'Repaid ${Money.format(summary.totalRepaid)}',
           style: context.text.bodySmall,
         ),
+        if (!b.isClosed || summary.projectedSaved > 0) ...[
+          const SizedBox(height: AppSpacing.md),
+          _ProjectedExtra(
+            summary: summary,
+            crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+        ],
       ],
     );
   }
@@ -263,6 +257,60 @@ class _Tag extends StatelessWidget {
         label,
         style: AppTypography.eyebrow(context.colors).copyWith(color: color),
       ),
+    );
+  }
+}
+
+/// The forward-looking "WILL COST" figure shown on every open borrowing: the
+/// total extra beyond principal over its whole life, muted. A brass line rewards
+/// interest saved by prepaying/foreclosing; an ember line flags a loan whose
+/// pace never clears.
+class _ProjectedExtra extends StatelessWidget {
+  const _ProjectedExtra({
+    required this.summary,
+    this.crossAxisAlignment = CrossAxisAlignment.end,
+  });
+
+  final BorrowingSummary summary;
+  final CrossAxisAlignment crossAxisAlignment;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final hasCost = summary.projectedExtra > 0;
+    if (!hasCost && summary.projectedSaved <= 0 && !summary.neverClears) {
+      return const SizedBox.shrink();
+    }
+    return Column(
+      crossAxisAlignment: crossAxisAlignment,
+      children: [
+        if (hasCost) ...[
+          Text('WILL COST', style: AppTypography.eyebrow(c)),
+          const SizedBox(height: AppSpacing.xs),
+          MoneyText(summary.projectedExtra, signed: true, color: c.textMid),
+        ],
+        if (summary.projectedSaved > 0) ...[
+          const SizedBox(height: AppSpacing.xs),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.trending_down_rounded, size: 13, color: c.accent),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                '${Money.format(summary.projectedSaved)} saved',
+                style: context.text.bodySmall?.copyWith(color: c.accent),
+              ),
+            ],
+          ),
+        ],
+        if (summary.neverClears) ...[
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Never clears at ${Money.format(summary.borrowing.minPayment)}/mo',
+            style: context.text.bodySmall?.copyWith(color: c.cost),
+          ),
+        ],
+      ],
     );
   }
 }

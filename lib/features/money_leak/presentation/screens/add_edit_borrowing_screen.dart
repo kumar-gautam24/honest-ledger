@@ -359,7 +359,7 @@ class _AddEditBorrowingScreenState
         ),
         const SizedBox(height: AppSpacing.lg),
         AppTextField.amount(
-          label: 'Minimum payment (optional)',
+          label: 'Planned monthly payment (optional)',
           controller: _minPayment,
           validator: Validators.number(),
         ),

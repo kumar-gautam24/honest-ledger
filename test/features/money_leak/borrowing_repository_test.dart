@@ -29,6 +29,23 @@ void main() {
 
   tearDown(() => db.close());
 
+  test('foreclosureFee round-trips through the database', () async {
+    await repo.upsertBorrowing(Borrowing(
+      id: 'fc1',
+      title: 'Phone EMI',
+      lenderName: 'HDFC',
+      kind: BorrowingKind.fixedEmi,
+      principal: 12000,
+      interestRatePct: 18,
+      tenureMonths: 12,
+      foreclosureFee: 750,
+      startDate: DateTime(2026, 1, 1),
+      createdAt: DateTime(2026, 1, 1),
+    ));
+    final loaded = await repo.watchSummaries().first;
+    expect(loaded.single.borrowing.foreclosureFee, 750);
+  });
+
   test('repaying ₹15k on a ₹10k borrowing shows ₹5k wasted', () async {
     await repo.upsertBorrowing(_slice());
     await repo.addRepayment(Repayment(

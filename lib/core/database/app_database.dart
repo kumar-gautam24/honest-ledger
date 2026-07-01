@@ -43,6 +43,7 @@ class Borrowings extends Table {
   RealColumn get principal => real()();
   RealColumn get processingFee => real().withDefault(const Constant(0))();
   RealColumn get gstOnFee => real().withDefault(const Constant(0))();
+  RealColumn get foreclosureFee => real().nullable()();
   BoolColumn get gstOnInterest =>
       boolean().withDefault(const Constant(false))();
   RealColumn get interestRatePct => real().withDefault(const Constant(0))();
@@ -101,7 +102,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -118,6 +119,9 @@ class AppDatabase extends _$AppDatabase {
             await customStatement(
               "UPDATE borrowings SET kind = 'fixedEmi' WHERE tenure_months > 0",
             );
+          }
+          if (from < 5) {
+            await m.addColumn(borrowings, borrowings.foreclosureFee);
           }
         },
         beforeOpen: (details) async {

@@ -39,6 +39,7 @@ class Borrowing {
     this.lenderId,
     this.processingFee = 0,
     this.gstOnFee = 0,
+    this.foreclosureFee = 0,
     this.gstOnInterest = false,
     this.interestRatePct = 0,
     this.rateType = RateType.reducing,
@@ -58,6 +59,10 @@ class Borrowing {
   final double principal;
   final double processingFee;
   final double gstOnFee;
+
+  /// Fee charged when a fixed EMI is closed early (foreclosure). 0 when the
+  /// borrowing was never foreclosed.
+  final double foreclosureFee;
 
   /// Whether 18% GST is levied on each installment's interest (as on Indian
   /// credit-card / consumer EMIs). Applies to [BorrowingKind.fixedEmi] only.
@@ -86,6 +91,7 @@ class Borrowing {
     double? principal,
     double? processingFee,
     double? gstOnFee,
+    double? foreclosureFee,
     bool? gstOnInterest,
     double? interestRatePct,
     RateType? rateType,
@@ -104,6 +110,7 @@ class Borrowing {
       principal: principal ?? this.principal,
       processingFee: processingFee ?? this.processingFee,
       gstOnFee: gstOnFee ?? this.gstOnFee,
+      foreclosureFee: foreclosureFee ?? this.foreclosureFee,
       gstOnInterest: gstOnInterest ?? this.gstOnInterest,
       interestRatePct: interestRatePct ?? this.interestRatePct,
       rateType: rateType ?? this.rateType,

@@ -785,6 +785,17 @@ class $BorrowingsTable extends Borrowings
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _foreclosureFeeMeta = const VerificationMeta(
+    'foreclosureFee',
+  );
+  @override
+  late final GeneratedColumn<double> foreclosureFee = GeneratedColumn<double>(
+    'foreclosure_fee',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _gstOnInterestMeta = const VerificationMeta(
     'gstOnInterest',
   );
@@ -899,6 +910,7 @@ class $BorrowingsTable extends Borrowings
     principal,
     processingFee,
     gstOnFee,
+    foreclosureFee,
     gstOnInterest,
     interestRatePct,
     rateType,
@@ -975,6 +987,15 @@ class $BorrowingsTable extends Borrowings
       context.handle(
         _gstOnFeeMeta,
         gstOnFee.isAcceptableOrUnknown(data['gst_on_fee']!, _gstOnFeeMeta),
+      );
+    }
+    if (data.containsKey('foreclosure_fee')) {
+      context.handle(
+        _foreclosureFeeMeta,
+        foreclosureFee.isAcceptableOrUnknown(
+          data['foreclosure_fee']!,
+          _foreclosureFeeMeta,
+        ),
       );
     }
     if (data.containsKey('gst_on_interest')) {
@@ -1085,6 +1106,10 @@ class $BorrowingsTable extends Borrowings
         DriftSqlType.double,
         data['${effectivePrefix}gst_on_fee'],
       )!,
+      foreclosureFee: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}foreclosure_fee'],
+      ),
       gstOnInterest: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}gst_on_interest'],
@@ -1139,6 +1164,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
   final double principal;
   final double processingFee;
   final double gstOnFee;
+  final double? foreclosureFee;
   final bool gstOnInterest;
   final double interestRatePct;
   final String rateType;
@@ -1157,6 +1183,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     required this.principal,
     required this.processingFee,
     required this.gstOnFee,
+    this.foreclosureFee,
     required this.gstOnInterest,
     required this.interestRatePct,
     required this.rateType,
@@ -1180,6 +1207,9 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     map['principal'] = Variable<double>(principal);
     map['processing_fee'] = Variable<double>(processingFee);
     map['gst_on_fee'] = Variable<double>(gstOnFee);
+    if (!nullToAbsent || foreclosureFee != null) {
+      map['foreclosure_fee'] = Variable<double>(foreclosureFee);
+    }
     map['gst_on_interest'] = Variable<bool>(gstOnInterest);
     map['interest_rate_pct'] = Variable<double>(interestRatePct);
     map['rate_type'] = Variable<String>(rateType);
@@ -1206,6 +1236,9 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       principal: Value(principal),
       processingFee: Value(processingFee),
       gstOnFee: Value(gstOnFee),
+      foreclosureFee: foreclosureFee == null && nullToAbsent
+          ? const Value.absent()
+          : Value(foreclosureFee),
       gstOnInterest: Value(gstOnInterest),
       interestRatePct: Value(interestRatePct),
       rateType: Value(rateType),
@@ -1234,6 +1267,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       principal: serializer.fromJson<double>(json['principal']),
       processingFee: serializer.fromJson<double>(json['processingFee']),
       gstOnFee: serializer.fromJson<double>(json['gstOnFee']),
+      foreclosureFee: serializer.fromJson<double?>(json['foreclosureFee']),
       gstOnInterest: serializer.fromJson<bool>(json['gstOnInterest']),
       interestRatePct: serializer.fromJson<double>(json['interestRatePct']),
       rateType: serializer.fromJson<String>(json['rateType']),
@@ -1257,6 +1291,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       'principal': serializer.toJson<double>(principal),
       'processingFee': serializer.toJson<double>(processingFee),
       'gstOnFee': serializer.toJson<double>(gstOnFee),
+      'foreclosureFee': serializer.toJson<double?>(foreclosureFee),
       'gstOnInterest': serializer.toJson<bool>(gstOnInterest),
       'interestRatePct': serializer.toJson<double>(interestRatePct),
       'rateType': serializer.toJson<String>(rateType),
@@ -1278,6 +1313,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     double? principal,
     double? processingFee,
     double? gstOnFee,
+    Value<double?> foreclosureFee = const Value.absent(),
     bool? gstOnInterest,
     double? interestRatePct,
     String? rateType,
@@ -1296,6 +1332,9 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     principal: principal ?? this.principal,
     processingFee: processingFee ?? this.processingFee,
     gstOnFee: gstOnFee ?? this.gstOnFee,
+    foreclosureFee: foreclosureFee.present
+        ? foreclosureFee.value
+        : this.foreclosureFee,
     gstOnInterest: gstOnInterest ?? this.gstOnInterest,
     interestRatePct: interestRatePct ?? this.interestRatePct,
     rateType: rateType ?? this.rateType,
@@ -1320,6 +1359,9 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
           ? data.processingFee.value
           : this.processingFee,
       gstOnFee: data.gstOnFee.present ? data.gstOnFee.value : this.gstOnFee,
+      foreclosureFee: data.foreclosureFee.present
+          ? data.foreclosureFee.value
+          : this.foreclosureFee,
       gstOnInterest: data.gstOnInterest.present
           ? data.gstOnInterest.value
           : this.gstOnInterest,
@@ -1351,6 +1393,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
           ..write('principal: $principal, ')
           ..write('processingFee: $processingFee, ')
           ..write('gstOnFee: $gstOnFee, ')
+          ..write('foreclosureFee: $foreclosureFee, ')
           ..write('gstOnInterest: $gstOnInterest, ')
           ..write('interestRatePct: $interestRatePct, ')
           ..write('rateType: $rateType, ')
@@ -1374,6 +1417,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     principal,
     processingFee,
     gstOnFee,
+    foreclosureFee,
     gstOnInterest,
     interestRatePct,
     rateType,
@@ -1396,6 +1440,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
           other.principal == this.principal &&
           other.processingFee == this.processingFee &&
           other.gstOnFee == this.gstOnFee &&
+          other.foreclosureFee == this.foreclosureFee &&
           other.gstOnInterest == this.gstOnInterest &&
           other.interestRatePct == this.interestRatePct &&
           other.rateType == this.rateType &&
@@ -1416,6 +1461,7 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
   final Value<double> principal;
   final Value<double> processingFee;
   final Value<double> gstOnFee;
+  final Value<double?> foreclosureFee;
   final Value<bool> gstOnInterest;
   final Value<double> interestRatePct;
   final Value<String> rateType;
@@ -1435,6 +1481,7 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     this.principal = const Value.absent(),
     this.processingFee = const Value.absent(),
     this.gstOnFee = const Value.absent(),
+    this.foreclosureFee = const Value.absent(),
     this.gstOnInterest = const Value.absent(),
     this.interestRatePct = const Value.absent(),
     this.rateType = const Value.absent(),
@@ -1455,6 +1502,7 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     required double principal,
     this.processingFee = const Value.absent(),
     this.gstOnFee = const Value.absent(),
+    this.foreclosureFee = const Value.absent(),
     this.gstOnInterest = const Value.absent(),
     this.interestRatePct = const Value.absent(),
     this.rateType = const Value.absent(),
@@ -1480,6 +1528,7 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     Expression<double>? principal,
     Expression<double>? processingFee,
     Expression<double>? gstOnFee,
+    Expression<double>? foreclosureFee,
     Expression<bool>? gstOnInterest,
     Expression<double>? interestRatePct,
     Expression<String>? rateType,
@@ -1500,6 +1549,7 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
       if (principal != null) 'principal': principal,
       if (processingFee != null) 'processing_fee': processingFee,
       if (gstOnFee != null) 'gst_on_fee': gstOnFee,
+      if (foreclosureFee != null) 'foreclosure_fee': foreclosureFee,
       if (gstOnInterest != null) 'gst_on_interest': gstOnInterest,
       if (interestRatePct != null) 'interest_rate_pct': interestRatePct,
       if (rateType != null) 'rate_type': rateType,
@@ -1522,6 +1572,7 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     Value<double>? principal,
     Value<double>? processingFee,
     Value<double>? gstOnFee,
+    Value<double?>? foreclosureFee,
     Value<bool>? gstOnInterest,
     Value<double>? interestRatePct,
     Value<String>? rateType,
@@ -1542,6 +1593,7 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
       principal: principal ?? this.principal,
       processingFee: processingFee ?? this.processingFee,
       gstOnFee: gstOnFee ?? this.gstOnFee,
+      foreclosureFee: foreclosureFee ?? this.foreclosureFee,
       gstOnInterest: gstOnInterest ?? this.gstOnInterest,
       interestRatePct: interestRatePct ?? this.interestRatePct,
       rateType: rateType ?? this.rateType,
@@ -1581,6 +1633,9 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     }
     if (gstOnFee.present) {
       map['gst_on_fee'] = Variable<double>(gstOnFee.value);
+    }
+    if (foreclosureFee.present) {
+      map['foreclosure_fee'] = Variable<double>(foreclosureFee.value);
     }
     if (gstOnInterest.present) {
       map['gst_on_interest'] = Variable<bool>(gstOnInterest.value);
@@ -1626,6 +1681,7 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
           ..write('principal: $principal, ')
           ..write('processingFee: $processingFee, ')
           ..write('gstOnFee: $gstOnFee, ')
+          ..write('foreclosureFee: $foreclosureFee, ')
           ..write('gstOnInterest: $gstOnInterest, ')
           ..write('interestRatePct: $interestRatePct, ')
           ..write('rateType: $rateType, ')
@@ -3033,6 +3089,7 @@ typedef $$BorrowingsTableCreateCompanionBuilder =
       required double principal,
       Value<double> processingFee,
       Value<double> gstOnFee,
+      Value<double?> foreclosureFee,
       Value<bool> gstOnInterest,
       Value<double> interestRatePct,
       Value<String> rateType,
@@ -3054,6 +3111,7 @@ typedef $$BorrowingsTableUpdateCompanionBuilder =
       Value<double> principal,
       Value<double> processingFee,
       Value<double> gstOnFee,
+      Value<double?> foreclosureFee,
       Value<bool> gstOnInterest,
       Value<double> interestRatePct,
       Value<String> rateType,
@@ -3135,6 +3193,11 @@ class $$BorrowingsTableFilterComposer
 
   ColumnFilters<double> get gstOnFee => $composableBuilder(
     column: $table.gstOnFee,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get foreclosureFee => $composableBuilder(
+    column: $table.foreclosureFee,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3258,6 +3321,11 @@ class $$BorrowingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get foreclosureFee => $composableBuilder(
+    column: $table.foreclosureFee,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get gstOnInterest => $composableBuilder(
     column: $table.gstOnInterest,
     builder: (column) => ColumnOrderings(column),
@@ -3340,6 +3408,11 @@ class $$BorrowingsTableAnnotationComposer
 
   GeneratedColumn<double> get gstOnFee =>
       $composableBuilder(column: $table.gstOnFee, builder: (column) => column);
+
+  GeneratedColumn<double> get foreclosureFee => $composableBuilder(
+    column: $table.foreclosureFee,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get gstOnInterest => $composableBuilder(
     column: $table.gstOnInterest,
@@ -3438,6 +3511,7 @@ class $$BorrowingsTableTableManager
                 Value<double> principal = const Value.absent(),
                 Value<double> processingFee = const Value.absent(),
                 Value<double> gstOnFee = const Value.absent(),
+                Value<double?> foreclosureFee = const Value.absent(),
                 Value<bool> gstOnInterest = const Value.absent(),
                 Value<double> interestRatePct = const Value.absent(),
                 Value<String> rateType = const Value.absent(),
@@ -3457,6 +3531,7 @@ class $$BorrowingsTableTableManager
                 principal: principal,
                 processingFee: processingFee,
                 gstOnFee: gstOnFee,
+                foreclosureFee: foreclosureFee,
                 gstOnInterest: gstOnInterest,
                 interestRatePct: interestRatePct,
                 rateType: rateType,
@@ -3478,6 +3553,7 @@ class $$BorrowingsTableTableManager
                 required double principal,
                 Value<double> processingFee = const Value.absent(),
                 Value<double> gstOnFee = const Value.absent(),
+                Value<double?> foreclosureFee = const Value.absent(),
                 Value<bool> gstOnInterest = const Value.absent(),
                 Value<double> interestRatePct = const Value.absent(),
                 Value<String> rateType = const Value.absent(),
@@ -3497,6 +3573,7 @@ class $$BorrowingsTableTableManager
                 principal: principal,
                 processingFee: processingFee,
                 gstOnFee: gstOnFee,
+                foreclosureFee: foreclosureFee,
                 gstOnInterest: gstOnInterest,
                 interestRatePct: interestRatePct,
                 rateType: rateType,

@@ -2,6 +2,49 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:recurring/core/utils/finance_math.dart';
 
 void main() {
+  group('accruedInterestFlexible', () {
+    test('no time elapsed accrues nothing', () {
+      final start = DateTime(2026, 1, 1);
+      expect(
+        FinanceMath.accruedInterestFlexible(
+          principal: 10000,
+          annualRatePct: 36,
+          startDate: start,
+          payments: const [],
+          asOf: start,
+        ),
+        closeTo(0, 0.001),
+      );
+    });
+
+    test('one month at 36% p.a. (3%/mo) on ₹10,000 ≈ ₹300', () {
+      final start = DateTime(2026, 1, 1);
+      expect(
+        FinanceMath.accruedInterestFlexible(
+          principal: 10000,
+          annualRatePct: 36,
+          startDate: start,
+          payments: const [],
+          asOf: DateTime(2026, 2, 1),
+        ),
+        closeTo(300, 0.01),
+      );
+    });
+
+    test('a payment before the accrual lowers the interest charged', () {
+      final start = DateTime(2026, 1, 1);
+      final withPay = FinanceMath.accruedInterestFlexible(
+        principal: 10000,
+        annualRatePct: 36,
+        startDate: start,
+        payments: [(DateTime(2026, 1, 10), 4000)],
+        asOf: DateTime(2026, 2, 1),
+      );
+      // Balance is 6,000 when the month's interest accrues → 3% ≈ ₹180.
+      expect(withPay, closeTo(180, 0.01));
+    });
+  });
+
   group('reducingEmi', () {
     test('₹1,00,000 @ 12% for 12 months ≈ ₹8,884.88', () {
       expect(
