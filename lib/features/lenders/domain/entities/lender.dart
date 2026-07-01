@@ -23,6 +23,7 @@ class Lender {
     this.rateType = RateType.reducing,
     this.feeType = FeeType.flat,
     this.feeValue = 0,
+    this.feeCap,
     this.isMine = false,
     this.notes,
   });
@@ -45,6 +46,9 @@ class Lender {
   /// Flat amount or percent of principal, per [feeType].
   final double feeValue;
 
+  /// Upper cap on a percent fee (e.g. ICICI 2.99% but max ₹299). Null = no cap.
+  final double? feeCap;
+
   /// One of the user's own cards/accounts.
   final bool isMine;
   final String? notes;
@@ -58,6 +62,7 @@ class Lender {
     RateType? rateType,
     FeeType? feeType,
     double? feeValue,
+    double? feeCap,
     bool? isMine,
     String? notes,
   }) {
@@ -71,6 +76,7 @@ class Lender {
       rateType: rateType ?? this.rateType,
       feeType: feeType ?? this.feeType,
       feeValue: feeValue ?? this.feeValue,
+      feeCap: feeCap ?? this.feeCap,
       isMine: isMine ?? this.isMine,
       notes: notes ?? this.notes,
     );

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../constants/app_constants.dart';
+import 'date_x.dart';
 
 /// How a processing fee is expressed.
 enum FeeType { flat, percent }
@@ -16,6 +17,7 @@ class EmiBreakdown {
     required this.totalInterest,
     required this.processingFee,
     required this.gstOnFee,
+    required this.gstOnInterest,
     required this.totalPayable,
     required this.effectiveAnnualRatePct,
   });
@@ -26,7 +28,11 @@ class EmiBreakdown {
   final double processingFee;
   final double gstOnFee;
 
-  /// principal + interest + fee + GST on fee.
+  /// 18% GST on the interest, when charged (credit-card / consumer EMIs). Zero
+  /// otherwise.
+  final double gstOnInterest;
+
+  /// principal + interest + GST-on-interest + fee + GST on fee.
   final double totalPayable;
 
   /// True annualised cost once the upfront fee is folded in.
@@ -34,6 +40,31 @@ class EmiBreakdown {
 
   /// Everything paid beyond what was borrowed.
   double get totalExtra => totalPayable - principal;
+}
+
+/// One exact installment of a fixed EMI schedule: the amount, its due date, and
+/// the component split. Month 1 carries the upfront processing fee + its GST.
+class EmiInstallment {
+  const EmiInstallment({
+    required this.number,
+    required this.dueDate,
+    required this.principal,
+    required this.interest,
+    required this.gstOnInterest,
+    required this.fee,
+    required this.gstOnFee,
+  });
+
+  final int number;
+  final DateTime dueDate;
+  final double principal;
+  final double interest;
+  final double gstOnInterest;
+  final double fee;
+  final double gstOnFee;
+
+  /// The exact amount due this month.
+  double get total => principal + interest + gstOnInterest + fee + gstOnFee;
 }
 
 /// One row of a reducing-balance amortization schedule.
@@ -127,23 +158,31 @@ abstract final class FinanceMath {
     return (principal + interest) / months;
   }
 
-  /// Processing fee from a [FeeType]/value pair.
+  /// Processing fee from a [FeeType]/value pair, with optional [cap]/[min]
+  /// (e.g. ICICI Instant EMI is 2.99% of the amount but capped at ₹299).
   static double processingFee({
     required double principal,
     required FeeType type,
     required double value,
+    double? cap,
+    double? min,
   }) {
-    return switch (type) {
+    var fee = switch (type) {
       FeeType.flat => value,
       FeeType.percent => principal * value / 100,
     };
+    if (min != null && fee < min) fee = min;
+    if (cap != null && fee > cap) fee = cap;
+    return fee;
   }
 
   static double gstOn(double amount, {double rate = AppConstants.gstRate}) {
     return amount * rate;
   }
 
-  /// Full EMI breakdown including processing fee + GST and effective rate.
+  /// Full EMI breakdown including processing fee + GST and effective rate. When
+  /// [gstOnInterest] is true, 18% GST on the interest is folded into the total
+  /// (as on Indian credit-card / consumer EMIs).
   static EmiBreakdown emiBreakdown({
     required double principal,
     required double annualRatePct,
@@ -151,6 +190,7 @@ abstract final class FinanceMath {
     RateType rateType = RateType.reducing,
     FeeType feeType = FeeType.flat,
     double feeValue = 0,
+    bool gstOnInterest = false,
     double gstRate = AppConstants.gstRate,
   }) {
     final emi = switch (rateType) {
@@ -164,13 +204,15 @@ abstract final class FinanceMath {
       value: feeValue,
     );
     final gstFee = gstOn(fee, rate: gstRate);
-    final totalPayable = emi * months + fee + gstFee;
+    final gstInterest = gstOnInterest ? gstOn(totalInterest, rate: gstRate) : 0.0;
+    final totalPayable = emi * months + gstInterest + fee + gstFee;
     return EmiBreakdown(
       principal: principal,
       emi: emi,
       totalInterest: totalInterest,
       processingFee: fee,
       gstOnFee: gstFee,
+      gstOnInterest: gstInterest,
       totalPayable: totalPayable,
       effectiveAnnualRatePct: effectiveAnnualRatePct(
         principal: principal,
@@ -179,6 +221,111 @@ abstract final class FinanceMath {
         upfrontCost: fee + gstFee,
       ),
     );
+  }
+
+  /// The exact, dated installment schedule for a fixed EMI. Reducing loans use
+  /// the amortization split; flat loans spread interest evenly. GST on interest
+  /// is added per row when [gstOnInterest] is set, and the processing fee + its
+  /// GST land on installment 1.
+  static List<EmiInstallment> emiSchedule({
+    required double principal,
+    required double annualRatePct,
+    required int months,
+    required DateTime startDate,
+    RateType rateType = RateType.reducing,
+    bool gstOnInterest = false,
+    FeeType feeType = FeeType.flat,
+    double feeValue = 0,
+    double gstRate = AppConstants.gstRate,
+  }) {
+    if (months <= 0) return const [];
+    final fee = processingFee(principal: principal, type: feeType, value: feeValue);
+    final gstFee = gstOn(fee, rate: gstRate);
+
+    // (principal, interest) per month, by rate type.
+    List<(double, double)> parts;
+    switch (rateType) {
+      case RateType.reducing:
+        parts = amortizationSchedule(
+          principal: principal,
+          annualRatePct: annualRatePct,
+          months: months,
+        ).map((e) => (e.principalComponent, e.interest)).toList();
+      case RateType.flat:
+        final interestEach = flatTotalInterest(principal, annualRatePct, months) / months;
+        final principalEach = principal / months;
+        parts = List.generate(months, (_) => (principalEach, interestEach));
+    }
+
+    return [
+      for (var i = 0; i < months; i++)
+        EmiInstallment(
+          number: i + 1,
+          dueDate: startDate.addMonths(i + 1),
+          principal: parts[i].$1,
+          interest: parts[i].$2,
+          gstOnInterest: gstOnInterest ? gstOn(parts[i].$2, rate: gstRate) : 0,
+          fee: i == 0 ? fee : 0,
+          gstOnFee: i == 0 ? gstFee : 0,
+        ),
+    ];
+  }
+
+  /// Outstanding balance of a [flexible loan] as of [asOf]: interest accrues on
+  /// the reducing balance each month from [startDate]; each payment lowers it,
+  /// so larger payments leave less to accrue interest on. Never negative.
+  static double outstandingFlexible({
+    required double principal,
+    required double annualRatePct,
+    required DateTime startDate,
+    required List<(DateTime, double)> payments,
+    DateTime? asOf,
+  }) {
+    final r = annualRatePct / 12 / 100;
+    final end = asOf ?? DateTime.now();
+    final sorted = [...payments]..sort((a, b) => a.$1.compareTo(b.$1));
+    var balance = principal;
+    var pi = 0;
+    var cursor = startDate;
+    while (cursor.isBefore(end)) {
+      final next = cursor.addMonths(1);
+      while (pi < sorted.length && sorted[pi].$1.isBefore(next)) {
+        balance -= sorted[pi].$2;
+        pi++;
+      }
+      if (balance > 0 && r > 0) balance += balance * r;
+      cursor = next;
+    }
+    while (pi < sorted.length && !sorted[pi].$1.isAfter(end)) {
+      balance -= sorted[pi].$2;
+      pi++;
+    }
+    return balance < 0 ? 0 : balance;
+  }
+
+  /// Total interest paid to clear [principal] by paying a fixed [monthlyPayment]
+  /// against a reducing balance. Returns [double.infinity] when the payment is
+  /// too small to ever amortise. Drives the "interest saved by paying more" hint.
+  static double projectedInterestFlexible({
+    required double principal,
+    required double annualRatePct,
+    required double monthlyPayment,
+    int maxMonths = 600,
+  }) {
+    final r = annualRatePct / 12 / 100;
+    if (monthlyPayment <= 0) return double.infinity;
+    var balance = principal;
+    var totalInterest = 0.0;
+    for (var m = 0; m < maxMonths; m++) {
+      final interest = balance * r;
+      // Payment can't cover even the interest → the debt never clears.
+      if (monthlyPayment <= interest) return double.infinity;
+      totalInterest += interest;
+      balance += interest;
+      balance -= monthlyPayment;
+      if (balance <= 0.01) break;
+    }
+    return totalInterest;
   }
 
   /// Reducing-balance amortization schedule, one [AmortEntry] per month.

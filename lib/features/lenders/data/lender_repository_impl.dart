@@ -58,3 +58,18 @@ Future<void> seedLendersIfEmpty(AppDatabase db) async {
     b.insertAll(db.lenders, kSeedLenders.map(lenderToCompanion).toList());
   });
 }
+
+/// Upserts the seed catalog, refreshing rates/fees for the built-in lenders
+/// (matched by id) while leaving any user-added lenders untouched. Used when
+/// the seed data version changes.
+Future<void> reseedLenders(AppDatabase db) async {
+  await db.batch((b) {
+    for (final lender in kSeedLenders) {
+      b.insert(
+        db.lenders,
+        lenderToCompanion(lender),
+        onConflict: DoUpdate((_) => lenderToCompanion(lender)),
+      );
+    }
+  });
+}

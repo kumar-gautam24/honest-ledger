@@ -3,6 +3,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/lenders/data/lender_repository_impl.dart';
+import '../../features/lenders/data/lender_seed.dart';
 import '../../features/lenders/domain/repositories/lender_repository.dart';
 import '../../features/money_leak/data/borrowing_repository_impl.dart';
 import '../../features/money_leak/domain/repositories/borrowing_repository.dart';
@@ -52,7 +53,20 @@ Future<void> configureDependencies({AppDatabase? database}) async {
       RecurringRepositoryImpl(sl<AppDatabase>()),
     );
   }
-  await seedLendersIfEmpty(sl<AppDatabase>());
+  await _seedLenders();
+}
+
+/// Seeds the lender catalog, and refreshes the built-in entries when the seed
+/// data version changes (leaving user-added lenders alone).
+Future<void> _seedLenders() async {
+  final prefs = sl<SharedPreferences>();
+  final storedVersion = prefs.getInt('lender_seed_version') ?? 0;
+  if (storedVersion < kLenderSeedVersion) {
+    await reseedLenders(sl<AppDatabase>());
+    await prefs.setInt('lender_seed_version', kLenderSeedVersion);
+  } else {
+    await seedLendersIfEmpty(sl<AppDatabase>());
+  }
 }
 
 /// Fires a light tap if haptics are available. Safe to call from widgets even

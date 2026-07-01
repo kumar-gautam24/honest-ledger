@@ -8,6 +8,7 @@ import '../../../../core/forms/app_form.dart';
 import '../../../../core/haptics/haptic_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/finance_math.dart';
+import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/validation/validators.dart';
 import '../../../../shared/widgets/widgets.dart';
 import '../../domain/entities/lender.dart';
@@ -34,6 +35,7 @@ class _AddEditLenderScreenState extends ConsumerState<AddEditLenderScreen> {
   late final TextEditingController _network;
   late final TextEditingController _rate;
   late final TextEditingController _fee;
+  late final TextEditingController _feeCap;
   late final TextEditingController _notes;
 
   LenderType _type = LenderType.card;
@@ -55,7 +57,10 @@ class _AddEditLenderScreenState extends ConsumerState<AddEditLenderScreen> {
       text: e == null || e.typicalRatePct == 0 ? '' : _fmt(e.typicalRatePct),
     );
     _fee = TextEditingController(
-      text: e == null || e.feeValue == 0 ? '' : _fmt(e.feeValue),
+      text: e == null || e.feeValue == 0 ? '' : Money.input(e.feeValue),
+    );
+    _feeCap = TextEditingController(
+      text: e?.feeCap == null ? '' : Money.input(e!.feeCap!),
     );
     _notes = TextEditingController(text: e?.notes ?? '');
     _type = e?.type ?? LenderType.card;
@@ -66,7 +71,7 @@ class _AddEditLenderScreenState extends ConsumerState<AddEditLenderScreen> {
 
   @override
   void dispose() {
-    for (final c in [_name, _issuer, _network, _rate, _fee, _notes]) {
+    for (final c in [_name, _issuer, _network, _rate, _fee, _feeCap, _notes]) {
       c.dispose();
     }
     super.dispose();
@@ -95,6 +100,9 @@ class _AddEditLenderScreenState extends ConsumerState<AddEditLenderScreen> {
       rateType: _rateType,
       feeType: _feeType,
       feeValue: _d(_fee),
+      feeCap: _feeType == FeeType.percent && _feeCap.text.trim().isNotEmpty
+          ? _d(_feeCap)
+          : null,
       isMine: _isMine,
       notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
     );
@@ -165,12 +173,20 @@ class _AddEditLenderScreenState extends ConsumerState<AddEditLenderScreen> {
               onChanged: (r) => setState(() => _rateType = r),
             ),
             const SizedBox(height: AppSpacing.lg),
-            AppTextField.amount(
-              label: _feeType == FeeType.flat
-                  ? 'Processing fee (flat)'
-                  : 'Processing fee (% of amount)',
-              controller: _fee,
-            ),
+            if (_feeType == FeeType.flat)
+              AppTextField.amount(
+                label: 'Processing fee (flat)',
+                controller: _fee,
+              )
+            else
+              AppTextField(
+                label: 'Processing fee (% of amount)',
+                controller: _fee,
+                hint: '0',
+                suffix: '%',
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+              ),
             const SizedBox(height: AppSpacing.sm),
             _ChipRow<FeeType>(
               values: FeeType.values,
@@ -178,6 +194,13 @@ class _AddEditLenderScreenState extends ConsumerState<AddEditLenderScreen> {
               labelOf: (f) => f == FeeType.flat ? 'Flat ₹' : 'Percent %',
               onChanged: (f) => setState(() => _feeType = f),
             ),
+            if (_feeType == FeeType.percent) ...[
+              const SizedBox(height: AppSpacing.lg),
+              AppTextField.amount(
+                label: 'Max fee cap (optional)',
+                controller: _feeCap,
+              ),
+            ],
             const SizedBox(height: AppSpacing.lg),
             AppCard(
               child: Row(

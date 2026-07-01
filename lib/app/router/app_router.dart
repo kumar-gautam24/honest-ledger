@@ -3,24 +3,25 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/di/injector.dart';
 import '../../core/haptics/haptic_service.dart';
+import '../../core/utils/enum_x.dart';
 import '../../features/emi_calculator/presentation/screens/amortization_screen.dart';
 import '../../features/emi_calculator/presentation/screens/emi_calculator_screen.dart';
+import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/lenders/domain/entities/lender.dart';
 import '../../features/lenders/presentation/screens/add_edit_lender_screen.dart';
 import '../../features/lenders/presentation/screens/lender_catalog_screen.dart';
 import '../../features/money_leak/domain/entities/borrowing.dart';
 import '../../features/money_leak/presentation/screens/add_edit_borrowing_screen.dart';
 import '../../features/money_leak/presentation/screens/borrowing_detail_screen.dart';
-import '../../features/money_leak/presentation/screens/money_leak_screen.dart';
 import '../../features/no_cost_emi/presentation/screens/no_cost_emi_screen.dart';
 import '../../features/recurring/domain/entities/recurring_item.dart';
 import '../../features/recurring/presentation/screens/add_edit_recurring_screen.dart';
-import '../../features/recurring/presentation/screens/recurring_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/tools/presentation/screens/tools_screen.dart';
 
-/// App routes. A persistent bottom-nav shell hosts the four top-level tabs;
-/// feature detail routes are added under their branches in later phases.
+/// App routes. A persistent bottom-nav shell hosts the three top-level tabs
+/// (Home · Tools · Settings). Home is the unified obligations hub; adding a
+/// borrowing or recurring item lives under it with the kind/type preset.
 final GoRouter appRouter = GoRouter(
   initialLocation: '/home',
   routes: [
@@ -31,11 +32,28 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/home',
-              builder: (_, _) => const MoneyLeakScreen(),
+              builder: (_, _) => const HomeScreen(),
               routes: [
                 GoRoute(
                   path: 'add',
-                  builder: (_, _) => const AddEditBorrowingScreen(),
+                  builder: (_, state) => AddEditBorrowingScreen(
+                    initialKind: enumByName(
+                      BorrowingKind.values,
+                      state.uri.queryParameters['kind'],
+                      BorrowingKind.fixedEmi,
+                    ),
+                  ),
+                ),
+                GoRoute(
+                  path: 'add-recurring',
+                  builder: (_, state) => AddEditRecurringScreen(
+                    existing: state.extra as RecurringItem?,
+                    initialType: enumByName(
+                      RecurringType.values,
+                      state.uri.queryParameters['type'],
+                      RecurringType.subscription,
+                    ),
+                  ),
                 ),
                 GoRoute(
                   path: 'borrowing/:id',
@@ -76,22 +94,6 @@ final GoRouter appRouter = GoRouter(
                 GoRoute(
                   path: 'no-cost',
                   builder: (_, _) => const NoCostEmiScreen(),
-                ),
-              ],
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/recurring',
-              builder: (_, _) => const RecurringScreen(),
-              routes: [
-                GoRoute(
-                  path: 'add',
-                  builder: (_, state) => AddEditRecurringScreen(
-                    existing: state.extra as RecurringItem?,
-                  ),
                 ),
               ],
             ),
@@ -143,19 +145,14 @@ class _RootShell extends StatelessWidget {
         onDestinationSelected: _onTap,
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.trending_down_outlined),
-            selectedIcon: Icon(Icons.trending_down_rounded),
+            icon: Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(Icons.receipt_long_rounded),
             label: 'Home',
           ),
           NavigationDestination(
             icon: Icon(Icons.calculate_outlined),
             selectedIcon: Icon(Icons.calculate_rounded),
             label: 'Tools',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.event_repeat_outlined),
-            selectedIcon: Icon(Icons.event_repeat_rounded),
-            label: 'Recurring',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),

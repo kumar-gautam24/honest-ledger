@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/forms/amount_input_formatter.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/validation/validators.dart';
 
@@ -46,6 +47,7 @@ class AppTextField extends StatelessWidget {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+        IndianAmountInputFormatter(),
       ],
       textInputAction: textInputAction,
       focusNode: focusNode,

@@ -22,6 +22,9 @@ abstract final class Money {
     decimalDigits: 1,
   );
 
+  static final NumberFormat _grouped =
+      NumberFormat.decimalPattern(AppConstants.locale);
+
   /// `₹15,240` — default for figures the user reads at a glance.
   static String format(num amount) => _whole.format(amount);
 
@@ -30,6 +33,10 @@ abstract final class Money {
 
   /// `₹10.5K` / `₹2.3L` — for tight spaces and chart labels.
   static String compact(num amount) => _compact.format(amount);
+
+  /// Grouped digits without a symbol, for prefilling amount inputs
+  /// (`75000` → `75,000`). Pairs with [IndianAmountInputFormatter].
+  static String input(num amount) => _grouped.format(amount);
 
   /// `+₹5,240` / `-₹400` — signed delta for gains and leaks.
   static String signed(num amount) {

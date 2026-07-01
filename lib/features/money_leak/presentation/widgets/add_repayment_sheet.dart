@@ -5,6 +5,7 @@ import '../../../../core/di/injector.dart';
 import '../../../../core/haptics/haptic_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_x.dart';
+import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/validation/validators.dart';
 import '../../../../shared/widgets/widgets.dart';
 import '../../domain/entities/repayment.dart';
@@ -13,20 +14,49 @@ import '../../domain/repositories/borrowing_repository.dart';
 const _uuid = Uuid();
 
 /// Bottom sheet to log a repayment against a borrowing.
-Future<void> showAddRepaymentSheet(BuildContext context, String borrowingId) {
+///
+/// For a fixed EMI, pass the [installmentNo] being settled plus its exact
+/// [prefillAmount] (still editable). For a flexible loan, pass [minAmount] to
+/// enforce the minimum payment (there is no maximum).
+Future<void> showAddRepaymentSheet(
+  BuildContext context,
+  String borrowingId, {
+  int? installmentNo,
+  double? prefillAmount,
+  double minAmount = 0,
+  String? context_,
+}) {
   return showModalBottomSheet<void>(
     context: context,
     backgroundColor: context.colors.surface,
     showDragHandle: true,
     isScrollControlled: true,
-    builder: (_) => _AddRepaymentSheet(borrowingId: borrowingId),
+    builder: (_) => _AddRepaymentSheet(
+      borrowingId: borrowingId,
+      installmentNo: installmentNo,
+      prefillAmount: prefillAmount,
+      minAmount: minAmount,
+      contextLabel: context_,
+    ),
   );
 }
 
 class _AddRepaymentSheet extends StatefulWidget {
-  const _AddRepaymentSheet({required this.borrowingId});
+  const _AddRepaymentSheet({
+    required this.borrowingId,
+    this.installmentNo,
+    this.prefillAmount,
+    this.minAmount = 0,
+    this.contextLabel,
+  });
 
   final String borrowingId;
+  final int? installmentNo;
+  final double? prefillAmount;
+  final double minAmount;
+
+  /// A quiet line under the title, e.g. "Installment 3 · due 10 Aug".
+  final String? contextLabel;
 
   @override
   State<_AddRepaymentSheet> createState() => _AddRepaymentSheetState();
@@ -34,9 +64,19 @@ class _AddRepaymentSheet extends StatefulWidget {
 
 class _AddRepaymentSheetState extends State<_AddRepaymentSheet> {
   final _formKey = GlobalKey<FormState>();
-  final _amount = TextEditingController();
+  late final TextEditingController _amount;
   DateTime _date = DateTime.now();
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _amount = TextEditingController(
+      text: widget.prefillAmount == null
+          ? ''
+          : Money.input(widget.prefillAmount!),
+    );
+  }
 
   @override
   void dispose() {
@@ -62,6 +102,7 @@ class _AddRepaymentSheetState extends State<_AddRepaymentSheet> {
       borrowingId: widget.borrowingId,
       amount: double.parse(_amount.text.replaceAll(',', '').trim()),
       date: _date,
+      installmentNo: widget.installmentNo,
     );
     await sl<BorrowingRepository>().addRepayment(repayment);
     sl<HapticService>().success();
@@ -85,7 +126,11 @@ class _AddRepaymentSheetState extends State<_AddRepaymentSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Add payment', style: context.text.titleLarge),
+            Text('Record payment', style: context.text.titleLarge),
+            if (widget.contextLabel != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(widget.contextLabel!, style: context.text.bodySmall),
+            ],
             const SizedBox(height: AppSpacing.lg),
             AppTextField.amount(
               label: 'Amount paid',
@@ -96,6 +141,12 @@ class _AddRepaymentSheetState extends State<_AddRepaymentSheet> {
                 Validators.required('Enter the amount'),
                 Validators.number(),
                 Validators.positive(),
+                if (widget.minAmount > 0)
+                  Validators.min(
+                    widget.minAmount,
+                    message:
+                        'Minimum payment is ${Money.format(widget.minAmount)}',
+                  ),
               ]),
               onSubmitted: (_) => _add(),
             ),
@@ -112,7 +163,7 @@ class _AddRepaymentSheetState extends State<_AddRepaymentSheet> {
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
-            AppButton(label: 'Add payment', loading: _saving, onPressed: _add),
+            AppButton(label: 'Record payment', loading: _saving, onPressed: _add),
           ],
         ),
       ),

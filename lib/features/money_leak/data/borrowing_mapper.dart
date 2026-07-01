@@ -9,14 +9,17 @@ import '../domain/entities/repayment.dart';
 Borrowing borrowingFromRow(BorrowingRow r) => Borrowing(
       id: r.id,
       title: r.title,
+      kind: enumByName(BorrowingKind.values, r.kind, BorrowingKind.flexibleLoan),
       lenderId: r.lenderId,
       lenderName: r.lenderName,
       principal: r.principal,
       processingFee: r.processingFee,
       gstOnFee: r.gstOnFee,
+      gstOnInterest: r.gstOnInterest,
       interestRatePct: r.interestRatePct,
       rateType: enumByName(RateType.values, r.rateType, RateType.reducing),
       tenureMonths: r.tenureMonths,
+      minPayment: r.minPayment,
       startDate: r.startDate,
       status: enumByName(BorrowingStatus.values, r.status, BorrowingStatus.active),
       notes: r.notes,
@@ -31,12 +34,15 @@ BorrowingsCompanion borrowingToCompanion(Borrowing b) =>
       principal: b.principal,
       startDate: b.startDate,
       createdAt: b.createdAt,
+      kind: Value(b.kind.name),
       lenderId: Value(b.lenderId),
       processingFee: Value(b.processingFee),
       gstOnFee: Value(b.gstOnFee),
+      gstOnInterest: Value(b.gstOnInterest),
       interestRatePct: Value(b.interestRatePct),
       rateType: Value(b.rateType.name),
       tenureMonths: Value(b.tenureMonths),
+      minPayment: Value(b.minPayment),
       status: Value(b.status.name),
       notes: Value(b.notes),
     );
@@ -46,6 +52,7 @@ Repayment repaymentFromRow(RepaymentRow r) => Repayment(
       borrowingId: r.borrowingId,
       amount: r.amount,
       date: r.date,
+      installmentNo: r.installmentNo,
       note: r.note,
     );
 
@@ -55,5 +62,6 @@ RepaymentsCompanion repaymentToCompanion(Repayment r) =>
       borrowingId: r.borrowingId,
       amount: r.amount,
       date: r.date,
+      installmentNo: Value(r.installmentNo),
       note: Value(r.note),
     );

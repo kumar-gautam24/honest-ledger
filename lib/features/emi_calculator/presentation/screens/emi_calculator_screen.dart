@@ -52,8 +52,14 @@ class _EmiCalculatorScreenState extends State<EmiCalculatorScreen> {
     setState(() {
       _rateType = lender.rateType;
       if (lender.typicalRatePct > 0) _rate.text = _fmt(lender.typicalRatePct);
-      if (lender.feeType == FeeType.flat && lender.feeValue > 0) {
-        _fee.text = _fmt(lender.feeValue);
+      if (lender.feeValue > 0) {
+        final fee = FinanceMath.processingFee(
+          principal: _d(_principal),
+          type: lender.feeType,
+          value: lender.feeValue,
+          cap: lender.feeCap,
+        );
+        if (fee > 0) _fee.text = Money.input(fee);
       }
     });
   }

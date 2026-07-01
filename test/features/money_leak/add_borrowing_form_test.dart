@@ -31,7 +31,7 @@ void main() {
     await tester.tap(button);
     await tester.pump();
 
-    expect(find.text('Give it a name'), findsOneWidget);
+    expect(find.text('Name the purchase'), findsOneWidget);
     expect(find.text('Enter the amount'), findsOneWidget);
   });
 }

@@ -66,7 +66,10 @@ class _LenderRow extends ConsumerWidget {
         ? null
         : lender.feeType == FeeType.flat
             ? '${Money.format(lender.feeValue)} fee'
-            : '${Percent.format(lender.feeValue)} fee';
+            : lender.feeCap != null
+                ? '${Percent.format(lender.feeValue)} fee '
+                    '(max ${Money.format(lender.feeCap!)})'
+                : '${Percent.format(lender.feeValue)} fee';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),

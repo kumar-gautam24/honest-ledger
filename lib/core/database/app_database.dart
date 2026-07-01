@@ -21,6 +21,7 @@ class Lenders extends Table {
       text().withDefault(const Constant('reducing'))();
   TextColumn get feeType => text().withDefault(const Constant('flat'))();
   RealColumn get feeValue => real().withDefault(const Constant(0))();
+  RealColumn get feeCap => real().nullable()();
   BoolColumn get isMine => boolean().withDefault(const Constant(false))();
   TextColumn get notes => text().nullable()();
 
@@ -35,15 +36,20 @@ class Lenders extends Table {
 class Borrowings extends Table {
   TextColumn get id => text()();
   TextColumn get title => text()();
+  TextColumn get kind =>
+      text().withDefault(const Constant('flexibleLoan'))();
   TextColumn get lenderId => text().nullable()();
   TextColumn get lenderName => text()();
   RealColumn get principal => real()();
   RealColumn get processingFee => real().withDefault(const Constant(0))();
   RealColumn get gstOnFee => real().withDefault(const Constant(0))();
+  BoolColumn get gstOnInterest =>
+      boolean().withDefault(const Constant(false))();
   RealColumn get interestRatePct => real().withDefault(const Constant(0))();
   TextColumn get rateType =>
       text().withDefault(const Constant('reducing'))();
   IntColumn get tenureMonths => integer().withDefault(const Constant(0))();
+  RealColumn get minPayment => real().withDefault(const Constant(0))();
   DateTimeColumn get startDate => dateTime()();
   TextColumn get status => text().withDefault(const Constant('active'))();
   TextColumn get notes => text().nullable()();
@@ -61,6 +67,7 @@ class Repayments extends Table {
       text().references(Borrowings, #id, onDelete: KeyAction.cascade)();
   RealColumn get amount => real()();
   DateTimeColumn get date => dateTime()();
+  IntColumn get installmentNo => integer().nullable()();
   TextColumn get note => text().nullable()();
 
   @override
@@ -94,13 +101,24 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) => m.createAll(),
         onUpgrade: (m, from, to) async {
           if (from < 2) await m.createTable(recurringItems);
+          if (from < 3) await m.addColumn(lenders, lenders.feeCap);
+          if (from < 4) {
+            await m.addColumn(borrowings, borrowings.kind);
+            await m.addColumn(borrowings, borrowings.gstOnInterest);
+            await m.addColumn(borrowings, borrowings.minPayment);
+            await m.addColumn(repayments, repayments.installmentNo);
+            // Existing borrowings with a tenure were structured EMIs.
+            await customStatement(
+              "UPDATE borrowings SET kind = 'fixedEmi' WHERE tenure_months > 0",
+            );
+          }
         },
         beforeOpen: (details) async {
           await customStatement('PRAGMA foreign_keys = ON');

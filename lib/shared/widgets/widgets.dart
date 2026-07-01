@@ -7,5 +7,6 @@ export 'app_text_field.dart';
 export 'breakdown_row.dart';
 export 'empty_state.dart';
 export 'entrance_fade.dart';
+export 'installment_strip.dart';
 export 'money_text.dart';
 export 'section_header.dart';

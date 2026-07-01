@@ -16,6 +16,7 @@ Lender lenderFromRow(LenderRow r) => Lender(
       rateType: enumByName(RateType.values, r.rateType, RateType.reducing),
       feeType: enumByName(FeeType.values, r.feeType, FeeType.flat),
       feeValue: r.feeValue,
+      feeCap: r.feeCap,
       isMine: r.isMine,
       notes: r.notes,
     );
@@ -30,6 +31,7 @@ LendersCompanion lenderToCompanion(Lender l) => LendersCompanion.insert(
       rateType: Value(l.rateType.name),
       feeType: Value(l.feeType.name),
       feeValue: Value(l.feeValue),
+      feeCap: Value(l.feeCap),
       isMine: Value(l.isMine),
       notes: Value(l.notes),
     );

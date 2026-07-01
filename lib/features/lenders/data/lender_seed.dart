@@ -1,8 +1,15 @@
 import '../../../../core/utils/finance_math.dart';
 import '../domain/entities/lender.dart';
 
+/// Bump when the seed values below change so the app refreshes them on upgrade.
+const int kLenderSeedVersion = 3;
+
 /// Default catalog seeded on first launch. Values are typical starting points
-/// (rates depend on credit assessment) and are fully editable by the user.
+/// sourced from each provider's public EMI/loan terms (2026); real rates depend
+/// on your credit assessment, so everything here is editable.
+///
+/// Card EMI processing fees are usually a **percent of the purchase** (≈1–2%),
+/// not a small flat amount — modelled with [FeeType.percent].
 ///
 /// `isMine` marks the cards the user actually holds.
 const List<Lender> kSeedLenders = [
@@ -12,39 +19,80 @@ const List<Lender> kSeedLenders = [
     name: 'slice',
     type: LenderType.bnpl,
     typicalRatePct: 36,
-    feeType: FeeType.flat,
-    notes: '~36% online / 42% bank transfer. Flat fee per borrow + 2.5% '
-        'transfer fee + 18% GST.',
+    feeType: FeeType.percent,
+    feeValue: 2.5,
+    notes: 'slice borrow ~18% p.a.; slice card ~36% online / 42% bank '
+        'transfer. 2.5% transfer fee (min ₹25) + 18% GST.',
   ),
   Lender(
     id: 'mpokket',
     name: 'mPokket',
     type: LenderType.bnpl,
-    typicalRatePct: 18.96,
-    notes: 'Per-transaction processing fee + GST.',
+    typicalRatePct: 30,
+    feeType: FeeType.percent,
+    feeValue: 3.75,
+    notes: '1.58–3%/month (AIR up to 36%, APR up to ~58%). Processing '
+        '~3.75% + GST.',
   ),
-  Lender(id: 'lazypay', name: 'LazyPay', type: LenderType.bnpl),
-  Lender(id: 'simpl', name: 'Simpl', type: LenderType.bnpl),
-  Lender(id: 'kreditbee', name: 'KreditBee', type: LenderType.nbfc),
+  Lender(
+    id: 'lazypay',
+    name: 'LazyPay',
+    type: LenderType.bnpl,
+    typicalRatePct: 24,
+    notes: '18–32% p.a. depending on profile.',
+  ),
+  Lender(
+    id: 'simpl',
+    name: 'Simpl',
+    type: LenderType.bnpl,
+    notes: 'Interest-free if paid on time; late fees apply.',
+  ),
+  Lender(
+    id: 'kreditbee',
+    name: 'KreditBee',
+    type: LenderType.nbfc,
+    typicalRatePct: 24,
+    feeType: FeeType.percent,
+    feeValue: 5,
+    notes: '12–28.5% p.a. Processing up to ~5.1% + GST.',
+  ),
 
-  // ---- Generic card-EMI issuers (processing + 18% GST) ----
+  // ---- Generic card-EMI issuers (processing ≈1–2% + 18% GST) ----
   Lender(
     id: 'hdfc-card-emi',
     name: 'HDFC Card EMI',
     type: LenderType.card,
     issuer: 'HDFC',
     typicalRatePct: 16,
-    feeValue: 199,
-    notes: 'Typical ₹199 + GST processing fee.',
+    feeType: FeeType.percent,
+    feeValue: 2,
+    feeCap: 849,
+    notes: 'SmartEMI: POS ~15% / post-purchase ~18% p.a. Processing up to 2% '
+        '(min ₹149, max ₹849) + 18% GST.',
   ),
   Lender(
     id: 'icici-card-emi',
     name: 'ICICI Card EMI',
     type: LenderType.card,
     issuer: 'ICICI',
+    typicalRatePct: 15.99,
+    feeType: FeeType.percent,
+    feeValue: 2.99,
+    feeCap: 299,
+    notes: 'Instant EMI 15.99% p.a.; 2.99% fee (max ₹299) + 18% GST. '
+        'EMI-on-call: up to 2% of the amount.',
+  ),
+  Lender(
+    id: 'sbi-card-emi',
+    name: 'SBI Card EMI',
+    type: LenderType.card,
+    issuer: 'SBI',
     typicalRatePct: 16,
-    feeValue: 99,
-    notes: 'Typical ₹99 + GST processing fee.',
+    feeType: FeeType.percent,
+    feeValue: 1,
+    feeCap: 2000,
+    notes: 'Flexipay 9.75–24% p.a.; 1% fee (max ₹2000) + 18% GST; '
+        'nil fee for 24/36 months.',
   ),
   Lender(
     id: 'axis-card-emi',
@@ -52,19 +100,24 @@ const List<Lender> kSeedLenders = [
     type: LenderType.card,
     issuer: 'Axis',
     typicalRatePct: 16,
-    feeValue: 299,
-    notes: 'Typical ₹299 + GST processing fee.',
+    feeValue: 150,
+    notes: 'Merchant EMI ~14% / post-purchase ~18% p.a. '
+        'Processing ₹150 (+18% GST); some products up to 2%.',
   ),
 
-  // ---- The user's own cards ----
+  // ---- The user's own cards (map to the issuer's EMI terms) ----
   Lender(
     id: 'sbi-flipkart',
     name: 'SBI Flipkart',
     type: LenderType.card,
     issuer: 'SBI',
     typicalRatePct: 16,
-    feeValue: 199,
+    feeType: FeeType.percent,
+    feeValue: 1,
+    feeCap: 2000,
     isMine: true,
+    notes: 'SBI Card Flexipay: 9.75–24% p.a.; 1% fee (max ₹2000) + 18% GST; '
+        'nil for 24/36 months.',
   ),
   Lender(
     id: 'hdfc-swiggy',
@@ -72,8 +125,11 @@ const List<Lender> kSeedLenders = [
     type: LenderType.card,
     issuer: 'HDFC',
     typicalRatePct: 16,
-    feeValue: 199,
+    feeType: FeeType.percent,
+    feeValue: 2,
+    feeCap: 849,
     isMine: true,
+    notes: 'HDFC SmartEMI: up to 2% (min ₹149, max ₹849) + 18% GST.',
   ),
   Lender(
     id: 'hdfc-rupay',
@@ -82,8 +138,11 @@ const List<Lender> kSeedLenders = [
     issuer: 'HDFC',
     network: 'RuPay',
     typicalRatePct: 16,
-    feeValue: 199,
+    feeType: FeeType.percent,
+    feeValue: 2,
+    feeCap: 849,
     isMine: true,
+    notes: 'HDFC SmartEMI: up to 2% (min ₹149, max ₹849) + 18% GST.',
   ),
   Lender(
     id: 'axis-flipkart',
@@ -91,8 +150,10 @@ const List<Lender> kSeedLenders = [
     type: LenderType.card,
     issuer: 'Axis',
     typicalRatePct: 16,
-    feeValue: 299,
+    feeValue: 150,
     isMine: true,
+    notes: 'Axis EMI terms: ~14–18% p.a.; ₹150 fee (+18% GST); '
+        'some products up to 2%.',
   ),
   Lender(
     id: 'icici-amazon-pay',
@@ -100,8 +161,11 @@ const List<Lender> kSeedLenders = [
     type: LenderType.card,
     issuer: 'ICICI',
     network: 'Visa',
-    typicalRatePct: 16,
-    feeValue: 99,
+    typicalRatePct: 15.99,
+    feeType: FeeType.percent,
+    feeValue: 2.99,
+    feeCap: 299,
     isMine: true,
+    notes: 'ICICI Instant EMI 15.99% p.a.; 2.99% fee (max ₹299) + 18% GST.',
   ),
 ];

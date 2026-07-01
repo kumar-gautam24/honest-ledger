@@ -8,6 +8,7 @@ import '../../../../core/forms/app_form.dart';
 import '../../../../core/haptics/haptic_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_x.dart';
+import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/validation/validators.dart';
 import '../../../../shared/widgets/widgets.dart';
 import '../../domain/entities/recurring_item.dart';
@@ -16,9 +17,12 @@ import '../controllers/recurring_providers.dart';
 const _uuid = Uuid();
 
 class AddEditRecurringScreen extends ConsumerStatefulWidget {
-  const AddEditRecurringScreen({super.key, this.existing});
+  const AddEditRecurringScreen({super.key, this.existing, this.initialType});
 
   final RecurringItem? existing;
+
+  /// Preset when arriving from the Home "Add" chooser (subscription vs bill).
+  final RecurringType? initialType;
 
   @override
   ConsumerState<AddEditRecurringScreen> createState() =>
@@ -45,14 +49,14 @@ class _AddEditRecurringScreenState
     super.initState();
     final e = widget.existing;
     _title = TextEditingController(text: e?.title ?? '');
-    _amount = TextEditingController(
-      text: e == null ? '' : (e.amount == e.amount.roundToDouble()
-          ? e.amount.toStringAsFixed(0)
-          : e.amount.toString()),
-    );
+    _amount =
+        TextEditingController(text: e == null ? '' : Money.input(e.amount));
     _category = TextEditingController(text: e?.category ?? '');
     _notes = TextEditingController(text: e?.notes ?? '');
-    _type = e?.type ?? RecurringType.subscription;
+    // EMIs are tracked as borrowings now; treat any legacy EMI row as a bill.
+    _type = e?.type == RecurringType.emi
+        ? RecurringType.bill
+        : e?.type ?? widget.initialType ?? RecurringType.subscription;
     _frequency = e?.frequency ?? Frequency.monthly;
     _due = e?.nextDueDate ?? DateTime.now().add(const Duration(days: 1));
   }
@@ -128,7 +132,7 @@ class _AddEditRecurringScreenState
             Text('Type', style: AppTypography.eyebrow(c)),
             const SizedBox(height: AppSpacing.sm),
             _ChipRow<RecurringType>(
-              values: RecurringType.values,
+              values: const [RecurringType.subscription, RecurringType.bill],
               selected: _type,
               labelOf: (t) => t.label,
               onChanged: (t) => setState(() => _type = t),

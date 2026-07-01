@@ -104,6 +104,15 @@ class $LendersTable extends Lenders with TableInfo<$LendersTable, LenderRow> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _feeCapMeta = const VerificationMeta('feeCap');
+  @override
+  late final GeneratedColumn<double> feeCap = GeneratedColumn<double>(
+    'fee_cap',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _isMineMeta = const VerificationMeta('isMine');
   @override
   late final GeneratedColumn<bool> isMine = GeneratedColumn<bool>(
@@ -137,6 +146,7 @@ class $LendersTable extends Lenders with TableInfo<$LendersTable, LenderRow> {
     rateType,
     feeType,
     feeValue,
+    feeCap,
     isMine,
     notes,
   ];
@@ -210,6 +220,12 @@ class $LendersTable extends Lenders with TableInfo<$LendersTable, LenderRow> {
         feeValue.isAcceptableOrUnknown(data['fee_value']!, _feeValueMeta),
       );
     }
+    if (data.containsKey('fee_cap')) {
+      context.handle(
+        _feeCapMeta,
+        feeCap.isAcceptableOrUnknown(data['fee_cap']!, _feeCapMeta),
+      );
+    }
     if (data.containsKey('is_mine')) {
       context.handle(
         _isMineMeta,
@@ -267,6 +283,10 @@ class $LendersTable extends Lenders with TableInfo<$LendersTable, LenderRow> {
         DriftSqlType.double,
         data['${effectivePrefix}fee_value'],
       )!,
+      feeCap: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}fee_cap'],
+      ),
       isMine: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_mine'],
@@ -294,6 +314,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
   final String rateType;
   final String feeType;
   final double feeValue;
+  final double? feeCap;
   final bool isMine;
   final String? notes;
   const LenderRow({
@@ -306,6 +327,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
     required this.rateType,
     required this.feeType,
     required this.feeValue,
+    this.feeCap,
     required this.isMine,
     this.notes,
   });
@@ -325,6 +347,9 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
     map['rate_type'] = Variable<String>(rateType);
     map['fee_type'] = Variable<String>(feeType);
     map['fee_value'] = Variable<double>(feeValue);
+    if (!nullToAbsent || feeCap != null) {
+      map['fee_cap'] = Variable<double>(feeCap);
+    }
     map['is_mine'] = Variable<bool>(isMine);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -347,6 +372,9 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
       rateType: Value(rateType),
       feeType: Value(feeType),
       feeValue: Value(feeValue),
+      feeCap: feeCap == null && nullToAbsent
+          ? const Value.absent()
+          : Value(feeCap),
       isMine: Value(isMine),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
@@ -369,6 +397,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
       rateType: serializer.fromJson<String>(json['rateType']),
       feeType: serializer.fromJson<String>(json['feeType']),
       feeValue: serializer.fromJson<double>(json['feeValue']),
+      feeCap: serializer.fromJson<double?>(json['feeCap']),
       isMine: serializer.fromJson<bool>(json['isMine']),
       notes: serializer.fromJson<String?>(json['notes']),
     );
@@ -386,6 +415,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
       'rateType': serializer.toJson<String>(rateType),
       'feeType': serializer.toJson<String>(feeType),
       'feeValue': serializer.toJson<double>(feeValue),
+      'feeCap': serializer.toJson<double?>(feeCap),
       'isMine': serializer.toJson<bool>(isMine),
       'notes': serializer.toJson<String?>(notes),
     };
@@ -401,6 +431,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
     String? rateType,
     String? feeType,
     double? feeValue,
+    Value<double?> feeCap = const Value.absent(),
     bool? isMine,
     Value<String?> notes = const Value.absent(),
   }) => LenderRow(
@@ -413,6 +444,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
     rateType: rateType ?? this.rateType,
     feeType: feeType ?? this.feeType,
     feeValue: feeValue ?? this.feeValue,
+    feeCap: feeCap.present ? feeCap.value : this.feeCap,
     isMine: isMine ?? this.isMine,
     notes: notes.present ? notes.value : this.notes,
   );
@@ -429,6 +461,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
       rateType: data.rateType.present ? data.rateType.value : this.rateType,
       feeType: data.feeType.present ? data.feeType.value : this.feeType,
       feeValue: data.feeValue.present ? data.feeValue.value : this.feeValue,
+      feeCap: data.feeCap.present ? data.feeCap.value : this.feeCap,
       isMine: data.isMine.present ? data.isMine.value : this.isMine,
       notes: data.notes.present ? data.notes.value : this.notes,
     );
@@ -446,6 +479,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
           ..write('rateType: $rateType, ')
           ..write('feeType: $feeType, ')
           ..write('feeValue: $feeValue, ')
+          ..write('feeCap: $feeCap, ')
           ..write('isMine: $isMine, ')
           ..write('notes: $notes')
           ..write(')'))
@@ -463,6 +497,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
     rateType,
     feeType,
     feeValue,
+    feeCap,
     isMine,
     notes,
   );
@@ -479,6 +514,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
           other.rateType == this.rateType &&
           other.feeType == this.feeType &&
           other.feeValue == this.feeValue &&
+          other.feeCap == this.feeCap &&
           other.isMine == this.isMine &&
           other.notes == this.notes);
 }
@@ -493,6 +529,7 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
   final Value<String> rateType;
   final Value<String> feeType;
   final Value<double> feeValue;
+  final Value<double?> feeCap;
   final Value<bool> isMine;
   final Value<String?> notes;
   final Value<int> rowid;
@@ -506,6 +543,7 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
     this.rateType = const Value.absent(),
     this.feeType = const Value.absent(),
     this.feeValue = const Value.absent(),
+    this.feeCap = const Value.absent(),
     this.isMine = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -520,6 +558,7 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
     this.rateType = const Value.absent(),
     this.feeType = const Value.absent(),
     this.feeValue = const Value.absent(),
+    this.feeCap = const Value.absent(),
     this.isMine = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -535,6 +574,7 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
     Expression<String>? rateType,
     Expression<String>? feeType,
     Expression<double>? feeValue,
+    Expression<double>? feeCap,
     Expression<bool>? isMine,
     Expression<String>? notes,
     Expression<int>? rowid,
@@ -549,6 +589,7 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
       if (rateType != null) 'rate_type': rateType,
       if (feeType != null) 'fee_type': feeType,
       if (feeValue != null) 'fee_value': feeValue,
+      if (feeCap != null) 'fee_cap': feeCap,
       if (isMine != null) 'is_mine': isMine,
       if (notes != null) 'notes': notes,
       if (rowid != null) 'rowid': rowid,
@@ -565,6 +606,7 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
     Value<String>? rateType,
     Value<String>? feeType,
     Value<double>? feeValue,
+    Value<double?>? feeCap,
     Value<bool>? isMine,
     Value<String?>? notes,
     Value<int>? rowid,
@@ -579,6 +621,7 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
       rateType: rateType ?? this.rateType,
       feeType: feeType ?? this.feeType,
       feeValue: feeValue ?? this.feeValue,
+      feeCap: feeCap ?? this.feeCap,
       isMine: isMine ?? this.isMine,
       notes: notes ?? this.notes,
       rowid: rowid ?? this.rowid,
@@ -615,6 +658,9 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
     if (feeValue.present) {
       map['fee_value'] = Variable<double>(feeValue.value);
     }
+    if (feeCap.present) {
+      map['fee_cap'] = Variable<double>(feeCap.value);
+    }
     if (isMine.present) {
       map['is_mine'] = Variable<bool>(isMine.value);
     }
@@ -639,6 +685,7 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
           ..write('rateType: $rateType, ')
           ..write('feeType: $feeType, ')
           ..write('feeValue: $feeValue, ')
+          ..write('feeCap: $feeCap, ')
           ..write('isMine: $isMine, ')
           ..write('notes: $notes, ')
           ..write('rowid: $rowid')
@@ -670,6 +717,16 @@ class $BorrowingsTable extends Borrowings
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('flexibleLoan'),
   );
   static const VerificationMeta _lenderIdMeta = const VerificationMeta(
     'lenderId',
@@ -728,6 +785,21 @@ class $BorrowingsTable extends Borrowings
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _gstOnInterestMeta = const VerificationMeta(
+    'gstOnInterest',
+  );
+  @override
+  late final GeneratedColumn<bool> gstOnInterest = GeneratedColumn<bool>(
+    'gst_on_interest',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("gst_on_interest" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _interestRatePctMeta = const VerificationMeta(
     'interestRatePct',
   );
@@ -761,6 +833,18 @@ class $BorrowingsTable extends Borrowings
     aliasedName,
     false,
     type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _minPaymentMeta = const VerificationMeta(
+    'minPayment',
+  );
+  @override
+  late final GeneratedColumn<double> minPayment = GeneratedColumn<double>(
+    'min_payment',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
@@ -809,14 +893,17 @@ class $BorrowingsTable extends Borrowings
   List<GeneratedColumn> get $columns => [
     id,
     title,
+    kind,
     lenderId,
     lenderName,
     principal,
     processingFee,
     gstOnFee,
+    gstOnInterest,
     interestRatePct,
     rateType,
     tenureMonths,
+    minPayment,
     startDate,
     status,
     notes,
@@ -846,6 +933,12 @@ class $BorrowingsTable extends Borrowings
       );
     } else if (isInserting) {
       context.missing(_titleMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
     }
     if (data.containsKey('lender_id')) {
       context.handle(
@@ -884,6 +977,15 @@ class $BorrowingsTable extends Borrowings
         gstOnFee.isAcceptableOrUnknown(data['gst_on_fee']!, _gstOnFeeMeta),
       );
     }
+    if (data.containsKey('gst_on_interest')) {
+      context.handle(
+        _gstOnInterestMeta,
+        gstOnInterest.isAcceptableOrUnknown(
+          data['gst_on_interest']!,
+          _gstOnInterestMeta,
+        ),
+      );
+    }
     if (data.containsKey('interest_rate_pct')) {
       context.handle(
         _interestRatePctMeta,
@@ -906,6 +1008,12 @@ class $BorrowingsTable extends Borrowings
           data['tenure_months']!,
           _tenureMonthsMeta,
         ),
+      );
+    }
+    if (data.containsKey('min_payment')) {
+      context.handle(
+        _minPaymentMeta,
+        minPayment.isAcceptableOrUnknown(data['min_payment']!, _minPaymentMeta),
       );
     }
     if (data.containsKey('start_date')) {
@@ -953,6 +1061,10 @@ class $BorrowingsTable extends Borrowings
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
       lenderId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}lender_id'],
@@ -973,6 +1085,10 @@ class $BorrowingsTable extends Borrowings
         DriftSqlType.double,
         data['${effectivePrefix}gst_on_fee'],
       )!,
+      gstOnInterest: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}gst_on_interest'],
+      )!,
       interestRatePct: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}interest_rate_pct'],
@@ -984,6 +1100,10 @@ class $BorrowingsTable extends Borrowings
       tenureMonths: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}tenure_months'],
+      )!,
+      minPayment: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}min_payment'],
       )!,
       startDate: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
@@ -1013,14 +1133,17 @@ class $BorrowingsTable extends Borrowings
 class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
   final String id;
   final String title;
+  final String kind;
   final String? lenderId;
   final String lenderName;
   final double principal;
   final double processingFee;
   final double gstOnFee;
+  final bool gstOnInterest;
   final double interestRatePct;
   final String rateType;
   final int tenureMonths;
+  final double minPayment;
   final DateTime startDate;
   final String status;
   final String? notes;
@@ -1028,14 +1151,17 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
   const BorrowingRow({
     required this.id,
     required this.title,
+    required this.kind,
     this.lenderId,
     required this.lenderName,
     required this.principal,
     required this.processingFee,
     required this.gstOnFee,
+    required this.gstOnInterest,
     required this.interestRatePct,
     required this.rateType,
     required this.tenureMonths,
+    required this.minPayment,
     required this.startDate,
     required this.status,
     this.notes,
@@ -1046,6 +1172,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['title'] = Variable<String>(title);
+    map['kind'] = Variable<String>(kind);
     if (!nullToAbsent || lenderId != null) {
       map['lender_id'] = Variable<String>(lenderId);
     }
@@ -1053,9 +1180,11 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     map['principal'] = Variable<double>(principal);
     map['processing_fee'] = Variable<double>(processingFee);
     map['gst_on_fee'] = Variable<double>(gstOnFee);
+    map['gst_on_interest'] = Variable<bool>(gstOnInterest);
     map['interest_rate_pct'] = Variable<double>(interestRatePct);
     map['rate_type'] = Variable<String>(rateType);
     map['tenure_months'] = Variable<int>(tenureMonths);
+    map['min_payment'] = Variable<double>(minPayment);
     map['start_date'] = Variable<DateTime>(startDate);
     map['status'] = Variable<String>(status);
     if (!nullToAbsent || notes != null) {
@@ -1069,6 +1198,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     return BorrowingsCompanion(
       id: Value(id),
       title: Value(title),
+      kind: Value(kind),
       lenderId: lenderId == null && nullToAbsent
           ? const Value.absent()
           : Value(lenderId),
@@ -1076,9 +1206,11 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       principal: Value(principal),
       processingFee: Value(processingFee),
       gstOnFee: Value(gstOnFee),
+      gstOnInterest: Value(gstOnInterest),
       interestRatePct: Value(interestRatePct),
       rateType: Value(rateType),
       tenureMonths: Value(tenureMonths),
+      minPayment: Value(minPayment),
       startDate: Value(startDate),
       status: Value(status),
       notes: notes == null && nullToAbsent
@@ -1096,14 +1228,17 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     return BorrowingRow(
       id: serializer.fromJson<String>(json['id']),
       title: serializer.fromJson<String>(json['title']),
+      kind: serializer.fromJson<String>(json['kind']),
       lenderId: serializer.fromJson<String?>(json['lenderId']),
       lenderName: serializer.fromJson<String>(json['lenderName']),
       principal: serializer.fromJson<double>(json['principal']),
       processingFee: serializer.fromJson<double>(json['processingFee']),
       gstOnFee: serializer.fromJson<double>(json['gstOnFee']),
+      gstOnInterest: serializer.fromJson<bool>(json['gstOnInterest']),
       interestRatePct: serializer.fromJson<double>(json['interestRatePct']),
       rateType: serializer.fromJson<String>(json['rateType']),
       tenureMonths: serializer.fromJson<int>(json['tenureMonths']),
+      minPayment: serializer.fromJson<double>(json['minPayment']),
       startDate: serializer.fromJson<DateTime>(json['startDate']),
       status: serializer.fromJson<String>(json['status']),
       notes: serializer.fromJson<String?>(json['notes']),
@@ -1116,14 +1251,17 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'title': serializer.toJson<String>(title),
+      'kind': serializer.toJson<String>(kind),
       'lenderId': serializer.toJson<String?>(lenderId),
       'lenderName': serializer.toJson<String>(lenderName),
       'principal': serializer.toJson<double>(principal),
       'processingFee': serializer.toJson<double>(processingFee),
       'gstOnFee': serializer.toJson<double>(gstOnFee),
+      'gstOnInterest': serializer.toJson<bool>(gstOnInterest),
       'interestRatePct': serializer.toJson<double>(interestRatePct),
       'rateType': serializer.toJson<String>(rateType),
       'tenureMonths': serializer.toJson<int>(tenureMonths),
+      'minPayment': serializer.toJson<double>(minPayment),
       'startDate': serializer.toJson<DateTime>(startDate),
       'status': serializer.toJson<String>(status),
       'notes': serializer.toJson<String?>(notes),
@@ -1134,14 +1272,17 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
   BorrowingRow copyWith({
     String? id,
     String? title,
+    String? kind,
     Value<String?> lenderId = const Value.absent(),
     String? lenderName,
     double? principal,
     double? processingFee,
     double? gstOnFee,
+    bool? gstOnInterest,
     double? interestRatePct,
     String? rateType,
     int? tenureMonths,
+    double? minPayment,
     DateTime? startDate,
     String? status,
     Value<String?> notes = const Value.absent(),
@@ -1149,14 +1290,17 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
   }) => BorrowingRow(
     id: id ?? this.id,
     title: title ?? this.title,
+    kind: kind ?? this.kind,
     lenderId: lenderId.present ? lenderId.value : this.lenderId,
     lenderName: lenderName ?? this.lenderName,
     principal: principal ?? this.principal,
     processingFee: processingFee ?? this.processingFee,
     gstOnFee: gstOnFee ?? this.gstOnFee,
+    gstOnInterest: gstOnInterest ?? this.gstOnInterest,
     interestRatePct: interestRatePct ?? this.interestRatePct,
     rateType: rateType ?? this.rateType,
     tenureMonths: tenureMonths ?? this.tenureMonths,
+    minPayment: minPayment ?? this.minPayment,
     startDate: startDate ?? this.startDate,
     status: status ?? this.status,
     notes: notes.present ? notes.value : this.notes,
@@ -1166,6 +1310,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     return BorrowingRow(
       id: data.id.present ? data.id.value : this.id,
       title: data.title.present ? data.title.value : this.title,
+      kind: data.kind.present ? data.kind.value : this.kind,
       lenderId: data.lenderId.present ? data.lenderId.value : this.lenderId,
       lenderName: data.lenderName.present
           ? data.lenderName.value
@@ -1175,6 +1320,9 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
           ? data.processingFee.value
           : this.processingFee,
       gstOnFee: data.gstOnFee.present ? data.gstOnFee.value : this.gstOnFee,
+      gstOnInterest: data.gstOnInterest.present
+          ? data.gstOnInterest.value
+          : this.gstOnInterest,
       interestRatePct: data.interestRatePct.present
           ? data.interestRatePct.value
           : this.interestRatePct,
@@ -1182,6 +1330,9 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       tenureMonths: data.tenureMonths.present
           ? data.tenureMonths.value
           : this.tenureMonths,
+      minPayment: data.minPayment.present
+          ? data.minPayment.value
+          : this.minPayment,
       startDate: data.startDate.present ? data.startDate.value : this.startDate,
       status: data.status.present ? data.status.value : this.status,
       notes: data.notes.present ? data.notes.value : this.notes,
@@ -1194,14 +1345,17 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     return (StringBuffer('BorrowingRow(')
           ..write('id: $id, ')
           ..write('title: $title, ')
+          ..write('kind: $kind, ')
           ..write('lenderId: $lenderId, ')
           ..write('lenderName: $lenderName, ')
           ..write('principal: $principal, ')
           ..write('processingFee: $processingFee, ')
           ..write('gstOnFee: $gstOnFee, ')
+          ..write('gstOnInterest: $gstOnInterest, ')
           ..write('interestRatePct: $interestRatePct, ')
           ..write('rateType: $rateType, ')
           ..write('tenureMonths: $tenureMonths, ')
+          ..write('minPayment: $minPayment, ')
           ..write('startDate: $startDate, ')
           ..write('status: $status, ')
           ..write('notes: $notes, ')
@@ -1214,14 +1368,17 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
   int get hashCode => Object.hash(
     id,
     title,
+    kind,
     lenderId,
     lenderName,
     principal,
     processingFee,
     gstOnFee,
+    gstOnInterest,
     interestRatePct,
     rateType,
     tenureMonths,
+    minPayment,
     startDate,
     status,
     notes,
@@ -1233,14 +1390,17 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       (other is BorrowingRow &&
           other.id == this.id &&
           other.title == this.title &&
+          other.kind == this.kind &&
           other.lenderId == this.lenderId &&
           other.lenderName == this.lenderName &&
           other.principal == this.principal &&
           other.processingFee == this.processingFee &&
           other.gstOnFee == this.gstOnFee &&
+          other.gstOnInterest == this.gstOnInterest &&
           other.interestRatePct == this.interestRatePct &&
           other.rateType == this.rateType &&
           other.tenureMonths == this.tenureMonths &&
+          other.minPayment == this.minPayment &&
           other.startDate == this.startDate &&
           other.status == this.status &&
           other.notes == this.notes &&
@@ -1250,14 +1410,17 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
 class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
   final Value<String> id;
   final Value<String> title;
+  final Value<String> kind;
   final Value<String?> lenderId;
   final Value<String> lenderName;
   final Value<double> principal;
   final Value<double> processingFee;
   final Value<double> gstOnFee;
+  final Value<bool> gstOnInterest;
   final Value<double> interestRatePct;
   final Value<String> rateType;
   final Value<int> tenureMonths;
+  final Value<double> minPayment;
   final Value<DateTime> startDate;
   final Value<String> status;
   final Value<String?> notes;
@@ -1266,14 +1429,17 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
   const BorrowingsCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
+    this.kind = const Value.absent(),
     this.lenderId = const Value.absent(),
     this.lenderName = const Value.absent(),
     this.principal = const Value.absent(),
     this.processingFee = const Value.absent(),
     this.gstOnFee = const Value.absent(),
+    this.gstOnInterest = const Value.absent(),
     this.interestRatePct = const Value.absent(),
     this.rateType = const Value.absent(),
     this.tenureMonths = const Value.absent(),
+    this.minPayment = const Value.absent(),
     this.startDate = const Value.absent(),
     this.status = const Value.absent(),
     this.notes = const Value.absent(),
@@ -1283,14 +1449,17 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
   BorrowingsCompanion.insert({
     required String id,
     required String title,
+    this.kind = const Value.absent(),
     this.lenderId = const Value.absent(),
     required String lenderName,
     required double principal,
     this.processingFee = const Value.absent(),
     this.gstOnFee = const Value.absent(),
+    this.gstOnInterest = const Value.absent(),
     this.interestRatePct = const Value.absent(),
     this.rateType = const Value.absent(),
     this.tenureMonths = const Value.absent(),
+    this.minPayment = const Value.absent(),
     required DateTime startDate,
     this.status = const Value.absent(),
     this.notes = const Value.absent(),
@@ -1305,14 +1474,17 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
   static Insertable<BorrowingRow> custom({
     Expression<String>? id,
     Expression<String>? title,
+    Expression<String>? kind,
     Expression<String>? lenderId,
     Expression<String>? lenderName,
     Expression<double>? principal,
     Expression<double>? processingFee,
     Expression<double>? gstOnFee,
+    Expression<bool>? gstOnInterest,
     Expression<double>? interestRatePct,
     Expression<String>? rateType,
     Expression<int>? tenureMonths,
+    Expression<double>? minPayment,
     Expression<DateTime>? startDate,
     Expression<String>? status,
     Expression<String>? notes,
@@ -1322,14 +1494,17 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (title != null) 'title': title,
+      if (kind != null) 'kind': kind,
       if (lenderId != null) 'lender_id': lenderId,
       if (lenderName != null) 'lender_name': lenderName,
       if (principal != null) 'principal': principal,
       if (processingFee != null) 'processing_fee': processingFee,
       if (gstOnFee != null) 'gst_on_fee': gstOnFee,
+      if (gstOnInterest != null) 'gst_on_interest': gstOnInterest,
       if (interestRatePct != null) 'interest_rate_pct': interestRatePct,
       if (rateType != null) 'rate_type': rateType,
       if (tenureMonths != null) 'tenure_months': tenureMonths,
+      if (minPayment != null) 'min_payment': minPayment,
       if (startDate != null) 'start_date': startDate,
       if (status != null) 'status': status,
       if (notes != null) 'notes': notes,
@@ -1341,14 +1516,17 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
   BorrowingsCompanion copyWith({
     Value<String>? id,
     Value<String>? title,
+    Value<String>? kind,
     Value<String?>? lenderId,
     Value<String>? lenderName,
     Value<double>? principal,
     Value<double>? processingFee,
     Value<double>? gstOnFee,
+    Value<bool>? gstOnInterest,
     Value<double>? interestRatePct,
     Value<String>? rateType,
     Value<int>? tenureMonths,
+    Value<double>? minPayment,
     Value<DateTime>? startDate,
     Value<String>? status,
     Value<String?>? notes,
@@ -1358,14 +1536,17 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     return BorrowingsCompanion(
       id: id ?? this.id,
       title: title ?? this.title,
+      kind: kind ?? this.kind,
       lenderId: lenderId ?? this.lenderId,
       lenderName: lenderName ?? this.lenderName,
       principal: principal ?? this.principal,
       processingFee: processingFee ?? this.processingFee,
       gstOnFee: gstOnFee ?? this.gstOnFee,
+      gstOnInterest: gstOnInterest ?? this.gstOnInterest,
       interestRatePct: interestRatePct ?? this.interestRatePct,
       rateType: rateType ?? this.rateType,
       tenureMonths: tenureMonths ?? this.tenureMonths,
+      minPayment: minPayment ?? this.minPayment,
       startDate: startDate ?? this.startDate,
       status: status ?? this.status,
       notes: notes ?? this.notes,
@@ -1383,6 +1564,9 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     if (title.present) {
       map['title'] = Variable<String>(title.value);
     }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
     if (lenderId.present) {
       map['lender_id'] = Variable<String>(lenderId.value);
     }
@@ -1398,6 +1582,9 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     if (gstOnFee.present) {
       map['gst_on_fee'] = Variable<double>(gstOnFee.value);
     }
+    if (gstOnInterest.present) {
+      map['gst_on_interest'] = Variable<bool>(gstOnInterest.value);
+    }
     if (interestRatePct.present) {
       map['interest_rate_pct'] = Variable<double>(interestRatePct.value);
     }
@@ -1406,6 +1593,9 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     }
     if (tenureMonths.present) {
       map['tenure_months'] = Variable<int>(tenureMonths.value);
+    }
+    if (minPayment.present) {
+      map['min_payment'] = Variable<double>(minPayment.value);
     }
     if (startDate.present) {
       map['start_date'] = Variable<DateTime>(startDate.value);
@@ -1430,14 +1620,17 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     return (StringBuffer('BorrowingsCompanion(')
           ..write('id: $id, ')
           ..write('title: $title, ')
+          ..write('kind: $kind, ')
           ..write('lenderId: $lenderId, ')
           ..write('lenderName: $lenderName, ')
           ..write('principal: $principal, ')
           ..write('processingFee: $processingFee, ')
           ..write('gstOnFee: $gstOnFee, ')
+          ..write('gstOnInterest: $gstOnInterest, ')
           ..write('interestRatePct: $interestRatePct, ')
           ..write('rateType: $rateType, ')
           ..write('tenureMonths: $tenureMonths, ')
+          ..write('minPayment: $minPayment, ')
           ..write('startDate: $startDate, ')
           ..write('status: $status, ')
           ..write('notes: $notes, ')
@@ -1495,6 +1688,17 @@ class $RepaymentsTable extends Repayments
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _installmentNoMeta = const VerificationMeta(
+    'installmentNo',
+  );
+  @override
+  late final GeneratedColumn<int> installmentNo = GeneratedColumn<int>(
+    'installment_no',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _noteMeta = const VerificationMeta('note');
   @override
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
@@ -1505,7 +1709,14 @@ class $RepaymentsTable extends Repayments
     requiredDuringInsert: false,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, borrowingId, amount, date, note];
+  List<GeneratedColumn> get $columns => [
+    id,
+    borrowingId,
+    amount,
+    date,
+    installmentNo,
+    note,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1550,6 +1761,15 @@ class $RepaymentsTable extends Repayments
     } else if (isInserting) {
       context.missing(_dateMeta);
     }
+    if (data.containsKey('installment_no')) {
+      context.handle(
+        _installmentNoMeta,
+        installmentNo.isAcceptableOrUnknown(
+          data['installment_no']!,
+          _installmentNoMeta,
+        ),
+      );
+    }
     if (data.containsKey('note')) {
       context.handle(
         _noteMeta,
@@ -1581,6 +1801,10 @@ class $RepaymentsTable extends Repayments
         DriftSqlType.dateTime,
         data['${effectivePrefix}date'],
       )!,
+      installmentNo: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}installment_no'],
+      ),
       note: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}note'],
@@ -1599,12 +1823,14 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
   final String borrowingId;
   final double amount;
   final DateTime date;
+  final int? installmentNo;
   final String? note;
   const RepaymentRow({
     required this.id,
     required this.borrowingId,
     required this.amount,
     required this.date,
+    this.installmentNo,
     this.note,
   });
   @override
@@ -1614,6 +1840,9 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
     map['borrowing_id'] = Variable<String>(borrowingId);
     map['amount'] = Variable<double>(amount);
     map['date'] = Variable<DateTime>(date);
+    if (!nullToAbsent || installmentNo != null) {
+      map['installment_no'] = Variable<int>(installmentNo);
+    }
     if (!nullToAbsent || note != null) {
       map['note'] = Variable<String>(note);
     }
@@ -1626,6 +1855,9 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
       borrowingId: Value(borrowingId),
       amount: Value(amount),
       date: Value(date),
+      installmentNo: installmentNo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(installmentNo),
       note: note == null && nullToAbsent ? const Value.absent() : Value(note),
     );
   }
@@ -1640,6 +1872,7 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
       borrowingId: serializer.fromJson<String>(json['borrowingId']),
       amount: serializer.fromJson<double>(json['amount']),
       date: serializer.fromJson<DateTime>(json['date']),
+      installmentNo: serializer.fromJson<int?>(json['installmentNo']),
       note: serializer.fromJson<String?>(json['note']),
     );
   }
@@ -1651,6 +1884,7 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
       'borrowingId': serializer.toJson<String>(borrowingId),
       'amount': serializer.toJson<double>(amount),
       'date': serializer.toJson<DateTime>(date),
+      'installmentNo': serializer.toJson<int?>(installmentNo),
       'note': serializer.toJson<String?>(note),
     };
   }
@@ -1660,12 +1894,16 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
     String? borrowingId,
     double? amount,
     DateTime? date,
+    Value<int?> installmentNo = const Value.absent(),
     Value<String?> note = const Value.absent(),
   }) => RepaymentRow(
     id: id ?? this.id,
     borrowingId: borrowingId ?? this.borrowingId,
     amount: amount ?? this.amount,
     date: date ?? this.date,
+    installmentNo: installmentNo.present
+        ? installmentNo.value
+        : this.installmentNo,
     note: note.present ? note.value : this.note,
   );
   RepaymentRow copyWithCompanion(RepaymentsCompanion data) {
@@ -1676,6 +1914,9 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
           : this.borrowingId,
       amount: data.amount.present ? data.amount.value : this.amount,
       date: data.date.present ? data.date.value : this.date,
+      installmentNo: data.installmentNo.present
+          ? data.installmentNo.value
+          : this.installmentNo,
       note: data.note.present ? data.note.value : this.note,
     );
   }
@@ -1687,13 +1928,15 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
           ..write('borrowingId: $borrowingId, ')
           ..write('amount: $amount, ')
           ..write('date: $date, ')
+          ..write('installmentNo: $installmentNo, ')
           ..write('note: $note')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, borrowingId, amount, date, note);
+  int get hashCode =>
+      Object.hash(id, borrowingId, amount, date, installmentNo, note);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1702,6 +1945,7 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
           other.borrowingId == this.borrowingId &&
           other.amount == this.amount &&
           other.date == this.date &&
+          other.installmentNo == this.installmentNo &&
           other.note == this.note);
 }
 
@@ -1710,6 +1954,7 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
   final Value<String> borrowingId;
   final Value<double> amount;
   final Value<DateTime> date;
+  final Value<int?> installmentNo;
   final Value<String?> note;
   final Value<int> rowid;
   const RepaymentsCompanion({
@@ -1717,6 +1962,7 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
     this.borrowingId = const Value.absent(),
     this.amount = const Value.absent(),
     this.date = const Value.absent(),
+    this.installmentNo = const Value.absent(),
     this.note = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1725,6 +1971,7 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
     required String borrowingId,
     required double amount,
     required DateTime date,
+    this.installmentNo = const Value.absent(),
     this.note = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -1736,6 +1983,7 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
     Expression<String>? borrowingId,
     Expression<double>? amount,
     Expression<DateTime>? date,
+    Expression<int>? installmentNo,
     Expression<String>? note,
     Expression<int>? rowid,
   }) {
@@ -1744,6 +1992,7 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
       if (borrowingId != null) 'borrowing_id': borrowingId,
       if (amount != null) 'amount': amount,
       if (date != null) 'date': date,
+      if (installmentNo != null) 'installment_no': installmentNo,
       if (note != null) 'note': note,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1754,6 +2003,7 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
     Value<String>? borrowingId,
     Value<double>? amount,
     Value<DateTime>? date,
+    Value<int?>? installmentNo,
     Value<String?>? note,
     Value<int>? rowid,
   }) {
@@ -1762,6 +2012,7 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
       borrowingId: borrowingId ?? this.borrowingId,
       amount: amount ?? this.amount,
       date: date ?? this.date,
+      installmentNo: installmentNo ?? this.installmentNo,
       note: note ?? this.note,
       rowid: rowid ?? this.rowid,
     );
@@ -1782,6 +2033,9 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
     if (date.present) {
       map['date'] = Variable<DateTime>(date.value);
     }
+    if (installmentNo.present) {
+      map['installment_no'] = Variable<int>(installmentNo.value);
+    }
     if (note.present) {
       map['note'] = Variable<String>(note.value);
     }
@@ -1798,6 +2052,7 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
           ..write('borrowingId: $borrowingId, ')
           ..write('amount: $amount, ')
           ..write('date: $date, ')
+          ..write('installmentNo: $installmentNo, ')
           ..write('note: $note, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -2450,6 +2705,7 @@ typedef $$LendersTableCreateCompanionBuilder =
       Value<String> rateType,
       Value<String> feeType,
       Value<double> feeValue,
+      Value<double?> feeCap,
       Value<bool> isMine,
       Value<String?> notes,
       Value<int> rowid,
@@ -2465,6 +2721,7 @@ typedef $$LendersTableUpdateCompanionBuilder =
       Value<String> rateType,
       Value<String> feeType,
       Value<double> feeValue,
+      Value<double?> feeCap,
       Value<bool> isMine,
       Value<String?> notes,
       Value<int> rowid,
@@ -2521,6 +2778,11 @@ class $$LendersTableFilterComposer
 
   ColumnFilters<double> get feeValue => $composableBuilder(
     column: $table.feeValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get feeCap => $composableBuilder(
+    column: $table.feeCap,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2589,6 +2851,11 @@ class $$LendersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get feeCap => $composableBuilder(
+    column: $table.feeCap,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get isMine => $composableBuilder(
     column: $table.isMine,
     builder: (column) => ColumnOrderings(column),
@@ -2638,6 +2905,9 @@ class $$LendersTableAnnotationComposer
   GeneratedColumn<double> get feeValue =>
       $composableBuilder(column: $table.feeValue, builder: (column) => column);
 
+  GeneratedColumn<double> get feeCap =>
+      $composableBuilder(column: $table.feeCap, builder: (column) => column);
+
   GeneratedColumn<bool> get isMine =>
       $composableBuilder(column: $table.isMine, builder: (column) => column);
 
@@ -2682,6 +2952,7 @@ class $$LendersTableTableManager
                 Value<String> rateType = const Value.absent(),
                 Value<String> feeType = const Value.absent(),
                 Value<double> feeValue = const Value.absent(),
+                Value<double?> feeCap = const Value.absent(),
                 Value<bool> isMine = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -2695,6 +2966,7 @@ class $$LendersTableTableManager
                 rateType: rateType,
                 feeType: feeType,
                 feeValue: feeValue,
+                feeCap: feeCap,
                 isMine: isMine,
                 notes: notes,
                 rowid: rowid,
@@ -2710,6 +2982,7 @@ class $$LendersTableTableManager
                 Value<String> rateType = const Value.absent(),
                 Value<String> feeType = const Value.absent(),
                 Value<double> feeValue = const Value.absent(),
+                Value<double?> feeCap = const Value.absent(),
                 Value<bool> isMine = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -2723,6 +2996,7 @@ class $$LendersTableTableManager
                 rateType: rateType,
                 feeType: feeType,
                 feeValue: feeValue,
+                feeCap: feeCap,
                 isMine: isMine,
                 notes: notes,
                 rowid: rowid,
@@ -2753,14 +3027,17 @@ typedef $$BorrowingsTableCreateCompanionBuilder =
     BorrowingsCompanion Function({
       required String id,
       required String title,
+      Value<String> kind,
       Value<String?> lenderId,
       required String lenderName,
       required double principal,
       Value<double> processingFee,
       Value<double> gstOnFee,
+      Value<bool> gstOnInterest,
       Value<double> interestRatePct,
       Value<String> rateType,
       Value<int> tenureMonths,
+      Value<double> minPayment,
       required DateTime startDate,
       Value<String> status,
       Value<String?> notes,
@@ -2771,14 +3048,17 @@ typedef $$BorrowingsTableUpdateCompanionBuilder =
     BorrowingsCompanion Function({
       Value<String> id,
       Value<String> title,
+      Value<String> kind,
       Value<String?> lenderId,
       Value<String> lenderName,
       Value<double> principal,
       Value<double> processingFee,
       Value<double> gstOnFee,
+      Value<bool> gstOnInterest,
       Value<double> interestRatePct,
       Value<String> rateType,
       Value<int> tenureMonths,
+      Value<double> minPayment,
       Value<DateTime> startDate,
       Value<String> status,
       Value<String?> notes,
@@ -2828,6 +3108,11 @@ class $$BorrowingsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get lenderId => $composableBuilder(
     column: $table.lenderId,
     builder: (column) => ColumnFilters(column),
@@ -2853,6 +3138,11 @@ class $$BorrowingsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<bool> get gstOnInterest => $composableBuilder(
+    column: $table.gstOnInterest,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<double> get interestRatePct => $composableBuilder(
     column: $table.interestRatePct,
     builder: (column) => ColumnFilters(column),
@@ -2865,6 +3155,11 @@ class $$BorrowingsTableFilterComposer
 
   ColumnFilters<int> get tenureMonths => $composableBuilder(
     column: $table.tenureMonths,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get minPayment => $composableBuilder(
+    column: $table.minPayment,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2933,6 +3228,11 @@ class $$BorrowingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get lenderId => $composableBuilder(
     column: $table.lenderId,
     builder: (column) => ColumnOrderings(column),
@@ -2958,6 +3258,11 @@ class $$BorrowingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get gstOnInterest => $composableBuilder(
+    column: $table.gstOnInterest,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get interestRatePct => $composableBuilder(
     column: $table.interestRatePct,
     builder: (column) => ColumnOrderings(column),
@@ -2970,6 +3275,11 @@ class $$BorrowingsTableOrderingComposer
 
   ColumnOrderings<int> get tenureMonths => $composableBuilder(
     column: $table.tenureMonths,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get minPayment => $composableBuilder(
+    column: $table.minPayment,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3009,6 +3319,9 @@ class $$BorrowingsTableAnnotationComposer
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
   GeneratedColumn<String> get lenderId =>
       $composableBuilder(column: $table.lenderId, builder: (column) => column);
 
@@ -3028,6 +3341,11 @@ class $$BorrowingsTableAnnotationComposer
   GeneratedColumn<double> get gstOnFee =>
       $composableBuilder(column: $table.gstOnFee, builder: (column) => column);
 
+  GeneratedColumn<bool> get gstOnInterest => $composableBuilder(
+    column: $table.gstOnInterest,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<double> get interestRatePct => $composableBuilder(
     column: $table.interestRatePct,
     builder: (column) => column,
@@ -3038,6 +3356,11 @@ class $$BorrowingsTableAnnotationComposer
 
   GeneratedColumn<int> get tenureMonths => $composableBuilder(
     column: $table.tenureMonths,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get minPayment => $composableBuilder(
+    column: $table.minPayment,
     builder: (column) => column,
   );
 
@@ -3109,14 +3432,17 @@ class $$BorrowingsTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> title = const Value.absent(),
+                Value<String> kind = const Value.absent(),
                 Value<String?> lenderId = const Value.absent(),
                 Value<String> lenderName = const Value.absent(),
                 Value<double> principal = const Value.absent(),
                 Value<double> processingFee = const Value.absent(),
                 Value<double> gstOnFee = const Value.absent(),
+                Value<bool> gstOnInterest = const Value.absent(),
                 Value<double> interestRatePct = const Value.absent(),
                 Value<String> rateType = const Value.absent(),
                 Value<int> tenureMonths = const Value.absent(),
+                Value<double> minPayment = const Value.absent(),
                 Value<DateTime> startDate = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
@@ -3125,14 +3451,17 @@ class $$BorrowingsTableTableManager
               }) => BorrowingsCompanion(
                 id: id,
                 title: title,
+                kind: kind,
                 lenderId: lenderId,
                 lenderName: lenderName,
                 principal: principal,
                 processingFee: processingFee,
                 gstOnFee: gstOnFee,
+                gstOnInterest: gstOnInterest,
                 interestRatePct: interestRatePct,
                 rateType: rateType,
                 tenureMonths: tenureMonths,
+                minPayment: minPayment,
                 startDate: startDate,
                 status: status,
                 notes: notes,
@@ -3143,14 +3472,17 @@ class $$BorrowingsTableTableManager
               ({
                 required String id,
                 required String title,
+                Value<String> kind = const Value.absent(),
                 Value<String?> lenderId = const Value.absent(),
                 required String lenderName,
                 required double principal,
                 Value<double> processingFee = const Value.absent(),
                 Value<double> gstOnFee = const Value.absent(),
+                Value<bool> gstOnInterest = const Value.absent(),
                 Value<double> interestRatePct = const Value.absent(),
                 Value<String> rateType = const Value.absent(),
                 Value<int> tenureMonths = const Value.absent(),
+                Value<double> minPayment = const Value.absent(),
                 required DateTime startDate,
                 Value<String> status = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
@@ -3159,14 +3491,17 @@ class $$BorrowingsTableTableManager
               }) => BorrowingsCompanion.insert(
                 id: id,
                 title: title,
+                kind: kind,
                 lenderId: lenderId,
                 lenderName: lenderName,
                 principal: principal,
                 processingFee: processingFee,
                 gstOnFee: gstOnFee,
+                gstOnInterest: gstOnInterest,
                 interestRatePct: interestRatePct,
                 rateType: rateType,
                 tenureMonths: tenureMonths,
+                minPayment: minPayment,
                 startDate: startDate,
                 status: status,
                 notes: notes,
@@ -3237,6 +3572,7 @@ typedef $$RepaymentsTableCreateCompanionBuilder =
       required String borrowingId,
       required double amount,
       required DateTime date,
+      Value<int?> installmentNo,
       Value<String?> note,
       Value<int> rowid,
     });
@@ -3246,6 +3582,7 @@ typedef $$RepaymentsTableUpdateCompanionBuilder =
       Value<String> borrowingId,
       Value<double> amount,
       Value<DateTime> date,
+      Value<int?> installmentNo,
       Value<String?> note,
       Value<int> rowid,
     });
@@ -3293,6 +3630,11 @@ class $$RepaymentsTableFilterComposer
 
   ColumnFilters<DateTime> get date => $composableBuilder(
     column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get installmentNo => $composableBuilder(
+    column: $table.installmentNo,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3349,6 +3691,11 @@ class $$RepaymentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get installmentNo => $composableBuilder(
+    column: $table.installmentNo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get note => $composableBuilder(
     column: $table.note,
     builder: (column) => ColumnOrderings(column),
@@ -3395,6 +3742,11 @@ class $$RepaymentsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get date =>
       $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<int> get installmentNo => $composableBuilder(
+    column: $table.installmentNo,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get note =>
       $composableBuilder(column: $table.note, builder: (column) => column);
@@ -3455,6 +3807,7 @@ class $$RepaymentsTableTableManager
                 Value<String> borrowingId = const Value.absent(),
                 Value<double> amount = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
+                Value<int?> installmentNo = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RepaymentsCompanion(
@@ -3462,6 +3815,7 @@ class $$RepaymentsTableTableManager
                 borrowingId: borrowingId,
                 amount: amount,
                 date: date,
+                installmentNo: installmentNo,
                 note: note,
                 rowid: rowid,
               ),
@@ -3471,6 +3825,7 @@ class $$RepaymentsTableTableManager
                 required String borrowingId,
                 required double amount,
                 required DateTime date,
+                Value<int?> installmentNo = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RepaymentsCompanion.insert(
@@ -3478,6 +3833,7 @@ class $$RepaymentsTableTableManager
                 borrowingId: borrowingId,
                 amount: amount,
                 date: date,
+                installmentNo: installmentNo,
                 note: note,
                 rowid: rowid,
               ),
