@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends
 from app.auth import repository, service
 from app.auth.dependencies import get_current_user_id, get_pool
 from app.auth.schemas import (
+    ChangePasswordRequest,
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
@@ -68,3 +69,14 @@ async def me(
         # Valid signature but the account is gone (deleted) -> token is dead.
         raise InvalidTokenError("Account no longer exists")
     return UserResponse(id=user["id"], email=user["email"], created_at=user["created_at"])
+
+
+@account_router.post("/me/change-password", status_code=204)
+async def change_password(
+    body: ChangePasswordRequest,
+    user_id: uuid.UUID = Depends(get_current_user_id),
+    pool: asyncpg.Pool = Depends(get_pool),
+) -> None:
+    await service.change_password(
+        pool, user_id, body.current_password, body.new_password
+    )

@@ -90,3 +90,16 @@ async def logout(pool: asyncpg.Pool, raw_refresh_token: str) -> None:
         await repository.revoke_refresh_token(pool, row["id"])
     # Unknown/already-revoked tokens return success too: logout is idempotent,
     # and errors here would only help attackers probe which tokens exist.
+
+
+async def change_password(
+    pool: asyncpg.Pool, user_id: uuid.UUID, current_password: str, new_password: str
+) -> None:
+    user = await repository.get_user_by_id(pool, user_id)
+    if user is None:
+        raise InvalidCredentialsError("Current password is incorrect")
+    if not verify_password(current_password, user["password_hash"]):
+        raise InvalidCredentialsError("Current password is incorrect")
+    await repository.update_password_hash(pool, user_id, hash_password(new_password))
+    # Changing the password means "secure my account": revoke every session.
+    await repository.revoke_all_refresh_tokens_for_user(pool, user_id)
