@@ -12,9 +12,11 @@ import '../../../money_leak/presentation/widgets/borrowing_card.dart';
 import '../../../recurring/presentation/controllers/recurring_providers.dart';
 import '../../../recurring/presentation/widgets/recurring_tile.dart';
 import '../../../settings/presentation/controllers/income_controller.dart';
+import '../controllers/catch_up_controller.dart';
 import '../home_providers.dart';
 import '../obligation_view.dart';
 import '../widgets/add_obligation_sheet.dart';
+import '../widgets/catch_up_card.dart';
 
 /// Home — the single place for every obligation: EMIs, loans, subscriptions and
 /// bills, sorted by urgency with a filter to slice by kind.
@@ -46,6 +48,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         padding: AppSpacing.screen.copyWith(bottom: 96),
         children: [
           const _HomeHero(),
+          const _CatchUpSection(),
           const SizedBox(height: AppSpacing.xl),
           _FilterBar(
             selected: _filter,
@@ -103,6 +106,21 @@ class _ObligationRow extends ConsumerWidget {
           },
         );
     }
+  }
+}
+
+/// Shows the "while you were away" card only when pre-month arrears exist.
+class _CatchUpSection extends ConsumerWidget {
+  const _CatchUpSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final catchUp = ref.watch(catchUpProvider);
+    if (catchUp.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.lg),
+      child: CatchUpCard(catchUp: catchUp),
+    );
   }
 }
 

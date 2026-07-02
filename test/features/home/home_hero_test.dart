@@ -62,4 +62,45 @@ void main() {
     // 85,000 − 5,000 due = 80,000 left.
     expect(find.textContaining('80,000 left after obligations'), findsOneWidget);
   });
+
+  testWidgets('no arrears → no catch-up card', (tester) async {
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+    expect(find.text('WHILE YOU WERE AWAY'), findsNothing);
+  });
+
+  testWidgets('arrears show the catch-up card and open the sheet',
+      (tester) async {
+    // EMI started 3 months before this month with nothing paid → at least two
+    // pre-month installments are in arrears regardless of today's date.
+    final monthStart = DateTime.now().monthStart;
+    final late = emiSummary(startDate: monthStart.addMonths(-3));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          borrowingSummariesProvider
+              .overrideWith((ref) => Stream.value([late])),
+          recurringItemsProvider.overrideWith((ref) => Stream.value(const [])),
+          incomeControllerProvider.overrideWith(() => _FixedIncome(null)),
+        ],
+        child: MaterialApp(theme: AppTheme.dark(), home: const HomeScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('WHILE YOU WERE AWAY'), findsOneWidget);
+    expect(find.textContaining('EMI installment'), findsOneWidget);
+
+    await tester.tap(find.text('WHILE YOU WERE AWAY'));
+    await tester.pumpAndSettle();
+
+    // Sheet: every arrear pre-checked + one mark-paid button (label carries
+    // the running total).
+    expect(find.textContaining('Mark paid'), findsOneWidget);
+    final boxes = tester
+        .widgetList<CheckboxListTile>(find.byType(CheckboxListTile))
+        .toList();
+    expect(boxes.length, greaterThanOrEqualTo(2));
+    expect(boxes.every((b) => b.value == true), isTrue);
+  });
 }
