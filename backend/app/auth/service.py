@@ -103,3 +103,9 @@ async def change_password(
     await repository.update_password_hash(pool, user_id, hash_password(new_password))
     # Changing the password means "secure my account": revoke every session.
     await repository.revoke_all_refresh_tokens_for_user(pool, user_id)
+
+
+async def delete_account(pool: asyncpg.Pool, user_id: uuid.UUID) -> None:
+    # ON DELETE CASCADE removes the user's refresh tokens with the row.
+    # B2 domain tables must make the same choice explicitly.
+    await repository.delete_user(pool, user_id)

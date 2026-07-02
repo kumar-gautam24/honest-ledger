@@ -80,3 +80,11 @@ async def change_password(
     await service.change_password(
         pool, user_id, body.current_password, body.new_password
     )
+
+
+@account_router.delete("/me", status_code=204)
+async def delete_account(
+    user_id: uuid.UUID = Depends(get_current_user_id),
+    pool: asyncpg.Pool = Depends(get_pool),
+) -> None:
+    await service.delete_account(pool, user_id)
