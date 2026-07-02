@@ -2,6 +2,8 @@ import 'package:get_it/get_it.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../features/cards/data/card_repository_impl.dart';
+import '../../features/cards/domain/repositories/card_repository.dart';
 import '../../features/lenders/data/lender_repository_impl.dart';
 import '../../features/lenders/data/lender_seed.dart';
 import '../../features/lenders/domain/repositories/lender_repository.dart';
@@ -51,6 +53,11 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   if (!sl.isRegistered<RecurringRepository>()) {
     sl.registerSingleton<RecurringRepository>(
       RecurringRepositoryImpl(sl<AppDatabase>()),
+    );
+  }
+  if (!sl.isRegistered<CardRepository>()) {
+    sl.registerSingleton<CardRepository>(
+      CardRepositoryImpl(sl<AppDatabase>()),
     );
   }
   await _seedLenders();
