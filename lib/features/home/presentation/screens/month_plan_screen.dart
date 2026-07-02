@@ -9,9 +9,12 @@ import '../../../../core/utils/date_x.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../shared/widgets/widgets.dart';
 import '../../../recurring/presentation/controllers/recurring_providers.dart';
+import '../../../settings/presentation/controllers/income_controller.dart';
 import '../../domain/entities/month_plan.dart';
+import '../../domain/entities/monthly_obligation_stats.dart';
 import '../../domain/entities/outflow_projection.dart';
 import '../home_providers.dart';
+import '../obligation_view.dart';
 
 /// This Month — the calendar month as a statement: what's due, what's been
 /// paid, what remains — followed by the coming year's outflow timeline.
@@ -65,16 +68,19 @@ class MonthPlanScreen extends ConsumerWidget {
 }
 
 /// The statement header: month eyebrow, the due-this-month hero with the brass
-/// fill-rule, paid/remaining lines and a settle-progress bar.
-class _MonthStatement extends StatelessWidget {
+/// fill-rule, paid/remaining lines, a settle-progress bar, and the steady-state
+/// per-month figure with its kind breakdown.
+class _MonthStatement extends ConsumerWidget {
   const _MonthStatement({required this.plan});
 
   final MonthPlan plan;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final settled = plan.totalDue > 0 && plan.remaining <= 0;
+    final monthly = ref.watch(monthlyObligationStatsProvider);
+    final income = ref.watch(incomeControllerProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,8 +150,58 @@ class _MonthStatement extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.lg),
         Container(height: 1, color: c.hairline),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text('PER MONTH', style: AppTypography.eyebrow(c)),
+                  const Spacer(),
+                  MoneyText(monthly.total, color: c.accent),
+                ],
+              ),
+              if (monthly.byCategory.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(_breakdownLine(monthly), style: context.text.bodySmall),
+              ],
+              if (income != null && income > 0 && monthly.total > 0) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  '${Percent.format(monthly.total / income * 100, decimals: 0)} '
+                  'of your income',
+                  style: context.text.bodySmall,
+                ),
+              ],
+              if (monthly.unplannedLoanCount > 0) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  monthly.unplannedLoanCount == 1
+                      ? '1 loan has no planned payment'
+                      : '${monthly.unplannedLoanCount} loans have no '
+                          'planned payment',
+                  style: context.text.bodySmall?.copyWith(color: c.cost),
+                ),
+              ],
+            ],
+          ),
+        ),
+        Container(height: 1, color: c.hairline),
       ],
     );
+  }
+
+  /// `EMIs ₹12.4k · Loans ₹5k · Subs ₹599` — non-zero kinds only.
+  String _breakdownLine(MonthlyObligationStats monthly) {
+    final parts = <String>[
+      for (final f in ObligationFilter.values)
+        if (f != ObligationFilter.all)
+          for (final MapEntry(:key, :value) in monthly.byCategory.entries)
+            if (key.name == f.name && value > 0)
+              '${f.label} ${Money.compact(value)}',
+    ];
+    return parts.join(' · ');
   }
 }
 

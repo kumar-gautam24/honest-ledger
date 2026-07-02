@@ -51,8 +51,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Statement header: due = 1,000 (EMI #1) + 5,000 (loan plan) + 499 (sub).
+    // The same total appears twice: the month hero and the steady-state
+    // PER MONTH row (same fixture composition).
     expect(find.text('DUE THIS MONTH'), findsOneWidget);
-    expect(find.textContaining('6,499'), findsOneWidget);
+    expect(find.textContaining('6,499'), findsWidgets);
     expect(find.text('Paid so far'), findsOneWidget);
     expect(find.text('Remaining'), findsOneWidget);
 

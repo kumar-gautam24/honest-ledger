@@ -11,7 +11,7 @@ import '../../../money_leak/presentation/controllers/money_leak_providers.dart';
 import '../../../money_leak/presentation/widgets/borrowing_card.dart';
 import '../../../recurring/presentation/controllers/recurring_providers.dart';
 import '../../../recurring/presentation/widgets/recurring_tile.dart';
-import '../../domain/entities/monthly_obligation_stats.dart';
+import '../../../settings/presentation/controllers/income_controller.dart';
 import '../home_providers.dart';
 import '../obligation_view.dart';
 import '../widgets/add_obligation_sheet.dart';
@@ -106,9 +106,9 @@ class _ObligationRow extends ConsumerWidget {
   }
 }
 
-/// The statement header: lifetime interest leaked as the headline figure with
-/// its brass fill-rule, and the true monthly outflow — EMIs, loans, subs and
-/// bills combined — as a tappable statement line opening the month plan.
+/// The statement header. The operational figure leads: what's still to pay
+/// this month (tap → the month statement). Lifetime waste — the app's
+/// signature — is the second line (tap → the Leak).
 class _HomeHero extends ConsumerWidget {
   const _HomeHero();
 
@@ -116,53 +116,16 @@ class _HomeHero extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final lifetime = ref.watch(lifetimeStatsProvider);
-    final monthly = ref.watch(monthlyObligationStatsProvider);
     final plan = ref.watch(monthPlanProvider);
-    final wasted = lifetime.totalWasted;
-    final isLeaking = wasted > 0;
+    final income = ref.watch(incomeControllerProvider);
+    final now = DateTime.now();
+    final hasOverdue = plan.dues.any((d) => d.isOverdue(now));
+    final settled = plan.remaining <= 0;
+    final leftAfter = income == null ? null : income - plan.totalDue;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(height: 1, color: c.hairline),
-        const SizedBox(height: AppSpacing.lg),
-        Text('LIFETIME WASTED', style: AppTypography.eyebrow(c)),
-        const SizedBox(height: AppSpacing.sm),
-        IntrinsicWidth(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AnimatedCounter(
-                value: wasted,
-                formatter: Money.format,
-                style: AppTypography.moneyHero(
-                  c,
-                  color: isLeaking ? c.cost : c.textHi,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Container(
-                height: 3,
-                decoration: BoxDecoration(
-                  color: c.accent,
-                  borderRadius: AppRadius.brPill,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          lifetime.count == 0
-              ? 'across no borrowings — for now'
-              : lifetime.projectedWaste > wasted
-                  ? '${Money.format(lifetime.projectedWaste)} projected across '
-                      '${lifetime.count} ${lifetime.count == 1 ? 'borrowing' : 'borrowings'}'
-                  : 'across ${lifetime.count} '
-                      '${lifetime.count == 1 ? 'borrowing' : 'borrowings'}',
-          style: context.text.bodyMedium,
-        ),
-        const SizedBox(height: AppSpacing.lg),
         Container(height: 1, color: c.hairline),
         InkWell(
           onTap: () {
@@ -170,21 +133,17 @@ class _HomeHero extends ConsumerWidget {
             context.push('/home/month');
           },
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Text('PER MONTH', style: AppTypography.eyebrow(c)),
-                    const Spacer(),
-                    AnimatedCounter(
-                      value: monthly.total,
-                      formatter: Money.format,
-                      style: AppTypography.money(c, color: c.accent)
-                          .copyWith(fontSize: 16),
+                    Text(
+                      'REMAINING THIS MONTH',
+                      style: AppTypography.eyebrow(c),
                     ),
-                    const SizedBox(width: AppSpacing.xs),
+                    const Spacer(),
                     Icon(
                       Icons.chevron_right_rounded,
                       size: 18,
@@ -192,54 +151,85 @@ class _HomeHero extends ConsumerWidget {
                     ),
                   ],
                 ),
-                if (monthly.byCategory.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    _breakdownLine(monthly),
-                    style: context.text.bodySmall,
-                  ),
-                ],
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  plan.remaining > 0
-                      ? '${Money.format(plan.remaining)} remaining this month'
-                      : plan.totalDue > 0
-                          ? 'All settled this month'
-                          : 'Nothing due this month',
-                  style: context.text.bodySmall?.copyWith(
-                    color: plan.remaining > 0 ? c.textMid : c.positive,
+                const SizedBox(height: AppSpacing.sm),
+                IntrinsicWidth(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AnimatedCounter(
+                        value: plan.remaining,
+                        formatter: Money.format,
+                        style: AppTypography.moneyHero(
+                          c,
+                          color: hasOverdue
+                              ? c.cost
+                              : settled
+                                  ? c.positive
+                                  : c.textHi,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Container(
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: c.accent,
+                          borderRadius: AppRadius.brPill,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                if (monthly.unplannedLoanCount > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.xs),
-                    child: Text(
-                      monthly.unplannedLoanCount == 1
-                          ? '1 loan has no planned payment'
-                          : '${monthly.unplannedLoanCount} loans have no '
-                              'planned payment',
-                      style:
-                          context.text.bodySmall?.copyWith(color: c.cost),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  plan.totalDue > 0
+                      ? 'due ${Money.format(plan.totalDue)} · '
+                          'paid ${Money.format(plan.totalPaid)}'
+                      : 'nothing due this month — for now',
+                  style: context.text.bodyMedium,
+                ),
+                if (leftAfter != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    leftAfter < 0
+                        ? '${Money.format(-leftAfter)} over your income'
+                        : '${Money.format(leftAfter)} left after obligations',
+                    style: context.text.bodySmall?.copyWith(
+                      color: leftAfter < 0 ? c.cost : c.textMid,
                     ),
                   ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        Container(height: 1, color: c.hairline),
+        InkWell(
+          onTap: () {
+            sl<HapticService>().select();
+            context.push('/home/waste');
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+            child: Row(
+              children: [
+                Text('LIFETIME WASTED', style: AppTypography.eyebrow(c)),
+                const Spacer(),
+                AnimatedCounter(
+                  value: lifetime.totalWasted,
+                  formatter: Money.format,
+                  style: AppTypography.money(
+                    c,
+                    color: lifetime.totalWasted > 0 ? c.cost : c.textMid,
+                  ).copyWith(fontSize: 16),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Icon(Icons.chevron_right_rounded, size: 18, color: c.textLow),
               ],
             ),
           ),
         ),
       ],
     );
-  }
-
-  /// `EMIs ₹12.4k · Loans ₹5k · Subs ₹599` — non-zero kinds only.
-  String _breakdownLine(MonthlyObligationStats monthly) {
-    final parts = <String>[
-      for (final f in ObligationFilter.values)
-        if (f != ObligationFilter.all)
-          for (final MapEntry(:key, :value) in monthly.byCategory.entries)
-            if (key.name == f.name && value > 0)
-              '${f.label} ${Money.compact(value)}',
-    ];
-    return parts.join(' · ');
   }
 }
 
