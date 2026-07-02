@@ -4,6 +4,8 @@ import '../constants/app_constants.dart';
 
 final _dayMonth = DateFormat('d MMM', AppConstants.locale);
 final _dayMonthYear = DateFormat('d MMM yyyy', AppConstants.locale);
+final _monthYear = DateFormat('MMMM yyyy', AppConstants.locale);
+final _monthShort = DateFormat('MMM', AppConstants.locale);
 
 extension DateFormatting on DateTime {
   /// `7 Jul`
@@ -12,15 +14,26 @@ extension DateFormatting on DateTime {
   /// `7 Jul 2026`
   String get dayMonthYear => _dayMonthYear.format(this);
 
+  /// `July 2026`
+  String get monthYear => _monthYear.format(this);
+
+  /// `Jul`
+  String get monthShort => _monthShort.format(this);
+
   DateTime get dateOnly => DateTime(year, month, day);
 
-  /// Add [months] keeping the day-of-month where possible (clamps month-end).
+  /// Midnight on the first of this date's month.
+  DateTime get monthStart => DateTime(year, month);
+
+  bool isSameMonth(DateTime other) =>
+      year == other.year && month == other.month;
+
+  /// Add [months] (may be negative) keeping the day-of-month where possible
+  /// (clamps month-end). Relies on DateTime normalising out-of-range months.
   DateTime addMonths(int months) {
-    final totalMonth = month - 1 + months;
-    final newYear = year + (totalMonth ~/ 12);
-    final newMonth = totalMonth % 12 + 1;
-    final lastDay = DateTime(newYear, newMonth + 1, 0).day;
-    return DateTime(newYear, newMonth, day.clamp(1, lastDay));
+    final anchor = DateTime(year, month + months);
+    final lastDay = DateTime(anchor.year, anchor.month + 1, 0).day;
+    return DateTime(anchor.year, anchor.month, day.clamp(1, lastDay));
   }
 
   /// Whole days from today (negative = overdue).

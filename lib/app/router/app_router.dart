@@ -7,6 +7,7 @@ import '../../core/utils/enum_x.dart';
 import '../../features/emi_calculator/presentation/screens/amortization_screen.dart';
 import '../../features/emi_calculator/presentation/screens/emi_calculator_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
+import '../../features/home/presentation/screens/month_plan_screen.dart';
 import '../../features/lenders/domain/entities/lender.dart';
 import '../../features/lenders/presentation/screens/add_edit_lender_screen.dart';
 import '../../features/lenders/presentation/screens/lender_catalog_screen.dart';
@@ -34,6 +35,10 @@ final GoRouter appRouter = GoRouter(
               path: '/home',
               builder: (_, _) => const HomeScreen(),
               routes: [
+                GoRoute(
+                  path: 'month',
+                  builder: (_, _) => const MonthPlanScreen(),
+                ),
                 GoRoute(
                   path: 'add',
                   builder: (_, state) => AddEditBorrowingScreen(

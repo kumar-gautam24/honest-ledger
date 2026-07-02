@@ -361,6 +361,32 @@ abstract final class FinanceMath {
     return totalInterest;
   }
 
+  /// The month-by-month payments that clear [principal] at a fixed
+  /// [monthlyPayment] against a reducing balance; the last entry is the smaller
+  /// residual payment. Returns null when the payment can never amortise the
+  /// balance. Companion to [projectedInterestFlexible] for the outflow timeline.
+  static List<double>? flexiblePaymentPlan({
+    required double principal,
+    required double annualRatePct,
+    required double monthlyPayment,
+    int maxMonths = 600,
+  }) {
+    if (monthlyPayment <= 0 || principal <= 0) return null;
+    final r = annualRatePct / 12 / 100;
+    final plan = <double>[];
+    var balance = principal;
+    for (var m = 0; m < maxMonths; m++) {
+      final interest = balance * r;
+      if (r > 0 && monthlyPayment <= interest) return null;
+      balance += interest;
+      final payment = math.min(monthlyPayment, balance);
+      plan.add(payment);
+      balance -= payment;
+      if (balance <= 0.01) return plan;
+    }
+    return null;
+  }
+
   /// Reducing-balance amortization schedule, one [AmortEntry] per month.
   static List<AmortEntry> amortizationSchedule({
     required double principal,

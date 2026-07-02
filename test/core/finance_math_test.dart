@@ -45,6 +45,66 @@ void main() {
     });
   });
 
+  group('flexiblePaymentPlan', () {
+    test('clears with an exact smaller residual last payment', () {
+      const principal = 10000.0;
+      const rate = 30.0;
+      const pay = 2000.0;
+      final plan = FinanceMath.flexiblePaymentPlan(
+        principal: principal,
+        annualRatePct: rate,
+        monthlyPayment: pay,
+      );
+      expect(plan, isNotNull);
+      // Every payment but the last is the full monthly payment.
+      for (final p in plan!.sublist(0, plan.length - 1)) {
+        expect(p, pay);
+      }
+      expect(plan.last, lessThanOrEqualTo(pay));
+      expect(plan.last, greaterThan(0));
+      // Total paid == principal + the interest the sibling projection computes.
+      final interest = FinanceMath.projectedInterestFlexible(
+        principal: principal,
+        annualRatePct: rate,
+        monthlyPayment: pay,
+      );
+      final totalPaid = plan.fold<double>(0, (s, p) => s + p);
+      expect(totalPaid, closeTo(principal + interest, 0.05));
+    });
+
+    test('null when the payment cannot cover the first month interest', () {
+      // ₹10,000 at 36% p.a. accrues ₹300 in month one; paying ₹300 never clears.
+      expect(
+        FinanceMath.flexiblePaymentPlan(
+          principal: 10000,
+          annualRatePct: 36,
+          monthlyPayment: 300,
+        ),
+        isNull,
+      );
+    });
+
+    test('zero rate is plain division with a residual', () {
+      final plan = FinanceMath.flexiblePaymentPlan(
+        principal: 5000,
+        annualRatePct: 0,
+        monthlyPayment: 2000,
+      );
+      expect(plan, [2000, 2000, 1000]);
+    });
+
+    test('non-positive payment is null', () {
+      expect(
+        FinanceMath.flexiblePaymentPlan(
+          principal: 5000,
+          annualRatePct: 12,
+          monthlyPayment: 0,
+        ),
+        isNull,
+      );
+    });
+  });
+
   group('reducingEmi', () {
     test('₹1,00,000 @ 12% for 12 months ≈ ₹8,884.88', () {
       expect(

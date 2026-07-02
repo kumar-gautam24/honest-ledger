@@ -20,6 +20,22 @@ enum Frequency {
   const Frequency(this.label, this.perYear);
   final String label;
   final int perYear;
+
+  /// [from] stepped one occurrence forward.
+  DateTime advance(DateTime from) => switch (this) {
+        Frequency.weekly => from.add(const Duration(days: 7)),
+        Frequency.monthly => from.addMonths(1),
+        Frequency.quarterly => from.addMonths(3),
+        Frequency.yearly => from.addMonths(12),
+      };
+
+  /// [from] stepped one occurrence back.
+  DateTime retreat(DateTime from) => switch (this) {
+        Frequency.weekly => from.subtract(const Duration(days: 7)),
+        Frequency.monthly => from.addMonths(-1),
+        Frequency.quarterly => from.addMonths(-3),
+        Frequency.yearly => from.addMonths(-12),
+      };
 }
 
 /// A subscription, bill, or EMI that repeats on a schedule.
@@ -52,12 +68,7 @@ class RecurringItem {
   double get monthlyAmount => amount * frequency.perYear / 12;
 
   /// The next due date after this one, rolled forward by the frequency.
-  DateTime advanceDue() => switch (frequency) {
-        Frequency.weekly => nextDueDate.add(const Duration(days: 7)),
-        Frequency.monthly => nextDueDate.addMonths(1),
-        Frequency.quarterly => nextDueDate.addMonths(3),
-        Frequency.yearly => nextDueDate.addMonths(12),
-      };
+  DateTime advanceDue() => frequency.advance(nextDueDate);
 
   RecurringItem copyWith({
     String? title,

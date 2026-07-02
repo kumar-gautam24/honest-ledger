@@ -14,4 +14,7 @@ abstract final class AppConstants {
 
   /// Default reminder lead time before a due date.
   static const int defaultReminderLeadDays = 1;
+
+  /// Months shown in the future-outflow projection timeline.
+  static const int projectionHorizonMonths = 12;
 }

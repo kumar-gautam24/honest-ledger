@@ -2,9 +2,9 @@ import '../../../core/utils/date_x.dart';
 import '../../money_leak/domain/entities/borrowing.dart';
 import '../../money_leak/domain/entities/borrowing_summary.dart';
 import '../../recurring/domain/entities/recurring_item.dart';
+import '../domain/entities/obligation_category.dart';
 
-/// The kind of obligation a row represents — the axis the home filter slices on.
-enum ObligationCategory { emi, loan, subscription, bill }
+export '../domain/entities/obligation_category.dart';
 
 /// Home filter chips. [all] matches everything; the rest map 1:1 to a category.
 enum ObligationFilter {
@@ -67,12 +67,7 @@ class RecurringObligation extends ObligationView {
   final RecurringItem item;
 
   @override
-  ObligationCategory get category => switch (item.type) {
-        RecurringType.subscription => ObligationCategory.subscription,
-        // Legacy EMIs recorded here are treated as bills; new EMIs are
-        // borrowings.
-        RecurringType.bill || RecurringType.emi => ObligationCategory.bill,
-      };
+  ObligationCategory get category => item.type.obligationCategory;
 
   @override
   double get sortKey =>

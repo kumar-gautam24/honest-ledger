@@ -111,3 +111,157 @@ final class HomeFeedLoadingProvider
 }
 
 String _$homeFeedLoadingHash() => r'80171c09340072e5d464285e1ed0256fa03528d9';
+
+/// The true committed monthly outgo — EMIs + loan plans + recurring — split by
+/// kind. Drives the home "PER MONTH" statement line.
+
+@ProviderFor(monthlyObligationStats)
+final monthlyObligationStatsProvider = MonthlyObligationStatsProvider._();
+
+/// The true committed monthly outgo — EMIs + loan plans + recurring — split by
+/// kind. Drives the home "PER MONTH" statement line.
+
+final class MonthlyObligationStatsProvider
+    extends
+        $FunctionalProvider<
+          MonthlyObligationStats,
+          MonthlyObligationStats,
+          MonthlyObligationStats
+        >
+    with $Provider<MonthlyObligationStats> {
+  /// The true committed monthly outgo — EMIs + loan plans + recurring — split by
+  /// kind. Drives the home "PER MONTH" statement line.
+  MonthlyObligationStatsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'monthlyObligationStatsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$monthlyObligationStatsHash();
+
+  @$internal
+  @override
+  $ProviderElement<MonthlyObligationStats> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  MonthlyObligationStats create(Ref ref) {
+    return monthlyObligationStats(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(MonthlyObligationStats value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<MonthlyObligationStats>(value),
+    );
+  }
+}
+
+String _$monthlyObligationStatsHash() =>
+    r'2b5f349fc691d79afda891d909ff0b64899ee651';
+
+/// The current calendar month as a statement: due, paid, remaining.
+
+@ProviderFor(monthPlan)
+final monthPlanProvider = MonthPlanProvider._();
+
+/// The current calendar month as a statement: due, paid, remaining.
+
+final class MonthPlanProvider
+    extends $FunctionalProvider<MonthPlan, MonthPlan, MonthPlan>
+    with $Provider<MonthPlan> {
+  /// The current calendar month as a statement: due, paid, remaining.
+  MonthPlanProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'monthPlanProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$monthPlanHash();
+
+  @$internal
+  @override
+  $ProviderElement<MonthPlan> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  MonthPlan create(Ref ref) {
+    return monthPlan(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(MonthPlan value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<MonthPlan>(value),
+    );
+  }
+}
+
+String _$monthPlanHash() => r'fae16a67784dc146cac34b726eb204f1c393d47d';
+
+/// Month-by-month outflow over the coming year, with freed-up moments.
+
+@ProviderFor(outflowProjection)
+final outflowProjectionProvider = OutflowProjectionProvider._();
+
+/// Month-by-month outflow over the coming year, with freed-up moments.
+
+final class OutflowProjectionProvider
+    extends
+        $FunctionalProvider<
+          OutflowProjection,
+          OutflowProjection,
+          OutflowProjection
+        >
+    with $Provider<OutflowProjection> {
+  /// Month-by-month outflow over the coming year, with freed-up moments.
+  OutflowProjectionProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'outflowProjectionProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$outflowProjectionHash();
+
+  @$internal
+  @override
+  $ProviderElement<OutflowProjection> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  OutflowProjection create(Ref ref) {
+    return outflowProjection(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(OutflowProjection value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<OutflowProjection>(value),
+    );
+  }
+}
+
+String _$outflowProjectionHash() => r'ef482d823d2f2cf3c4eb58f95300b812ad7ae2ed';

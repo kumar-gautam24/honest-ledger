@@ -11,6 +11,7 @@ import '../../../money_leak/presentation/controllers/money_leak_providers.dart';
 import '../../../money_leak/presentation/widgets/borrowing_card.dart';
 import '../../../recurring/presentation/controllers/recurring_providers.dart';
 import '../../../recurring/presentation/widgets/recurring_tile.dart';
+import '../../domain/entities/monthly_obligation_stats.dart';
 import '../home_providers.dart';
 import '../obligation_view.dart';
 import '../widgets/add_obligation_sheet.dart';
@@ -106,7 +107,8 @@ class _ObligationRow extends ConsumerWidget {
 }
 
 /// The statement header: lifetime interest leaked as the headline figure with
-/// its brass fill-rule, and the true monthly outflow as a second statement line.
+/// its brass fill-rule, and the true monthly outflow — EMIs, loans, subs and
+/// bills combined — as a tappable statement line opening the month plan.
 class _HomeHero extends ConsumerWidget {
   const _HomeHero();
 
@@ -114,7 +116,8 @@ class _HomeHero extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final lifetime = ref.watch(lifetimeStatsProvider);
-    final recurring = ref.watch(recurringStatsProvider);
+    final monthly = ref.watch(monthlyObligationStatsProvider);
+    final plan = ref.watch(monthPlanProvider);
     final wasted = lifetime.totalWasted;
     final isLeaking = wasted > 0;
 
@@ -161,20 +164,82 @@ class _HomeHero extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.lg),
         Container(height: 1, color: c.hairline),
-        const SizedBox(height: AppSpacing.md),
-        Row(
-          children: [
-            Text('PER MONTH', style: AppTypography.eyebrow(c)),
-            const Spacer(),
-            AnimatedCounter(
-              value: recurring.monthlyOutflow,
-              formatter: Money.format,
-              style: AppTypography.money(c, color: c.accent).copyWith(fontSize: 16),
+        InkWell(
+          onTap: () {
+            sl<HapticService>().select();
+            context.push('/home/month');
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text('PER MONTH', style: AppTypography.eyebrow(c)),
+                    const Spacer(),
+                    AnimatedCounter(
+                      value: monthly.total,
+                      formatter: Money.format,
+                      style: AppTypography.money(c, color: c.accent)
+                          .copyWith(fontSize: 16),
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18,
+                      color: c.textLow,
+                    ),
+                  ],
+                ),
+                if (monthly.byCategory.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    _breakdownLine(monthly),
+                    style: context.text.bodySmall,
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  plan.remaining > 0
+                      ? '${Money.format(plan.remaining)} remaining this month'
+                      : plan.totalDue > 0
+                          ? 'All settled this month'
+                          : 'Nothing due this month',
+                  style: context.text.bodySmall?.copyWith(
+                    color: plan.remaining > 0 ? c.textMid : c.positive,
+                  ),
+                ),
+                if (monthly.unplannedLoanCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.xs),
+                    child: Text(
+                      monthly.unplannedLoanCount == 1
+                          ? '1 loan has no planned payment'
+                          : '${monthly.unplannedLoanCount} loans have no '
+                              'planned payment',
+                      style:
+                          context.text.bodySmall?.copyWith(color: c.cost),
+                    ),
+                  ),
+              ],
             ),
-          ],
+          ),
         ),
       ],
     );
+  }
+
+  /// `EMIs ₹12.4k · Loans ₹5k · Subs ₹599` — non-zero kinds only.
+  String _breakdownLine(MonthlyObligationStats monthly) {
+    final parts = <String>[
+      for (final f in ObligationFilter.values)
+        if (f != ObligationFilter.all)
+          for (final MapEntry(:key, :value) in monthly.byCategory.entries)
+            if (key.name == f.name && value > 0)
+              '${f.label} ${Money.compact(value)}',
+    ];
+    return parts.join(' · ');
   }
 }
 
