@@ -9,6 +9,7 @@ from app.auth import repository, service
 from app.auth.dependencies import get_current_user_id, get_pool
 from app.auth.schemas import (
     LoginRequest,
+    RefreshRequest,
     RegisterRequest,
     TokenPairResponse,
     UserResponse,
@@ -38,6 +39,23 @@ async def login(
         pool, settings, body.email, body.password
     )
     return TokenPairResponse(access_token=access_token, refresh_token=refresh_token)
+
+
+@auth_router.post("/refresh", response_model=TokenPairResponse)
+async def refresh(
+    body: RefreshRequest,
+    pool: asyncpg.Pool = Depends(get_pool),
+    settings: Settings = Depends(get_settings),
+) -> TokenPairResponse:
+    access_token, refresh_token = await service.refresh(
+        pool, settings, body.refresh_token
+    )
+    return TokenPairResponse(access_token=access_token, refresh_token=refresh_token)
+
+
+@auth_router.post("/logout", status_code=204)
+async def logout(body: RefreshRequest, pool: asyncpg.Pool = Depends(get_pool)) -> None:
+    await service.logout(pool, body.refresh_token)
 
 
 @account_router.get("/me", response_model=UserResponse)

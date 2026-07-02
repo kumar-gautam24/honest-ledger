@@ -7,10 +7,15 @@ import asyncpg
 
 from app.auth import repository
 from app.core.config import Settings
-from app.core.errors import EmailTakenError, InvalidCredentialsError
+from app.core.errors import (
+    EmailTakenError,
+    InvalidCredentialsError,
+    InvalidTokenError,
+)
 from app.core.security import (
     create_access_token,
     hash_password,
+    hash_refresh_token,
     new_refresh_token,
     verify_password,
 )
@@ -53,3 +58,35 @@ async def _issue_token_pair(
     )
     await repository.insert_refresh_token(pool, user_id, refresh_hash, expires_at)
     return access, raw_refresh
+
+
+async def refresh(
+    pool: asyncpg.Pool, settings: Settings, raw_refresh_token: str
+) -> tuple[str, str]:
+    row = await repository.get_refresh_token_by_hash(
+        pool, hash_refresh_token(raw_refresh_token)
+    )
+    if row is None:
+        raise InvalidTokenError("Refresh token is invalid")
+    if row["revoked_at"] is not None:
+        # This token was already used or logged out. Someone is REPLAYING it —
+        # possibly a thief. Nuke every session for this user; both parties must
+        # log in again. This is standard refresh-token reuse detection.
+        await repository.revoke_all_refresh_tokens_for_user(pool, row["user_id"])
+        raise InvalidTokenError("Refresh token has been revoked")
+    if row["expires_at"] <= datetime.now(timezone.utc):
+        raise InvalidTokenError("Refresh token has expired")
+
+    # Rotation: each refresh token works exactly once.
+    await repository.revoke_refresh_token(pool, row["id"])
+    return await _issue_token_pair(pool, settings, row["user_id"])
+
+
+async def logout(pool: asyncpg.Pool, raw_refresh_token: str) -> None:
+    row = await repository.get_refresh_token_by_hash(
+        pool, hash_refresh_token(raw_refresh_token)
+    )
+    if row is not None and row["revoked_at"] is None:
+        await repository.revoke_refresh_token(pool, row["id"])
+    # Unknown/already-revoked tokens return success too: logout is idempotent,
+    # and errors here would only help attackers probe which tokens exist.
