@@ -21,6 +21,7 @@ from app.core import db
 from app.core.config import get_settings
 from app.core.errors import AppError
 from app.core.logging import configure_logging, get_logger
+from app.core.rate_limit import SlidingWindowRateLimiter
 
 
 @asynccontextmanager
@@ -39,9 +40,11 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
+    settings = get_settings()
+
     # Disable the interactive API docs (Swagger /docs, ReDoc, and the OpenAPI schema)
     # in production so we don't publish a map of the whole API surface. On in dev.
-    is_prod = get_settings().env == "production"
+    is_prod = settings.env == "production"
     if is_prod:
         docs_url = None
         redoc_url = None
@@ -82,6 +85,12 @@ def create_app() -> FastAPI:
                 }
             },
         )
+
+    # One limiter instance per app process, shared by all auth routes.
+    app.state.auth_limiter = SlidingWindowRateLimiter(
+        max_requests=settings.auth_rate_limit_max_requests,
+        window_seconds=settings.auth_rate_limit_window_seconds,
+    )
 
     app.include_router(auth_router)
     app.include_router(account_router)

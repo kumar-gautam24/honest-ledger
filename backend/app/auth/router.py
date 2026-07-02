@@ -6,7 +6,11 @@ import asyncpg
 from fastapi import APIRouter, Depends
 
 from app.auth import repository, service
-from app.auth.dependencies import get_current_user_id, get_pool
+from app.auth.dependencies import (
+    check_auth_rate_limit,
+    get_current_user_id,
+    get_pool,
+)
 from app.auth.schemas import (
     ChangePasswordRequest,
     LoginRequest,
@@ -18,7 +22,11 @@ from app.auth.schemas import (
 from app.core.config import Settings, get_settings
 from app.core.errors import InvalidTokenError
 
-auth_router = APIRouter(prefix="/v1/auth", tags=["auth"])
+# Credential endpoints get a shared rate limit; /me routes (already behind a
+# valid access token) do not.
+auth_router = APIRouter(
+    prefix="/v1/auth", tags=["auth"], dependencies=[Depends(check_auth_rate_limit)]
+)
 account_router = APIRouter(prefix="/v1", tags=["account"])
 
 
