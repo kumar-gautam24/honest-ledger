@@ -14,7 +14,8 @@ from app.core.security import (
     verify_password,
 )
 
-SECRET = "test-secret"
+# HS256 wants >= 32 bytes of key material (RFC 7518); PyJWT warns below that.
+SECRET = "test-secret-0123456789abcdef-0123456789abcdef"
 USER_ID = uuid.uuid4()
 
 
@@ -44,7 +45,7 @@ def test_expired_access_token_rejected():
 def test_tampered_access_token_rejected():
     token = create_access_token(USER_ID, SECRET, ttl_minutes=15)
     with pytest.raises(InvalidTokenError):
-        decode_access_token(token, "a-different-secret")
+        decode_access_token(token, "a-different-secret-0123456789abcdef-xyz")
 
 
 def test_refresh_token_pair():

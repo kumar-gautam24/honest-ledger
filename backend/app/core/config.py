@@ -22,8 +22,10 @@ class Settings(BaseSettings):
     # Connection string shared by the app (asyncpg) and yoyo (migrations).
     database_url: str = "postgresql://recurring:recurring@db:5432/recurring"
 
-    # Used from B1 onward to sign JWTs. Present now so the shape is stable.
-    jwt_secret: str = "dev-only-change-me"
+    # Signs JWT access tokens. HS256 needs >= 32 bytes of key material; this
+    # dev default satisfies that but MUST be replaced outside local dev
+    # (openssl rand -hex 32).
+    jwt_secret: str = "dev-only-change-me-0123456789abcdef-0123456789"
 
     # Auth (B1)
     access_token_ttl_minutes: int = 15
