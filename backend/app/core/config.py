@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     # Used from B1 onward to sign JWTs. Present now so the shape is stable.
     jwt_secret: str = "dev-only-change-me"
 
+    # Auth (B1)
+    access_token_ttl_minutes: int = 15
+    refresh_token_ttl_days: int = 30
+    auth_rate_limit_max_requests: int = 10
+    auth_rate_limit_window_seconds: int = 60
+
 
 @lru_cache
 def get_settings() -> Settings:

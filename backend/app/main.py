@@ -12,12 +12,14 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app import db
-from app.config import get_settings
-from app.logging import configure_logging, get_logger
+from app.core import db
+from app.core.config import get_settings
+from app.core.errors import AppError
+from app.core.logging import configure_logging, get_logger
 
 
 @asynccontextmanager
@@ -56,6 +58,29 @@ def create_app() -> FastAPI:
         redoc_url=redoc_url,
         openapi_url=openapi_url,
     )
+
+    @app.exception_handler(AppError)
+    async def handle_app_error(request: Request, exc: AppError) -> JSONResponse:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"error": {"code": exc.code, "message": exc.message}},
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def handle_validation_error(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
+        # Same envelope for bad request bodies, so clients parse ONE error shape.
+        return JSONResponse(
+            status_code=422,
+            content={
+                "error": {
+                    "code": "validation_error",
+                    "message": "Request body failed validation",
+                    "details": exc.errors(),
+                }
+            },
+        )
 
     @app.get("/health", tags=["ops"])
     async def health() -> dict[str, str]:

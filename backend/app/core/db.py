@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncpg
 
-from app.logging import get_logger
+from app.core.logging import get_logger
 
 log = get_logger(__name__)
 
