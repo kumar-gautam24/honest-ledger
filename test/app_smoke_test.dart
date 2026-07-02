@@ -18,8 +18,8 @@ void main() {
     await tester.pump(); // settle into empty/data state
 
     // Signature hero figures and the three nav tabs are present.
+    expect(find.text('REMAINING THIS MONTH'), findsOneWidget);
     expect(find.text('LIFETIME WASTED'), findsOneWidget);
-    expect(find.text('PER MONTH'), findsOneWidget);
     expect(find.text('Home'), findsWidgets); // app-bar title + nav label
     expect(find.text('Tools'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
