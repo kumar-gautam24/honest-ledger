@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../money_leak/presentation/controllers/money_leak_providers.dart';
 import '../../recurring/presentation/controllers/recurring_providers.dart';
+import '../domain/entities/lender_waste.dart';
 import '../domain/entities/month_plan.dart';
 import '../domain/entities/monthly_obligation_stats.dart';
 import '../domain/entities/outflow_projection.dart';
@@ -53,6 +54,14 @@ MonthPlan monthPlan(Ref ref) {
     items: recurring,
     now: DateTime.now(),
   );
+}
+
+/// Per-lender waste ranking for the Leak statement, worst first.
+@riverpod
+List<LenderWaste> lenderWaste(Ref ref) {
+  final borrowings =
+      ref.watch(borrowingSummariesProvider).asData?.value ?? const [];
+  return LenderWaste.rank(borrowings);
 }
 
 /// Month-by-month outflow over the coming year, with freed-up moments.

@@ -8,6 +8,7 @@ import '../../features/emi_calculator/presentation/screens/amortization_screen.d
 import '../../features/emi_calculator/presentation/screens/emi_calculator_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/home/presentation/screens/month_plan_screen.dart';
+import '../../features/home/presentation/screens/waste_screen.dart';
 import '../../features/lenders/domain/entities/lender.dart';
 import '../../features/lenders/presentation/screens/add_edit_lender_screen.dart';
 import '../../features/lenders/presentation/screens/lender_catalog_screen.dart';
@@ -38,6 +39,10 @@ final GoRouter appRouter = GoRouter(
                 GoRoute(
                   path: 'month',
                   builder: (_, _) => const MonthPlanScreen(),
+                ),
+                GoRoute(
+                  path: 'waste',
+                  builder: (_, _) => const WasteScreen(),
                 ),
                 GoRoute(
                   path: 'add',

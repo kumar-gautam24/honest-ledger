@@ -214,6 +214,58 @@ final class MonthPlanProvider
 
 String _$monthPlanHash() => r'fae16a67784dc146cac34b726eb204f1c393d47d';
 
+/// Per-lender waste ranking for the Leak statement, worst first.
+
+@ProviderFor(lenderWaste)
+final lenderWasteProvider = LenderWasteProvider._();
+
+/// Per-lender waste ranking for the Leak statement, worst first.
+
+final class LenderWasteProvider
+    extends
+        $FunctionalProvider<
+          List<LenderWaste>,
+          List<LenderWaste>,
+          List<LenderWaste>
+        >
+    with $Provider<List<LenderWaste>> {
+  /// Per-lender waste ranking for the Leak statement, worst first.
+  LenderWasteProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'lenderWasteProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$lenderWasteHash();
+
+  @$internal
+  @override
+  $ProviderElement<List<LenderWaste>> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  List<LenderWaste> create(Ref ref) {
+    return lenderWaste(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(List<LenderWaste> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<List<LenderWaste>>(value),
+    );
+  }
+}
+
+String _$lenderWasteHash() => r'1c9f1fa1f1a6c6b7df3c73a913acc6ebe7ff53e2';
+
 /// Month-by-month outflow over the coming year, with freed-up moments.
 
 @ProviderFor(outflowProjection)
