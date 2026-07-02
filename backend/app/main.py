@@ -36,7 +36,26 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="recurring-backend", version="0.0.0", lifespan=lifespan)
+    # Disable the interactive API docs (Swagger /docs, ReDoc, and the OpenAPI schema)
+    # in production so we don't publish a map of the whole API surface. On in dev.
+    is_prod = get_settings().env == "production"
+    if is_prod:
+        docs_url = None
+        redoc_url = None
+        openapi_url = None
+    else:
+        docs_url = "/docs"
+        redoc_url = "/redoc"
+        openapi_url = "/openapi.json"
+
+    app = FastAPI(
+        title="recurring-backend",
+        version="0.0.0",
+        lifespan=lifespan,
+        docs_url=docs_url,
+        redoc_url=redoc_url,
+        openapi_url=openapi_url,
+    )
 
     @app.get("/health", tags=["ops"])
     async def health() -> dict[str, str]:
