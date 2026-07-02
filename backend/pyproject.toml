@@ -28,5 +28,8 @@ package = false
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# One event loop for the whole run: asyncpg connections are bound to the loop
+# they were created on, so fixtures (the pool) and tests must share it.
 asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]
