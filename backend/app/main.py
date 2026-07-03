@@ -18,6 +18,10 @@ from fastapi.responses import JSONResponse
 
 from app.auth.router import account_router, auth_router
 from app.borrowings.router import borrowings_router, repayments_router
+from app.cards.router import cards_router, statements_router
+from app.lenders.router import lenders_router
+from app.recurring.router import recurring_router
+from app.summary.router import summary_router
 from app.sync.router import sync_router
 from app.core import db
 from app.core.config import get_settings
@@ -98,6 +102,11 @@ def create_app() -> FastAPI:
     app.include_router(account_router)
     app.include_router(borrowings_router)
     app.include_router(repayments_router)
+    app.include_router(lenders_router)
+    app.include_router(recurring_router)
+    app.include_router(cards_router)
+    app.include_router(statements_router)
+    app.include_router(summary_router)
     app.include_router(sync_router)
 
     @app.get("/health", tags=["ops"])
