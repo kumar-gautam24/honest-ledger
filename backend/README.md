@@ -32,6 +32,25 @@ are rate limited (10/min per IP by default).
 | POST | `/v1/me/change-password` | Bearer | change password, revoke all sessions (204) |
 | DELETE | `/v1/me` | Bearer | delete account + data (204) |
 
+### Borrowings & repayments (B2 — replay-safe, synced)
+
+All Bearer-authed. Creates carry a client-generated UUID (replay → 200, not a
+duplicate). PATCH carries `updated_at` (last-write-wins; stale → 409 with
+current row). DELETE is a tombstone. Money = integer paise.
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/v1/borrowings` | create (201; replay 200; foreign id 409) |
+| GET | `/v1/borrowings` | list (cursor + limit, excludes deleted) |
+| GET | `/v1/borrowings/{id}` | single |
+| PATCH | `/v1/borrowings/{id}` | partial update, LWW |
+| DELETE | `/v1/borrowings/{id}` | tombstone (204, idempotent) |
+| POST | `/v1/borrowings/{id}/repayments` | create repayment |
+| GET | `/v1/borrowings/{id}/repayments` | ledger for one borrowing |
+| PATCH | `/v1/repayments/{id}` | partial update, LWW |
+| DELETE | `/v1/repayments/{id}` | tombstone |
+| GET | `/v1/changes?since=&limit=` | change feed (tombstones INCLUDED), cursor = `server_seq` |
+
 ```bash
 curl -s -X POST localhost:8000/v1/auth/register -H 'Content-Type: application/json' \
   -d '{"email":"you@example.com","password":"longenough1"}'
