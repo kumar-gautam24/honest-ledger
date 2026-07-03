@@ -60,7 +60,8 @@ class AppButton extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: c.textHi,
             side: BorderSide(color: c.hairline),
-            minimumSize: const Size.fromHeight(52),
+            // Height floor only — an infinite minimum width breaks in Rows.
+            minimumSize: const Size(0, 52),
             shape: const RoundedRectangleBorder(
               borderRadius: AppRadius.brInput,
             ),

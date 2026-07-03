@@ -115,7 +115,11 @@ abstract final class AppTheme {
           foregroundColor: c.background,
           disabledBackgroundColor: c.surfaceHigh,
           disabledForegroundColor: c.textLow,
-          minimumSize: const Size.fromHeight(52),
+          // Height floor only. Size.fromHeight would force an infinite
+          // minimum WIDTH, which crashes any button laid out where width is
+          // unbounded (e.g. inside a Row). Full-width buttons come from
+          // AppButton's `expand`, not from the theme.
+          minimumSize: const Size(0, 52),
           textStyle: textTheme.labelLarge,
           shape: const RoundedRectangleBorder(borderRadius: AppRadius.brInput),
         ),
