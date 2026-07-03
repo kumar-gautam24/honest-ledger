@@ -67,3 +67,20 @@ async def client(pool):
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
+
+
+async def _register_and_login(client, email: str) -> dict:
+    credentials = {"email": email, "password": "longenough1"}
+    await client.post("/v1/auth/register", json=credentials)
+    response = await client.post("/v1/auth/login", json=credentials)
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+@pytest.fixture
+async def auth_headers(client):
+    return await _register_and_login(client, "sync@example.com")
+
+
+@pytest.fixture
+async def other_auth_headers(client):
+    return await _register_and_login(client, "other@example.com")
