@@ -1,4 +1,6 @@
 import '../../../core/utils/date_x.dart';
+import '../../cards/domain/entities/card_account.dart';
+import '../../cards/domain/entities/card_statement.dart';
 import '../../money_leak/domain/entities/borrowing.dart';
 import '../../money_leak/domain/entities/borrowing_summary.dart';
 import '../../recurring/domain/entities/recurring_item.dart';
@@ -12,7 +14,8 @@ enum ObligationFilter {
   emi('EMIs'),
   loan('Loans'),
   subscription('Subs'),
-  bill('Bills');
+  bill('Bills'),
+  card('Cards');
 
   const ObligationFilter(this.label);
   final String label;
@@ -59,6 +62,22 @@ class BorrowingObligation extends ObligationView {
     // Flexible loan (or fully-scheduled EMI): urgent while it still owes.
     return summary.outstanding > 0 ? _kUndated : _kSettled;
   }
+}
+
+/// An unpaid card bill riding the feed until it's settled.
+class CardBillObligation extends ObligationView {
+  const CardBillObligation({required this.card, required this.statement});
+
+  final CardAccount card;
+  final CardStatement statement;
+
+  @override
+  ObligationCategory get category => ObligationCategory.card;
+
+  @override
+  double get sortKey => statement.isPaid
+      ? _kSettled
+      : statement.dueDate.daysFromNow.toDouble();
 }
 
 class RecurringObligation extends ObligationView {

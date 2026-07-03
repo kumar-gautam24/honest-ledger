@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../cards/presentation/controllers/card_providers.dart';
 import '../../money_leak/presentation/controllers/money_leak_providers.dart';
 import '../../recurring/presentation/controllers/recurring_providers.dart';
 import '../domain/entities/lender_waste.dart';
@@ -18,10 +19,22 @@ List<ObligationView> homeFeed(Ref ref) {
   final borrowings =
       ref.watch(borrowingSummariesProvider).asData?.value ?? const [];
   final recurring = ref.watch(recurringItemsProvider).asData?.value ?? const [];
+  final cards = ref.watch(cardsProvider).asData?.value ?? const [];
+  final statements =
+      ref.watch(allCardStatementsProvider).asData?.value ?? const [];
+
+  // Only unpaid bills ride the feed; settled history lives on the card.
+  final cardById = {for (final c in cards) c.id: c};
+  final bills = <CardBillObligation>[
+    for (final st in statements)
+      if (!st.isPaid && cardById[st.cardId] != null)
+        CardBillObligation(card: cardById[st.cardId]!, statement: st),
+  ];
 
   return <ObligationView>[
     ...borrowings.map(BorrowingObligation.new),
     ...recurring.map(RecurringObligation.new),
+    ...bills,
   ]..sort((a, b) => a.sortKey.compareTo(b.sortKey));
 }
 
@@ -49,10 +62,15 @@ MonthPlan monthPlan(Ref ref) {
   final borrowings =
       ref.watch(borrowingSummariesProvider).asData?.value ?? const [];
   final recurring = ref.watch(recurringItemsProvider).asData?.value ?? const [];
+  final cards = ref.watch(cardsProvider).asData?.value ?? const [];
+  final statements =
+      ref.watch(allCardStatementsProvider).asData?.value ?? const [];
   return MonthPlan.from(
     summaries: borrowings,
     items: recurring,
     now: DateTime.now(),
+    cards: cards,
+    statements: statements,
   );
 }
 

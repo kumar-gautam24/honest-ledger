@@ -14,10 +14,12 @@ BorrowingSummary emiSummary({
   required DateTime startDate,
   int paidInstallments = 0,
   BorrowingStatus status = BorrowingStatus.active,
+  String? lenderId,
 }) {
   final b = Borrowing(
     id: id,
     title: title,
+    lenderId: lenderId,
     lenderName: 'Test Bank',
     principal: principal,
     startDate: startDate,

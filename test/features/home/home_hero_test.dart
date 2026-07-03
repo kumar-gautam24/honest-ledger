@@ -5,6 +5,7 @@ import 'package:recurring/core/database/app_database.dart';
 import 'package:recurring/core/di/injector.dart';
 import 'package:recurring/core/theme/app_theme.dart';
 import 'package:recurring/core/utils/date_x.dart';
+import 'package:recurring/features/cards/presentation/controllers/card_providers.dart';
 import 'package:recurring/features/home/presentation/screens/home_screen.dart';
 import 'package:recurring/features/money_leak/presentation/controllers/money_leak_providers.dart';
 import 'package:recurring/features/recurring/presentation/controllers/recurring_providers.dart';
@@ -28,6 +29,8 @@ Widget _app({double? income}) {
     overrides: [
       borrowingSummariesProvider.overrideWith((ref) => Stream.value([loan])),
       recurringItemsProvider.overrideWith((ref) => Stream.value(const [])),
+      cardsProvider.overrideWith((ref) => Stream.value(const [])),
+      allCardStatementsProvider.overrideWith((ref) => Stream.value(const [])),
       incomeControllerProvider.overrideWith(() => _FixedIncome(income)),
     ],
     child: MaterialApp(theme: AppTheme.dark(), home: const HomeScreen()),
@@ -81,6 +84,9 @@ void main() {
           borrowingSummariesProvider
               .overrideWith((ref) => Stream.value([late])),
           recurringItemsProvider.overrideWith((ref) => Stream.value(const [])),
+          cardsProvider.overrideWith((ref) => Stream.value(const [])),
+          allCardStatementsProvider
+              .overrideWith((ref) => Stream.value(const [])),
           incomeControllerProvider.overrideWith(() => _FixedIncome(null)),
         ],
         child: MaterialApp(theme: AppTheme.dark(), home: const HomeScreen()),

@@ -217,6 +217,7 @@ class _DueRow extends ConsumerWidget {
           'EMI · ${due.installmentNo}/${due.installmentCount}',
         MonthDueSource.flexiblePlan => 'LOAN',
         MonthDueSource.recurring => due.category.name.toUpperCase(),
+        MonthDueSource.cardBill => 'CARD BILL',
       };
 
   @override
@@ -246,6 +247,8 @@ class _DueRow extends ConsumerWidget {
                 break;
               }
             }
+          case MonthDueSource.cardBill:
+            context.push('/cards/${due.sourceId}');
         }
       },
       child: Column(
@@ -288,13 +291,21 @@ class _DueRow extends ConsumerWidget {
                           style: context.text.bodySmall
                               ?.copyWith(color: c.cost),
                         ),
-                      ] else if (due.source == MonthDueSource.flexiblePlan &&
+                      ] else if ((due.source == MonthDueSource.flexiblePlan ||
+                              due.source == MonthDueSource.cardBill) &&
                           due.amountPaid > 0 &&
                           !paid) ...[
                         const SizedBox(height: 2),
                         Text(
                           '${Money.format(due.amountPaid)} of '
                           '${Money.format(due.amountDue)} paid',
+                          style: context.text.bodySmall,
+                        ),
+                      ],
+                      if (due.foldedEmiAmount > 0) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'incl. ${Money.format(due.foldedEmiAmount)} EMIs',
                           style: context.text.bodySmall,
                         ),
                       ],

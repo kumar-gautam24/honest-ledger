@@ -6,7 +6,10 @@ import '../../../../core/di/injector.dart';
 import '../../../../core/haptics/haptic_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
+import '../../../../core/utils/date_x.dart';
 import '../../../../shared/widgets/widgets.dart';
+import '../../../cards/domain/entities/card_account.dart';
+import '../../../cards/domain/entities/card_statement.dart';
 import '../../../money_leak/presentation/controllers/money_leak_providers.dart';
 import '../../../money_leak/presentation/widgets/borrowing_card.dart';
 import '../../../recurring/presentation/controllers/recurring_providers.dart';
@@ -105,7 +108,54 @@ class _ObligationRow extends ConsumerWidget {
             repo.delete(item.id);
           },
         );
+      case CardBillObligation(:final card, :final statement):
+        return _CardBillRow(card: card, statement: statement);
     }
+  }
+}
+
+/// An unpaid card bill on the feed: the bill, its due label, tap → the card.
+class _CardBillRow extends StatelessWidget {
+  const _CardBillRow({required this.card, required this.statement});
+
+  final CardAccount card;
+  final CardStatement statement;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final overdue = statement.dueDate.daysFromNow < 0;
+    return AppCard(
+      onTap: () {
+        sl<HapticService>().select();
+        context.push('/cards/${card.id}');
+      },
+      child: Row(
+        children: [
+          Icon(Icons.credit_card_rounded, color: c.accent),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('CARD BILL', style: AppTypography.eyebrow(c)),
+                const SizedBox(height: AppSpacing.xs),
+                Text(card.name, style: context.text.titleMedium),
+                const SizedBox(height: 2),
+                Text(
+                  relativeDueLabel(statement.dueDate),
+                  style: context.text.bodySmall?.copyWith(
+                    color: overdue ? c.cost : c.textMid,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          MoneyText(statement.remaining),
+        ],
+      ),
+    );
   }
 }
 

@@ -1,10 +1,13 @@
 import '../../../../core/utils/date_x.dart';
+import '../../../cards/domain/entities/card_account.dart';
+import '../../../cards/domain/entities/card_cycle.dart';
+import '../../../cards/domain/entities/card_statement.dart';
 import '../../../money_leak/domain/entities/borrowing_summary.dart';
 import '../../../recurring/domain/entities/recurring_item.dart';
 import 'obligation_category.dart';
 
 /// Where a [MonthDue] row comes from.
-enum MonthDueSource { emiInstallment, flexiblePlan, recurring }
+enum MonthDueSource { emiInstallment, flexiblePlan, recurring, cardBill }
 
 /// One line of the current month's statement: something due this calendar
 /// month, with how much of it is already settled.
@@ -20,6 +23,7 @@ class MonthDue {
     this.noPlan = false,
     this.installmentNo,
     this.installmentCount,
+    this.foldedEmiAmount = 0,
   });
 
   /// Borrowing or recurring-item id — for navigation.
@@ -43,6 +47,11 @@ class MonthDue {
   /// `4` of `12` for an EMI installment row; null otherwise.
   final int? installmentNo;
   final int? installmentCount;
+
+  /// For a card-bill row: the slice of [amountDue] that is EMI installments
+  /// folded in from this card's borrowings ("incl. ₹X EMIs"). The folded
+  /// installments get no rows of their own — a rupee is counted once.
+  final double foldedEmiAmount;
 
   double get remaining =>
       (amountDue - amountPaid).clamp(0, double.infinity);
@@ -91,6 +100,8 @@ class MonthPlan {
     required List<BorrowingSummary> summaries,
     required List<RecurringItem> items,
     required DateTime now,
+    List<CardAccount> cards = const [],
+    List<CardStatement> statements = const [],
   }) {
     final monthStart = now.monthStart;
     final monthEnd = monthStart.addMonths(1);
@@ -100,11 +111,54 @@ class MonthPlan {
     final dues = <MonthDue>[];
     var carriedOver = 0.0;
 
+    // Cycle windows of every entered statement, keyed by the card's lender:
+    // an EMI installment billed inside a window is paid through that card's
+    // bill, so it never gets a row of its own.
+    final cardById = {for (final c in cards) c.id: c};
+    final windowsByLender = <String, List<(DateTime, DateTime)>>{};
+    for (final st in statements) {
+      final card = cardById[st.cardId];
+      if (card == null) continue;
+      windowsByLender.putIfAbsent(card.lenderId, () => []).add(
+            CardCycle.window(
+              cycleMonth: st.cycleMonth,
+              statementDay: card.statementDay,
+            ),
+          );
+    }
+    bool billedOnACard(String? lenderId, DateTime dueDate) {
+      final windows = windowsByLender[lenderId];
+      if (windows == null) return false;
+      return windows.any(
+        (w) => dueDate.isAfter(w.$1) && !dueDate.isAfter(w.$2),
+      );
+    }
+
+    for (final st in statements) {
+      final card = cardById[st.cardId];
+      if (card == null || !inMonth(st.dueDate)) continue;
+      dues.add(MonthDue(
+        sourceId: card.id,
+        source: MonthDueSource.cardBill,
+        category: ObligationCategory.card,
+        title: card.name,
+        dueDate: st.dueDate,
+        amountDue: st.statementAmount,
+        amountPaid: st.paidAmount,
+        foldedEmiAmount: CardCycle.emiPortion(
+          card: card,
+          cycleMonth: st.cycleMonth,
+          summaries: summaries,
+        ),
+      ));
+    }
+
     for (final s in summaries) {
       final b = s.borrowing;
       if (s.isEmi) {
         for (final e in s.schedule) {
           final paid = s.isInstallmentPaid(e.number);
+          if (billedOnACard(b.lenderId, e.dueDate)) continue;
           if (inMonth(e.dueDate)) {
             // A closed (foreclosed) EMI keeps what was actually paid this
             // month but owes nothing further.

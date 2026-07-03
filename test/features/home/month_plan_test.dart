@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:recurring/features/cards/domain/entities/card_account.dart';
+import 'package:recurring/features/cards/domain/entities/card_statement.dart';
 import 'package:recurring/features/home/domain/entities/month_plan.dart';
+import 'package:recurring/features/home/domain/entities/obligation_category.dart';
 import 'package:recurring/features/money_leak/domain/entities/borrowing.dart';
 import 'package:recurring/features/money_leak/domain/entities/repayment.dart';
 import 'package:recurring/features/recurring/domain/entities/recurring_item.dart';
@@ -212,6 +215,139 @@ void main() {
       );
       final plan = MonthPlan.from(summaries: const [], items: [item], now: now);
       expect(plan.dues, isEmpty);
+    });
+  });
+
+  group('MonthPlan — card bills fold in linked EMIs', () {
+    final icici = CardAccount(
+      id: 'c1',
+      lenderId: 'l-icici',
+      name: 'ICICI Amazon Pay',
+      statementDay: 15,
+      dueDay: 20,
+      createdAt: DateTime(2026, 1, 1),
+    );
+    // Cycle Jul: window (15 Jun, 15 Jul], bill due 20 Jul (inside July).
+    final julyStatement = CardStatement(
+      id: 's1',
+      cardId: 'c1',
+      cycleMonth: DateTime(2026, 7),
+      statementAmount: 18400,
+      dueDate: DateTime(2026, 7, 20),
+    );
+    // EMI on the card: #1 due 1 Jul → billed on the July statement.
+    final cardEmi = emiSummary(
+      startDate: DateTime(2026, 6, 1),
+      lenderId: 'l-icici',
+    );
+
+    test('one card-bill due; the linked EMI row is folded, never counted twice',
+        () {
+      final plan = MonthPlan.from(
+        summaries: [cardEmi],
+        items: const [],
+        now: now,
+        cards: [icici],
+        statements: [julyStatement],
+      );
+      final due = plan.dues.single;
+      expect(due.source, MonthDueSource.cardBill);
+      expect(due.category, ObligationCategory.card);
+      expect(due.amountDue, 18400);
+      expect(due.foldedEmiAmount, closeTo(1000, 0.001));
+      expect(due.dueDate, DateTime(2026, 7, 20));
+      expect(plan.totalDue, 18400);
+    });
+
+    test('partially paid bill reflects on the row and totals', () {
+      final plan = MonthPlan.from(
+        summaries: [cardEmi],
+        items: const [],
+        now: now,
+        cards: [icici],
+        statements: [julyStatement.copyWith(paidAmount: 5000)],
+      );
+      expect(plan.dues.single.amountPaid, 5000);
+      expect(plan.totalPaid, 5000);
+      expect(plan.remaining, closeTo(13400, 0.001));
+    });
+
+    test('no statement entered → the EMI row shows individually as before', () {
+      final plan = MonthPlan.from(
+        summaries: [cardEmi],
+        items: const [],
+        now: now,
+        cards: [icici],
+        statements: const [],
+      );
+      expect(plan.dues.single.source, MonthDueSource.emiInstallment);
+      expect(plan.totalDue, closeTo(1000, 0.001));
+    });
+
+    test('a statement due next month folds the EMI out of this month too', () {
+      // dueDay 3 → the July-cycle bill is due 3 Aug: the EMI money leaves with
+      // that bill, so July shows nothing and August shows the card bill.
+      final earlyDue = CardAccount(
+        id: 'c1',
+        lenderId: 'l-icici',
+        name: 'ICICI Amazon Pay',
+        statementDay: 15,
+        dueDay: 3,
+        createdAt: DateTime(2026, 1, 1),
+      );
+      final augustBill = CardStatement(
+        id: 's1',
+        cardId: 'c1',
+        cycleMonth: DateTime(2026, 7),
+        statementAmount: 18400,
+        dueDate: DateTime(2026, 8, 3),
+      );
+      final july = MonthPlan.from(
+        summaries: [cardEmi],
+        items: const [],
+        now: now,
+        cards: [earlyDue],
+        statements: [augustBill],
+      );
+      expect(july.dues, isEmpty);
+
+      final august = MonthPlan.from(
+        summaries: [cardEmi],
+        items: const [],
+        now: DateTime(2026, 8, 15),
+        cards: [earlyDue],
+        statements: [augustBill],
+      );
+      // August carries the July-cycle bill (covering EMI #1) AND EMI #2 as an
+      // individual row — #2 belongs to the August cycle, whose statement
+      // isn't entered yet. No rupee appears twice.
+      expect(
+        august.dues.map((d) => d.source),
+        containsAll(
+          [MonthDueSource.cardBill, MonthDueSource.emiInstallment],
+        ),
+      );
+      expect(august.dues, hasLength(2));
+    });
+
+    test('an unlinked EMI is untouched by card statements', () {
+      final other = emiSummary(
+        id: 'emi-2',
+        startDate: DateTime(2026, 6, 1),
+        lenderId: 'l-hdfc',
+      );
+      final plan = MonthPlan.from(
+        summaries: [other],
+        items: const [],
+        now: now,
+        cards: [icici],
+        statements: [julyStatement],
+      );
+      expect(
+        plan.dues.map((d) => d.source),
+        containsAll([MonthDueSource.cardBill, MonthDueSource.emiInstallment]),
+      );
+      expect(plan.totalDue, closeTo(18400 + 1000, 0.001));
     });
   });
 
