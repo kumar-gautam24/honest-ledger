@@ -22,6 +22,12 @@ Honest Ledger adds them up. Every borrowing carries a full repayment ledger, and
 
 **Recurring tracker.** Subscriptions, fixed bills, and running EMIs in one place, normalized to a single monthly outflow figure with upcoming dues. Marking a due as paid advances its next date.
 
+**This Month.** The home screen leads with what's still to pay this calendar month — due, paid, remaining — and opens a month statement: every dated due, anything overdue carried in from earlier, and a 12-month outflow timeline showing when each EMI ends and money frees up. Set a monthly income to see what's left after obligations.
+
+**Catch-up.** Come back after weeks away and a quiet "while you were away" card lists everything that went past unlogged — pre-checked, settled in one tap, with EMI repayments dated on their due dates so the interest math stays honest.
+
+**Cards.** Statement-level card tracking: enter one number a month (the bill total) and the app splits it into the EMI portion — derived from the card's linked borrowings — and other spends, with utilization against an optional limit. Card bills fold their EMIs in on the month view, so no rupee is ever counted twice.
+
 **Lender catalog.** A built-in, research-backed catalog of Indian lender and card-EMI terms (card EMI as percent-with-cap plus 18% GST, plus the fintech BNPL rates), editable and extendable from Settings.
 
 ## Tech
@@ -29,7 +35,7 @@ Honest Ledger adds them up. Every borrowing carries a full repayment ledger, and
 - **Flutter 3.44 / Dart 3.12**
 - **Riverpod** (code generation) for state, **get_it** for singletons — Riverpod owns "what the screen is doing", get_it owns "what exists once"
 - **Drift (SQLite)** for local persistence, with schema migrations
-- **go_router** for a bottom-nav shell
+- **go_router** for a four-tab bottom-nav shell (Home · Cards · Tools · Settings)
 - **freezed** / **json_serializable** for models
 - Feature-first clean architecture: a pure-Dart domain layer with repository interfaces, so a backend can drop in later behind the same contracts with no changes to UI or domain code
 
@@ -41,7 +47,7 @@ The design language ("The Honest Ledger") is dark-first: an ink base, a brass ac
 lib/
   app/            MaterialApp.router, theme wiring, go_router shell
   core/           theme, database, DI, formatters, finance math, validation
-  features/       money_leak, emi_calculator, no_cost_emi, recurring,
+  features/       money_leak, cards, emi_calculator, no_cost_emi, recurring,
                   lenders, home, settings, tools
   shared/         reusable widgets (cards, money text, animated counter, ...)
 ```
