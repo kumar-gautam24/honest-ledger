@@ -65,4 +65,15 @@ abstract final class CardCycle {
     final spends = statementAmount - emiPortion;
     return spends < 0 ? 0 : spends;
   }
+
+  /// The cycle whose statement is the latest one already generated as of
+  /// [now]: this month once the statement day has passed, else last month.
+  static DateTime cycleFor({
+    required DateTime now,
+    required int statementDay,
+  }) {
+    final thisMonths = _clamped(now.year, now.month, statementDay);
+    if (now.isBefore(thisMonths)) return DateTime(now.year, now.month - 1);
+    return DateTime(now.year, now.month);
+  }
 }

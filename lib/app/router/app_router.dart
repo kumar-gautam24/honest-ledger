@@ -4,6 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../../core/di/injector.dart';
 import '../../core/haptics/haptic_service.dart';
 import '../../core/utils/enum_x.dart';
+import '../../features/cards/domain/entities/card_account.dart';
+import '../../features/cards/presentation/screens/add_edit_card_screen.dart';
+import '../../features/cards/presentation/screens/card_detail_screen.dart';
+import '../../features/cards/presentation/screens/cards_screen.dart';
 import '../../features/emi_calculator/presentation/screens/amortization_screen.dart';
 import '../../features/emi_calculator/presentation/screens/emi_calculator_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
@@ -86,6 +90,28 @@ final GoRouter appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
+              path: '/cards',
+              builder: (_, _) => const CardsScreen(),
+              routes: [
+                GoRoute(
+                  path: 'add',
+                  builder: (_, state) => AddEditCardScreen(
+                    existing: state.extra as CardAccount?,
+                  ),
+                ),
+                GoRoute(
+                  path: ':id',
+                  builder: (_, state) => CardDetailScreen(
+                    cardId: state.pathParameters['id']!,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
               path: '/tools',
               builder: (_, _) => const ToolsScreen(),
               routes: [
@@ -158,6 +184,11 @@ class _RootShell extends StatelessWidget {
             icon: Icon(Icons.receipt_long_outlined),
             selectedIcon: Icon(Icons.receipt_long_rounded),
             label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.credit_card_outlined),
+            selectedIcon: Icon(Icons.credit_card_rounded),
+            label: 'Cards',
           ),
           NavigationDestination(
             icon: Icon(Icons.calculate_outlined),
