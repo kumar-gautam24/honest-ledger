@@ -1,0 +1,117 @@
+"""Cards SQL. Same shape and safety rules as the borrowings repository.
+
+Dynamic SET is built ONLY from the _PATCHABLE whitelist; values are always bind
+parameters. That is what keeps the dynamic UPDATE injection-safe.
+"""
+
+import uuid
+from datetime import datetime
+
+import asyncpg
+
+CARD_COLUMNS = """
+    id, user_id, lender_id, statement_day, due_day, credit_limit_paise,
+    is_active, created_at, updated_at, deleted_at, server_seq
+"""
+
+_PATCHABLE = {
+    "lender_id", "statement_day", "due_day", "credit_limit_paise", "is_active",
+}
+
+
+async def insert_card(
+    pool: asyncpg.Pool, user_id: uuid.UUID, data: dict
+) -> asyncpg.Record | None:
+    return await pool.fetchrow(
+        f"""
+        INSERT INTO cards (
+            id, user_id, lender_id, statement_day, due_day, credit_limit_paise,
+            is_active, created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ON CONFLICT (id) DO NOTHING
+        RETURNING {CARD_COLUMNS}
+        """,
+        data["id"], user_id, data["lender_id"], data["statement_day"],
+        data["due_day"], data["credit_limit_paise"], data["is_active"],
+        data["created_at"], data["updated_at"],
+    )
+
+
+async def get_card(
+    pool: asyncpg.Pool,
+    user_id: uuid.UUID,
+    card_id: uuid.UUID,
+    include_deleted: bool = False,
+) -> asyncpg.Record | None:
+    if include_deleted:
+        tombstone_filter = ""
+    else:
+        tombstone_filter = "AND deleted_at IS NULL"
+    return await pool.fetchrow(
+        f"""
+        SELECT {CARD_COLUMNS} FROM cards
+        WHERE id = $1 AND user_id = $2 {tombstone_filter}
+        """,
+        card_id, user_id,
+    )
+
+
+async def list_cards(
+    pool: asyncpg.Pool, user_id: uuid.UUID, cursor: int, limit: int
+) -> list[asyncpg.Record]:
+    return await pool.fetch(
+        f"""
+        SELECT {CARD_COLUMNS} FROM cards
+        WHERE user_id = $1 AND deleted_at IS NULL AND server_seq > $2
+        ORDER BY server_seq
+        LIMIT $3
+        """,
+        user_id, cursor, limit,
+    )
+
+
+async def update_card(
+    pool: asyncpg.Pool,
+    user_id: uuid.UUID,
+    card_id: uuid.UUID,
+    updated_at: datetime,
+    fields: dict,
+) -> asyncpg.Record | None:
+    set_parts = []
+    params: list = [card_id, user_id, updated_at]
+    for field, value in fields.items():
+        if field not in _PATCHABLE:
+            raise ValueError(f"not a patchable column: {field}")
+        params.append(value)
+        set_parts.append(f"{field} = ${len(params)}")
+    set_clause = ", ".join(set_parts)
+    return await pool.fetchrow(
+        f"""
+        UPDATE cards
+        SET {set_clause}, updated_at = $3, server_seq = nextval('sync_seq')
+        WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL AND updated_at < $3
+        RETURNING {CARD_COLUMNS}
+        """,
+        *params,
+    )
+
+
+async def tombstone_card(
+    pool: asyncpg.Pool, user_id: uuid.UUID, card_id: uuid.UUID
+) -> str | None:
+    row = await pool.fetchrow(
+        """
+        UPDATE cards
+        SET deleted_at = now(), server_seq = nextval('sync_seq')
+        WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+        RETURNING id
+        """,
+        card_id, user_id,
+    )
+    if row is not None:
+        return "deleted"
+    ghost = await get_card(pool, user_id, card_id, include_deleted=True)
+    if ghost is not None:
+        return "already"
+    return None

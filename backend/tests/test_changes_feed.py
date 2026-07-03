@@ -1,4 +1,11 @@
-from tests.factories import borrowing_payload, repayment_payload
+from tests.factories import (
+    borrowing_payload,
+    card_payload,
+    card_statement_payload,
+    lender_payload,
+    recurring_payload,
+    repayment_payload,
+)
 
 
 async def test_feed_streams_creates_updates_and_tombstones_in_order(
@@ -56,6 +63,33 @@ async def test_feed_cursor_pagination(client, auth_headers):
     empty = await client.get(f"/v1/changes?since={tip}", headers=auth_headers)
     assert empty.json()["changes"] == []
     assert empty.json()["next_cursor"] == tip
+
+
+async def test_feed_includes_all_b3_entities_with_tombstones(client, auth_headers):
+    # One of every B3 entity, plus a card statement under the card.
+    lender = lender_payload()
+    await client.post("/v1/lenders", json=lender, headers=auth_headers)
+    recurring = recurring_payload()
+    await client.post("/v1/recurring-items", json=recurring, headers=auth_headers)
+    card = card_payload()
+    await client.post("/v1/cards", json=card, headers=auth_headers)
+    statement = card_statement_payload()
+    await client.post(
+        f"/v1/cards/{card['id']}/statements", json=statement, headers=auth_headers
+    )
+    # Delete the recurring item — the feed must still carry it as a tombstone.
+    await client.delete(
+        f"/v1/recurring-items/{recurring['id']}", headers=auth_headers
+    )
+
+    body = (await client.get("/v1/changes", headers=auth_headers)).json()
+    by_entity = {c["entity"]: c["data"] for c in body["changes"]}
+
+    assert by_entity["lender"]["id"] == lender["id"]
+    assert by_entity["card"]["id"] == card["id"]
+    assert by_entity["card_statement"]["id"] == statement["id"]
+    assert by_entity["recurring_item"]["id"] == recurring["id"]
+    assert by_entity["recurring_item"]["deleted_at"] is not None
 
 
 async def test_feed_is_user_scoped(client, auth_headers, other_auth_headers):
