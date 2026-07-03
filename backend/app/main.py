@@ -17,7 +17,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.auth.router import account_router, auth_router
-from app.borrowings.router import borrowings_router
+from app.borrowings.router import borrowings_router, repayments_router
 from app.core import db
 from app.core.config import get_settings
 from app.core.errors import AppError
@@ -96,6 +96,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(account_router)
     app.include_router(borrowings_router)
+    app.include_router(repayments_router)
 
     @app.get("/health", tags=["ops"])
     async def health() -> dict[str, str]:

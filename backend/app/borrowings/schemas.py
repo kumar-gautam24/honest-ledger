@@ -77,3 +77,40 @@ class BorrowingListResponse(BaseModel):
     items: list[BorrowingResponse]
     next_cursor: int
     has_more: bool
+
+
+class RepaymentCreate(BaseModel):
+    id: uuid.UUID
+    amount_paise: int = Field(ge=0)
+    date: datetime
+    installment_no: int | None = Field(default=None, ge=0)
+    note: str | None = Field(default=None, max_length=500)
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class RepaymentPatch(BaseModel):
+    updated_at: datetime
+    amount_paise: int | None = Field(default=None, ge=0)
+    date: datetime | None = None
+    installment_no: int | None = Field(default=None, ge=0)
+    note: str | None = Field(default=None, max_length=500)
+
+
+class RepaymentResponse(BaseModel):
+    id: uuid.UUID
+    borrowing_id: uuid.UUID
+    amount_paise: int
+    date: datetime
+    installment_no: int | None
+    note: str | None
+    created_at: datetime
+    updated_at: datetime
+    deleted_at: datetime | None
+    server_seq: int
+
+
+class RepaymentListResponse(BaseModel):
+    items: list[RepaymentResponse]
+    next_cursor: int
+    has_more: bool
