@@ -65,10 +65,10 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(AppError)
     async def handle_app_error(request: Request, exc: AppError) -> JSONResponse:
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={"error": {"code": exc.code, "message": exc.message}},
-        )
+        error_body = {"code": exc.code, "message": exc.message}
+        if exc.details is not None:
+            error_body["details"] = exc.details
+        return JSONResponse(status_code=exc.status_code, content={"error": error_body})
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(

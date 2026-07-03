@@ -6,11 +6,8 @@ import asyncpg
 from fastapi import APIRouter, Depends
 
 from app.auth import repository, service
-from app.auth.dependencies import (
-    check_auth_rate_limit,
-    get_current_user_id,
-    get_pool,
-)
+from app.auth.dependencies import check_auth_rate_limit
+from app.core.dependencies import get_current_user_id, get_pool
 from app.auth.schemas import (
     ChangePasswordRequest,
     LoginRequest,
