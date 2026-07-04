@@ -26,6 +26,13 @@ dev = [
 [tool.uv]
 package = false
 
+[tool.basedpyright]
+# FastAPI registers handlers/routes by decorator side-effect (@app.get,
+# @app.exception_handler) and pytest registers fixtures the same way, so their
+# functions look "unused" to static analysis though the frameworks call them.
+# This rule is all false positives in this codebase; the rest of type checking stays on.
+reportUnusedFunction = false
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 # One event loop for the whole run: asyncpg connections are bound to the loop
