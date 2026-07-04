@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/di/injector.dart';
 import '../../core/haptics/haptic_service.dart';
+import '../../features/auth/presentation/sign_in_screen.dart';
 import '../../core/utils/enum_x.dart';
 import '../../features/cards/domain/entities/card_account.dart';
 import '../../features/cards/presentation/screens/add_edit_card_screen.dart';
@@ -141,6 +142,10 @@ final GoRouter appRouter = GoRouter(
               path: '/settings',
               builder: (_, _) => const SettingsScreen(),
               routes: [
+                GoRoute(
+                  path: 'account',
+                  builder: (_, _) => const SignInScreen(),
+                ),
                 GoRoute(
                   path: 'lenders',
                   builder: (_, _) => const LenderCatalogScreen(),

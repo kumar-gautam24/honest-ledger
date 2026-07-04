@@ -8,21 +8,21 @@ part of 'income_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Optional monthly income, persisted. Null = not set; powers the
-/// "left after obligations" line on Home and the %-of-income line on
-/// This Month — nothing else.
+/// Optional monthly income, persisted locally and (when signed in) synced to the
+/// backend under the `income` setting. Null = not set; powers the
+/// "left after obligations" line on Home and the %-of-income line on This Month.
 
 @ProviderFor(IncomeController)
 final incomeControllerProvider = IncomeControllerProvider._();
 
-/// Optional monthly income, persisted. Null = not set; powers the
-/// "left after obligations" line on Home and the %-of-income line on
-/// This Month — nothing else.
+/// Optional monthly income, persisted locally and (when signed in) synced to the
+/// backend under the `income` setting. Null = not set; powers the
+/// "left after obligations" line on Home and the %-of-income line on This Month.
 final class IncomeControllerProvider
     extends $NotifierProvider<IncomeController, double?> {
-  /// Optional monthly income, persisted. Null = not set; powers the
-  /// "left after obligations" line on Home and the %-of-income line on
-  /// This Month — nothing else.
+  /// Optional monthly income, persisted locally and (when signed in) synced to the
+  /// backend under the `income` setting. Null = not set; powers the
+  /// "left after obligations" line on Home and the %-of-income line on This Month.
   IncomeControllerProvider._()
     : super(
         from: null,
@@ -50,11 +50,11 @@ final class IncomeControllerProvider
   }
 }
 
-String _$incomeControllerHash() => r'1f4cf592024eac20d92327179838e9a823128915';
+String _$incomeControllerHash() => r'a59e8d3140c93af97e2eb9f0a7cdf9ed184653ac';
 
-/// Optional monthly income, persisted. Null = not set; powers the
-/// "left after obligations" line on Home and the %-of-income line on
-/// This Month — nothing else.
+/// Optional monthly income, persisted locally and (when signed in) synced to the
+/// backend under the `income` setting. Null = not set; powers the
+/// "left after obligations" line on Home and the %-of-income line on This Month.
 
 abstract class _$IncomeController extends $Notifier<double?> {
   double? build();

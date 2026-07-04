@@ -4,6 +4,11 @@ import '../domain/entities/lender.dart';
 /// Bump when the seed values below change so the app refreshes them on upgrade.
 const int kLenderSeedVersion = 3;
 
+/// Ids of the built-in catalog entries. These ship with the app (and live in the
+/// server's global catalog), so they are NOT synced to the per-user `/v1/lenders`
+/// store — only lenders the user adds are.
+final Set<String> kSeedLenderIds = {for (final l in kSeedLenders) l.id};
+
 /// Default catalog seeded on first launch. Values are typical starting points
 /// sourced from each provider's public EMI/loan terms (2026); real rates depend
 /// on your credit assessment, so everything here is editable.

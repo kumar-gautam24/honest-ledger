@@ -12,6 +12,14 @@ async def test_create_returns_201_with_row(client, auth_headers):
     assert body["deleted_at"] is None
 
 
+async def test_create_accepts_text_lender_id_slug(client, auth_headers):
+    # Client lender ids are catalog slugs, not UUIDs (see migration 0006).
+    payload = borrowing_payload(lender_id="slice")
+    response = await client.post("/v1/borrowings", json=payload, headers=auth_headers)
+    assert response.status_code == 201
+    assert response.json()["lender_id"] == "slice"
+
+
 async def test_create_replay_returns_200_same_row(client, auth_headers):
     payload = borrowing_payload()
     first = await client.post("/v1/borrowings", json=payload, headers=auth_headers)

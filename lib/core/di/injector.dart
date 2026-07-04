@@ -1,16 +1,33 @@
+import 'dart:async';
+
 import 'package:get_it/get_it.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../features/cards/data/card_remote_source.dart';
 import '../../features/cards/data/card_repository_impl.dart';
+import '../../features/cards/data/synced_card_repository.dart';
 import '../../features/cards/domain/repositories/card_repository.dart';
+import '../../features/lenders/data/lender_remote_source.dart';
 import '../../features/lenders/data/lender_repository_impl.dart';
 import '../../features/lenders/data/lender_seed.dart';
+import '../../features/lenders/data/synced_lender_repository.dart';
 import '../../features/lenders/domain/repositories/lender_repository.dart';
+import '../../features/money_leak/data/borrowing_remote_source.dart';
 import '../../features/money_leak/data/borrowing_repository_impl.dart';
+import '../../features/money_leak/data/synced_borrowing_repository.dart';
 import '../../features/money_leak/domain/repositories/borrowing_repository.dart';
+import '../../features/auth/data/auth_api.dart';
+import '../../features/recurring/data/recurring_remote_source.dart';
 import '../../features/recurring/data/recurring_repository_impl.dart';
+import '../../features/recurring/data/synced_recurring_repository.dart';
 import '../../features/recurring/domain/repositories/recurring_repository.dart';
+import '../../features/settings/data/settings_remote_source.dart';
+import '../api/api_client.dart';
+import '../api/auth_token_store.dart';
+import '../api/cloud_backed_repository.dart';
+import '../api/cloud_refresh_service.dart';
+import '../api/cloud_refresh_service_impl.dart';
 import '../database/app_database.dart';
 import '../haptics/haptic_service.dart';
 
@@ -40,27 +57,84 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   if (!sl.isRegistered<AppDatabase>()) {
     sl.registerSingleton<AppDatabase>(database ?? AppDatabase());
   }
+  // API layer: token store -> Dio client -> auth API. Registered even when the
+  // user is signed out; remote calls simply no-op without a token.
+  if (!sl.isRegistered<AuthTokenStore>()) {
+    sl.registerSingleton<AuthTokenStore>(
+      SharedPrefsAuthTokenStore(sl<SharedPreferences>()),
+    );
+  }
+  if (!sl.isRegistered<ApiClient>()) {
+    sl.registerSingleton<ApiClient>(ApiClient(sl<AuthTokenStore>()));
+  }
+  if (!sl.isRegistered<AuthApi>()) {
+    sl.registerSingleton<AuthApi>(AuthApi(sl<ApiClient>()));
+  }
+  if (!sl.isRegistered<SettingsRemoteSource>()) {
+    sl.registerSingleton<SettingsRemoteSource>(
+      SettingsRemoteSourceDio(sl<ApiClient>()),
+    );
+  }
   if (!sl.isRegistered<LenderRepository>()) {
     sl.registerSingleton<LenderRepository>(
-      LenderRepositoryImpl(sl<AppDatabase>()),
+      SyncedLenderRepository(
+        LenderRepositoryImpl(sl<AppDatabase>()),
+        LenderRemoteSourceDio(sl<ApiClient>()),
+        sl<AuthTokenStore>(),
+      ),
     );
   }
   if (!sl.isRegistered<BorrowingRepository>()) {
     sl.registerSingleton<BorrowingRepository>(
-      BorrowingRepositoryImpl(sl<AppDatabase>()),
+      SyncedBorrowingRepository(
+        BorrowingRepositoryImpl(sl<AppDatabase>()),
+        BorrowingRemoteSourceDio(sl<ApiClient>()),
+        sl<AuthTokenStore>(),
+      ),
     );
   }
   if (!sl.isRegistered<RecurringRepository>()) {
     sl.registerSingleton<RecurringRepository>(
-      RecurringRepositoryImpl(sl<AppDatabase>()),
+      SyncedRecurringRepository(
+        RecurringRepositoryImpl(sl<AppDatabase>()),
+        RecurringRemoteSourceDio(sl<ApiClient>()),
+        sl<AuthTokenStore>(),
+      ),
     );
   }
   if (!sl.isRegistered<CardRepository>()) {
     sl.registerSingleton<CardRepository>(
-      CardRepositoryImpl(sl<AppDatabase>()),
+      SyncedCardRepository(
+        CardRepositoryImpl(sl<AppDatabase>()),
+        CardRemoteSourceDio(sl<ApiClient>()),
+        sl<AuthTokenStore>(),
+      ),
+    );
+  }
+  // The cross-feature pull orchestrator: every synced repo is a CloudBackedRepository.
+  if (!sl.isRegistered<CloudRefreshService>()) {
+    sl.registerSingleton<CloudRefreshService>(
+      CloudRefreshServiceImpl(
+        [
+          sl<BorrowingRepository>() as CloudBackedRepository,
+          sl<RecurringRepository>() as CloudBackedRepository,
+          sl<CardRepository>() as CloudBackedRepository,
+          sl<LenderRepository>() as CloudBackedRepository,
+        ],
+        sl<SettingsRemoteSource>(),
+        sl<SharedPreferences>(),
+        sl<AuthTokenStore>(),
+      ),
     );
   }
   await _seedLenders();
+
+  // If already signed in from a previous session, pull the account in the
+  // background so a fresh launch reflects any changes made on other devices.
+  // Fire-and-forget: never blocks startup, never throws.
+  if (sl<AuthTokenStore>().isSignedIn) {
+    unawaited(sl<CloudRefreshService>().pullAll());
+  }
 }
 
 /// Seeds the lender catalog, and refreshes the built-in entries when the seed
