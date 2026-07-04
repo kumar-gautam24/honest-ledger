@@ -9,6 +9,7 @@ import '../../../../core/haptics/haptic_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../shared/widgets/widgets.dart';
+import '../../../auth/application/auth_session.dart';
 import '../controllers/haptics_controller.dart';
 import '../controllers/income_controller.dart';
 import '../controllers/theme_controller.dart';
@@ -62,6 +63,9 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(height: AppSpacing.xl),
+          const SectionHeader('Cloud'),
+          const _AccountTile(),
           const SizedBox(height: AppSpacing.xl),
           const SectionHeader('Planning'),
           const _IncomeTile(),
@@ -175,6 +179,51 @@ class _IncomeTile extends ConsumerWidget {
     await ref
         .read(incomeControllerProvider.notifier)
         .set(value <= 0 ? null : value);
+  }
+}
+
+/// Shows cloud sign-in status and links to the account screen. Signed out is the
+/// normal state — the app is local-first; signing in is optional backup + sync.
+class _AccountTile extends ConsumerWidget {
+  const _AccountTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    final auth = ref.watch(authSessionProvider);
+    final signedIn = auth.isSignedIn;
+
+    return AppCard(
+      onTap: () => context.push('/settings/account'),
+      child: Row(
+        children: [
+          Icon(
+            signedIn ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
+            color: signedIn ? c.accent : c.textLow,
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  signedIn ? 'Signed in' : 'Sign in',
+                  style: context.text.titleMedium,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  signedIn
+                      ? auth.email!
+                      : 'Back up your data and use it on any device',
+                  style: context.text.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: c.textLow),
+        ],
+      ),
+    );
   }
 }
 
