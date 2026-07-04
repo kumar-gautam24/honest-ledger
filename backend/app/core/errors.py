@@ -31,6 +31,11 @@ class InvalidTokenError(AppError):
     code = "invalid_token"
 
 
+class ForbiddenError(AppError):
+    status_code = 403
+    code = "forbidden"
+
+
 class RateLimitedError(AppError):
     status_code = 429
     code = "rate_limited"
