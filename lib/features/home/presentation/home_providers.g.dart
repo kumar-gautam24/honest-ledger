@@ -64,7 +64,7 @@ final class HomeFeedProvider
   }
 }
 
-String _$homeFeedHash() => r'8c76ea4e69b78ad3a4beabbd1ef41ba0bf3a43e6';
+String _$homeFeedHash() => r'91b81ea0f8f6cbea6f3106382b529a38596fdf6a';
 
 /// True while either underlying stream has yet to deliver its first value.
 
@@ -212,7 +212,7 @@ final class MonthPlanProvider
   }
 }
 
-String _$monthPlanHash() => r'fae16a67784dc146cac34b726eb204f1c393d47d';
+String _$monthPlanHash() => r'2f5693f7e5301f770b99d598cd155a72fa4cfeca';
 
 /// Per-lender waste ranking for the Leak statement, worst first.
 

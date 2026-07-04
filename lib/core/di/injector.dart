@@ -9,8 +9,11 @@ import '../../features/lenders/data/lender_seed.dart';
 import '../../features/lenders/domain/repositories/lender_repository.dart';
 import '../../features/money_leak/data/borrowing_repository_impl.dart';
 import '../../features/money_leak/domain/repositories/borrowing_repository.dart';
+import '../../features/auth/data/auth_api.dart';
 import '../../features/recurring/data/recurring_repository_impl.dart';
 import '../../features/recurring/domain/repositories/recurring_repository.dart';
+import '../api/api_client.dart';
+import '../api/auth_token_store.dart';
 import '../database/app_database.dart';
 import '../haptics/haptic_service.dart';
 
@@ -39,6 +42,19 @@ Future<void> configureDependencies({AppDatabase? database}) async {
       sl<SharedPreferences>().getBool('haptics_enabled') ?? true;
   if (!sl.isRegistered<AppDatabase>()) {
     sl.registerSingleton<AppDatabase>(database ?? AppDatabase());
+  }
+  // API layer: token store -> Dio client -> auth API. Registered even when the
+  // user is signed out; remote calls simply no-op without a token.
+  if (!sl.isRegistered<AuthTokenStore>()) {
+    sl.registerSingleton<AuthTokenStore>(
+      SharedPrefsAuthTokenStore(sl<SharedPreferences>()),
+    );
+  }
+  if (!sl.isRegistered<ApiClient>()) {
+    sl.registerSingleton<ApiClient>(ApiClient(sl<AuthTokenStore>()));
+  }
+  if (!sl.isRegistered<AuthApi>()) {
+    sl.registerSingleton<AuthApi>(AuthApi(sl<ApiClient>()));
   }
   if (!sl.isRegistered<LenderRepository>()) {
     sl.registerSingleton<LenderRepository>(
