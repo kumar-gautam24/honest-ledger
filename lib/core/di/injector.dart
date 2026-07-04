@@ -20,6 +20,7 @@ import '../../features/recurring/data/recurring_remote_source.dart';
 import '../../features/recurring/data/recurring_repository_impl.dart';
 import '../../features/recurring/data/synced_recurring_repository.dart';
 import '../../features/recurring/domain/repositories/recurring_repository.dart';
+import '../../features/settings/data/settings_remote_source.dart';
 import '../api/api_client.dart';
 import '../api/auth_token_store.dart';
 import '../database/app_database.dart';
@@ -63,6 +64,11 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   }
   if (!sl.isRegistered<AuthApi>()) {
     sl.registerSingleton<AuthApi>(AuthApi(sl<ApiClient>()));
+  }
+  if (!sl.isRegistered<SettingsRemoteSource>()) {
+    sl.registerSingleton<SettingsRemoteSource>(
+      SettingsRemoteSourceDio(sl<ApiClient>()),
+    );
   }
   if (!sl.isRegistered<LenderRepository>()) {
     sl.registerSingleton<LenderRepository>(
