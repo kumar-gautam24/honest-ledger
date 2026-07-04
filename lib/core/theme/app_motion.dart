@@ -10,6 +10,9 @@ abstract final class AppMotion {
   /// The ledger "wasted" counter roll-up.
   static const Duration counter = Duration(milliseconds: 900);
 
+  /// The branded launch moment: mark forms, motto appears, layer dissolves.
+  static const Duration launch = Duration(milliseconds: 1500);
+
   /// Per-row stagger step for list reveals.
   static const Duration stagger = Duration(milliseconds: 40);
 

@@ -9,5 +9,6 @@ export 'breakdown_row.dart';
 export 'empty_state.dart';
 export 'entrance_fade.dart';
 export 'installment_strip.dart';
+export 'launch_overlay.dart';
 export 'money_text.dart';
 export 'section_header.dart';

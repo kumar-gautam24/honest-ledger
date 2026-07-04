@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants/app_constants.dart';
 import '../core/theme/app_theme.dart';
 import '../features/settings/presentation/controllers/theme_controller.dart';
+import '../shared/widgets/widgets.dart';
 import 'router/app_router.dart';
 
 class RecurringApp extends ConsumerWidget {
@@ -19,6 +20,9 @@ class RecurringApp extends ConsumerWidget {
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
       routerConfig: appRouter,
+      builder: (context, child) {
+        return LaunchOverlay(child: child ?? const SizedBox.shrink());
+      },
     );
   }
 }
