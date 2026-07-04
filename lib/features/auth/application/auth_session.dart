@@ -4,6 +4,7 @@ import '../../../core/api/api_exceptions.dart';
 import '../../../core/api/auth_token_store.dart';
 import '../../../core/api/cloud_refresh_service.dart';
 import '../../../core/di/injector.dart';
+import '../../settings/presentation/controllers/income_controller.dart';
 import '../data/auth_api.dart';
 import 'auth_state.dart';
 
@@ -80,6 +81,9 @@ class AuthSession extends _$AuthSession {
   Future<void> _pullAfterSignIn() async {
     if (sl.isRegistered<CloudRefreshService>()) {
       await sl<CloudRefreshService>().pullAll();
+      // Drift-backed views auto-update from their streams; income is prefs-backed,
+      // so refresh it explicitly to reflect the pulled value immediately.
+      ref.invalidate(incomeControllerProvider);
     }
   }
 }

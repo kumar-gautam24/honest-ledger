@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:get_it/get_it.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,6 +25,9 @@ import '../../features/recurring/domain/repositories/recurring_repository.dart';
 import '../../features/settings/data/settings_remote_source.dart';
 import '../api/api_client.dart';
 import '../api/auth_token_store.dart';
+import '../api/cloud_backed_repository.dart';
+import '../api/cloud_refresh_service.dart';
+import '../api/cloud_refresh_service_impl.dart';
 import '../database/app_database.dart';
 import '../haptics/haptic_service.dart';
 
@@ -106,7 +111,30 @@ Future<void> configureDependencies({AppDatabase? database}) async {
       ),
     );
   }
+  // The cross-feature pull orchestrator: every synced repo is a CloudBackedRepository.
+  if (!sl.isRegistered<CloudRefreshService>()) {
+    sl.registerSingleton<CloudRefreshService>(
+      CloudRefreshServiceImpl(
+        [
+          sl<BorrowingRepository>() as CloudBackedRepository,
+          sl<RecurringRepository>() as CloudBackedRepository,
+          sl<CardRepository>() as CloudBackedRepository,
+          sl<LenderRepository>() as CloudBackedRepository,
+        ],
+        sl<SettingsRemoteSource>(),
+        sl<SharedPreferences>(),
+        sl<AuthTokenStore>(),
+      ),
+    );
+  }
   await _seedLenders();
+
+  // If already signed in from a previous session, pull the account in the
+  // background so a fresh launch reflects any changes made on other devices.
+  // Fire-and-forget: never blocks startup, never throws.
+  if (sl<AuthTokenStore>().isSignedIn) {
+    unawaited(sl<CloudRefreshService>().pullAll());
+  }
 }
 
 /// Seeds the lender catalog, and refreshes the built-in entries when the seed
