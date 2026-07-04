@@ -6,8 +6,10 @@ import '../../features/cards/data/card_remote_source.dart';
 import '../../features/cards/data/card_repository_impl.dart';
 import '../../features/cards/data/synced_card_repository.dart';
 import '../../features/cards/domain/repositories/card_repository.dart';
+import '../../features/lenders/data/lender_remote_source.dart';
 import '../../features/lenders/data/lender_repository_impl.dart';
 import '../../features/lenders/data/lender_seed.dart';
+import '../../features/lenders/data/synced_lender_repository.dart';
 import '../../features/lenders/domain/repositories/lender_repository.dart';
 import '../../features/money_leak/data/borrowing_remote_source.dart';
 import '../../features/money_leak/data/borrowing_repository_impl.dart';
@@ -64,7 +66,11 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   }
   if (!sl.isRegistered<LenderRepository>()) {
     sl.registerSingleton<LenderRepository>(
-      LenderRepositoryImpl(sl<AppDatabase>()),
+      SyncedLenderRepository(
+        LenderRepositoryImpl(sl<AppDatabase>()),
+        LenderRemoteSourceDio(sl<ApiClient>()),
+        sl<AuthTokenStore>(),
+      ),
     );
   }
   if (!sl.isRegistered<BorrowingRepository>()) {
