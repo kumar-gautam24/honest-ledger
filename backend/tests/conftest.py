@@ -84,3 +84,14 @@ async def auth_headers(client):
 @pytest.fixture
 async def other_auth_headers(client):
     return await _register_and_login(client, "other@example.com")
+
+
+@pytest.fixture
+async def admin_auth_headers(client, pool):
+    """A logged-in user promoted to admin (catalog write access)."""
+    email = "admin@example.com"
+    credentials = {"email": email, "password": "longenough1"}
+    await client.post("/v1/auth/register", json=credentials)
+    await pool.execute("UPDATE users SET is_admin = true WHERE email = $1", email)
+    response = await client.post("/v1/auth/login", json=credentials)
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}

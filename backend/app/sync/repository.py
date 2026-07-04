@@ -38,6 +38,10 @@ async def list_changes(
         SELECT 'card_statement' AS entity, to_jsonb(cs) AS data, cs.server_seq
         FROM card_statements cs
         WHERE cs.user_id = $1 AND cs.server_seq > $2
+        UNION ALL
+        SELECT 'setting' AS entity, to_jsonb(s) AS data, s.server_seq
+        FROM user_settings s
+        WHERE s.user_id = $1 AND s.server_seq > $2
         ORDER BY server_seq
         LIMIT $3
         """,
