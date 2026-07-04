@@ -29,6 +29,7 @@ from app.core import db
 from app.core.config import get_settings
 from app.core.errors import AppError
 from app.core.logging import configure_logging, get_logger
+from app.core.middleware import register_middleware
 from app.core.rate_limit import SlidingWindowRateLimiter
 
 
@@ -70,6 +71,8 @@ def create_app() -> FastAPI:
         redoc_url=redoc_url,
         openapi_url=openapi_url,
     )
+
+    register_middleware(app, settings)
 
     @app.exception_handler(AppError)
     async def handle_app_error(request: Request, exc: AppError) -> JSONResponse:

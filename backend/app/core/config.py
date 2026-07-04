@@ -33,6 +33,15 @@ class Settings(BaseSettings):
     auth_rate_limit_max_requests: int = 10
     auth_rate_limit_window_seconds: int = 60
 
+    # CORS: comma-separated allowed origins for browser clients. "*" (dev default)
+    # allows any origin — fine because we authenticate with a bearer token, not
+    # cookies. In production set this to your app's exact origin(s).
+    cors_allow_origins: str = "*"
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_allow_origins.split(",") if o.strip()]
+
 
 @lru_cache
 def get_settings() -> Settings:
