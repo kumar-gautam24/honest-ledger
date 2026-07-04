@@ -37,17 +37,41 @@ dev_dependencies:
   freezed: ^3.2.6-dev.1
   json_serializable: ^6.14.0
   flutter_native_splash: ^2.4.8
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
 
-# Dark-first branded splash on the "ink" base color.
+# Dark-first branded splash: the Leak Loop mark on the "ink" base color.
+# SVG masters live in assets/brand/; PNGs are rasterized with rsvg-convert.
 flutter_native_splash:
   color: "#0E1116"
   color_dark: "#0E1116"
+  image: assets/brand/png/splash-mark-576.png
+  image_dark: assets/brand/png/splash-mark-576.png
   android_12:
     color: "#0E1116"
     color_dark: "#0E1116"
+    image: assets/brand/png/splash-mark-1152.png
+    image_dark: assets/brand/png/splash-mark-1152.png
   android: true
   ios: true
   web: false
+
+# App icons generated from the brand masters: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: assets/brand/png/icon-1024.png
+  android: true
+  adaptive_icon_background: "#0E1116"
+  adaptive_icon_foreground: assets/brand/png/icon-foreground-1024.png
+  adaptive_icon_monochrome: assets/brand/png/icon-monochrome-1024.png
+  ios: true
+  remove_alpha_ios: true
+  macos:
+    generate: true
+    image_path: assets/brand/png/icon-1024.png
+  web:
+    generate: true
+    image_path: assets/brand/png/icon-1024.png
+    background_color: "#0E1116"
+    theme_color: "#C9A227"

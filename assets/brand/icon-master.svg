@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Recurring — "The Leak Loop" app icon master (full-bleed, opaque). -->
+  <defs>
+    <radialGradient id="ink" cx="50%" cy="38%" r="85%">
+      <stop offset="0%" stop-color="#171D26"/>
+      <stop offset="100%" stop-color="#0B0E12"/>
+    </radialGradient>
+    <linearGradient id="brass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8C455"/>
+      <stop offset="55%" stop-color="#C9A227"/>
+      <stop offset="100%" stop-color="#9A7A1A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#ink)"/>
+  <!-- Recurrence ring, open at 6 o'clock: center (512,428) r 290 -->
+  <path d="M 376 684 A 290 290 0 1 1 648 684"
+        fill="none" stroke="url(#brass)" stroke-width="104" stroke-linecap="round"/>
+  <!-- The leak: ember teardrop falling through the gap -->
+  <path d="M 512 756 C 542 790 568 820 568 852 A 56 56 0 1 1 456 852 C 456 820 482 790 512 756 Z"
+        fill="#E0533D"/>
+</svg>

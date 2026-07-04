@@ -3,6 +3,9 @@
 abstract final class AppConstants {
   static const String appName = 'Recurring';
 
+  /// Brand motto — pairs with the Leak Loop mark (see shared/widgets/brand_mark.dart).
+  static const String motto = 'Know what it really costs.';
+
   /// Indian GST applied to interest and processing fees.
   static const double gstRate = 0.18;
 

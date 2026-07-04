@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/widgets.dart';
 import '../application/auth_session.dart';
@@ -57,6 +58,16 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       body: ListView(
         padding: AppSpacing.screen,
         children: [
+          const SizedBox(height: AppSpacing.lg),
+          const Center(child: AnimatedBrandMark(size: 88)),
+          const SizedBox(height: AppSpacing.lg),
+          Center(
+            child: Text(
+              AppConstants.motto,
+              style: context.text.titleMedium?.copyWith(color: c.textHi),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
           Text(
             'Sign in to back up your data and use it on any device. The app keeps '
             'working offline either way.',
