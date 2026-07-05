@@ -5,6 +5,8 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/widgets.dart';
 import '../application/auth_session.dart';
+import '../application/auth_state.dart';
+import 'sync_overlay.dart';
 
 /// Optional cloud sign-in. The app works fully without it; signing in pushes your
 /// saves to the backend and pulls your data down on a new device. Toggles between
@@ -37,7 +39,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         : await notifier.signIn(email, password);
     if (ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Signed in — your data is syncing.')),
+        const SnackBar(content: Text('You’re in. Your data is backed up.')),
       );
     }
   }
@@ -46,6 +48,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   Widget build(BuildContext context) {
     final c = context.colors;
     final auth = ref.watch(authSessionProvider);
+
+    // The syncing moment covers whatever is underneath (the account view, since
+    // the email is set the instant credentials are accepted).
+    if (auth.phase == AuthPhase.syncing) {
+      return const SyncOverlay();
+    }
 
     if (auth.isSignedIn) {
       return _SignedIn(email: auth.email!, onSignOut: () {

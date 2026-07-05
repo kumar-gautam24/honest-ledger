@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:recurring/core/api/api_client.dart';
 import 'package:recurring/core/api/auth_token_store.dart';
+import 'package:recurring/core/api/cloud_refresh_service.dart';
 import 'package:recurring/core/di/injector.dart';
 import 'package:recurring/features/auth/application/auth_session.dart';
 import 'package:recurring/features/auth/data/auth_api.dart';
@@ -66,6 +67,15 @@ class _AuthAdapter implements HttpClientAdapter {
 
   @override
   void close({bool force = false}) {}
+}
+
+/// Records the order in which the sync steps run.
+class _SpyRefresh implements CloudRefreshService {
+  final calls = <String>[];
+  @override
+  Future<void> pushAll() async => calls.add('push');
+  @override
+  Future<void> pullAll() async => calls.add('pull');
 }
 
 AuthApi _authApiWith(_AuthAdapter adapter, AuthTokenStore store) {
@@ -132,6 +142,19 @@ void main() {
 
     expect(ok, isTrue);
     expect(container.read(authSessionProvider).isSignedIn, isTrue);
+  });
+
+  test('signIn back-fills before pulling (push then pull)', () async {
+    sl.registerSingleton<AuthApi>(_authApiWith(_AuthAdapter(), store));
+    final spy = _SpyRefresh();
+    sl.registerSingleton<CloudRefreshService>(spy);
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    container.listen(authSessionProvider, (_, _) {}); // keep the notifier alive
+
+    await container.read(authSessionProvider.notifier).signIn('a@b.com', 'pw');
+
+    expect(spy.calls, ['push', 'pull']);
   });
 
   test('signOut clears tokens and state', () async {

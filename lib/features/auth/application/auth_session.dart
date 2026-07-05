@@ -24,7 +24,7 @@ class AuthSession extends _$AuthSession {
   @override
   AuthState build() => AuthState(email: _tokens.email);
 
-  /// Log in with an existing account, then pull the account's data down.
+  /// Log in with an existing account, then sync the account's data.
   Future<bool> signIn(String email, String password) async {
     return _run(() async {
       final pair = await _api.login(email, password);
@@ -33,8 +33,8 @@ class AuthSession extends _$AuthSession {
         refreshToken: pair.refreshToken,
         email: email,
       );
-      state = AuthState(email: email);
-      await _pullAfterSignIn();
+      state = state.copyWith(email: email);
+      await _syncAfterSignIn();
     });
   }
 
@@ -48,8 +48,8 @@ class AuthSession extends _$AuthSession {
         refreshToken: pair.refreshToken,
         email: email,
       );
-      state = AuthState(email: email);
-      await _pullAfterSignIn();
+      state = state.copyWith(email: email);
+      await _syncAfterSignIn();
     });
   }
 
@@ -62,28 +62,44 @@ class AuthSession extends _$AuthSession {
     state = const AuthState();
   }
 
-  /// Runs [action] with busy/error bookkeeping. Returns whether it succeeded.
+  /// Runs [action] with busy/phase/error bookkeeping. Returns whether it
+  /// succeeded. Starts in the [AuthPhase.authenticating] phase; [action] moves
+  /// it to [AuthPhase.syncing] itself once credentials are accepted.
   Future<bool> _run(Future<void> Function() action) async {
-    state = state.copyWith(isBusy: true, clearError: true);
+    state = state.copyWith(
+      isBusy: true,
+      phase: AuthPhase.authenticating,
+      clearError: true,
+    );
     try {
       await action();
-      state = state.copyWith(isBusy: false);
+      state = state.copyWith(isBusy: false, phase: AuthPhase.idle);
       return true;
     } on ApiException catch (e) {
-      state = state.copyWith(isBusy: false, error: e.message);
+      state = state.copyWith(
+          isBusy: false, phase: AuthPhase.idle, error: e.message);
       return false;
     } catch (_) {
-      state = state.copyWith(isBusy: false, error: 'Something went wrong');
+      state = state.copyWith(
+          isBusy: false, phase: AuthPhase.idle, error: 'Something went wrong');
       return false;
     }
   }
 
-  Future<void> _pullAfterSignIn() async {
-    if (sl.isRegistered<CloudRefreshService>()) {
-      await sl<CloudRefreshService>().pullAll();
-      // Drift-backed views auto-update from their streams; income is prefs-backed,
-      // so refresh it explicitly to reflect the pulled value immediately.
-      ref.invalidate(incomeControllerProvider);
-    }
+  /// After the token is saved: back-fill local data up (so anything created
+  /// while signed out reaches the cloud instead of orphaning), then pull the
+  /// account down. Push before pull — the client is authoritative, so uploading
+  /// first means the pull merges back a cloud that already has the local rows.
+  /// Both are best-effort and never throw, so a flaky network never fails a
+  /// sign-in the credentials already earned.
+  Future<void> _syncAfterSignIn() async {
+    if (!sl.isRegistered<CloudRefreshService>()) return;
+    state = state.copyWith(phase: AuthPhase.syncing);
+    final service = sl<CloudRefreshService>();
+    await service.pushAll();
+    await service.pullAll();
+    // Drift-backed views auto-update from their streams; income is prefs-backed,
+    // so refresh it explicitly to reflect the pulled value immediately.
+    ref.invalidate(incomeControllerProvider);
   }
 }
