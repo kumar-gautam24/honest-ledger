@@ -95,6 +95,20 @@ void main() {
       expect((await repo.watchAll().first), hasLength(1));
     });
 
+    test('pushToCloud back-fills local items created while signed out',
+        () async {
+      final signedOut = SyncedRecurringRepository(local, remote, _Tokens());
+      await signedOut.upsert(_item(id: 'r1'));
+      await Future<void>.delayed(Duration.zero);
+      expect(remote.pushed, isEmpty);
+
+      final repo =
+          SyncedRecurringRepository(local, remote, _Tokens(signedIn: true));
+      await repo.pushToCloud();
+
+      expect(remote.pushed, ['r1']);
+    });
+
     test('pullFromCloud loads server rows locally', () async {
       remote.toReturn = [_item(id: 'server1')];
       final repo = SyncedRecurringRepository(local, remote, _Tokens(signedIn: true));

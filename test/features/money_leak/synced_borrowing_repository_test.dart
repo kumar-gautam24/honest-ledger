@@ -151,6 +151,25 @@ void main() {
       expect((await repo.watchSummaries().first), hasLength(1)); // local intact
     });
 
+    test('pushToCloud back-fills local borrowings AND repayments to remote',
+        () async {
+      // Data created while signed OUT: local-only, never pushed.
+      final signedOut = SyncedBorrowingRepository(local, remote, _FakeTokens());
+      await signedOut.upsertBorrowing(_borrowing(id: 'b1'));
+      await signedOut.addRepayment(Repayment(
+          id: 'r1', borrowingId: 'b1', amount: 500, date: DateTime(2026, 2, 1)));
+      await Future<void>.delayed(Duration.zero);
+      expect(remote.pushed, isEmpty); // nothing reached the cloud yet
+
+      // Now signed in: the back-fill uploads everything.
+      final repo = SyncedBorrowingRepository(
+          local, remote, _FakeTokens(signedIn: true));
+      await repo.pushToCloud();
+
+      expect(remote.pushed, ['b1']);
+      expect(remote.pushedRepayments, ['r1']);
+    });
+
     test('pullFromCloud writes server rows into the local cache', () async {
       remote.toReturn = [_borrowing(id: 'server1')];
       remote.repaymentsByBorrowing['server1'] = [

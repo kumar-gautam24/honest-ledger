@@ -129,11 +129,16 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   }
   await _seedLenders();
 
-  // If already signed in from a previous session, pull the account in the
-  // background so a fresh launch reflects any changes made on other devices.
+  // If already signed in from a previous session, sync in the background so a
+  // fresh launch both uploads anything that failed to push earlier and reflects
+  // changes made on other devices. Push before pull (client is authoritative).
   // Fire-and-forget: never blocks startup, never throws.
   if (sl<AuthTokenStore>().isSignedIn) {
-    unawaited(sl<CloudRefreshService>().pullAll());
+    final refresh = sl<CloudRefreshService>();
+    unawaited(Future(() async {
+      await refresh.pushAll();
+      await refresh.pullAll();
+    }));
   }
 }
 

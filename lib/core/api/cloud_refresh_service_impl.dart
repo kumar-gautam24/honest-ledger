@@ -19,6 +19,31 @@ class CloudRefreshServiceImpl implements CloudRefreshService {
   final AuthTokenStore _tokens;
 
   @override
+  Future<void> pushAll() async {
+    if (!_tokens.isSignedIn) return;
+    for (final repo in _repos) {
+      try {
+        await repo.pushToCloud();
+      } catch (_) {
+        // Skip this feature; keep pushing the rest.
+      }
+    }
+    await _pushIncome();
+  }
+
+  /// Uploads a locally-set income. Only pushes when a local value exists — a
+  /// device with no income must never *clear* the cloud value during back-fill.
+  Future<void> _pushIncome() async {
+    final income = _prefs.getDouble(IncomeController.prefsKey);
+    if (income == null) return;
+    try {
+      await _settings.pushIncome(income);
+    } catch (_) {
+      // Best-effort; the local value stays and can be pushed again later.
+    }
+  }
+
+  @override
   Future<void> pullAll() async {
     if (!_tokens.isSignedIn) return;
     for (final repo in _repos) {

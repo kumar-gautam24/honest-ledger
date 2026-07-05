@@ -44,6 +44,17 @@ class SyncedLenderRepository
   }
 
   @override
+  Future<void> pushToCloud() async {
+    // Only the user's custom lenders sync; the built-in catalog is server-side.
+    final mine = await _local.watchMine().first;
+    for (final lender in mine) {
+      if (!kSeedLenderIds.contains(lender.id)) {
+        await _remote.push(lender);
+      }
+    }
+  }
+
+  @override
   Future<void> pullFromCloud() async {
     final lenders = await _remote.fetchAll();
     for (final lender in lenders) {

@@ -57,6 +57,19 @@ class SyncedBorrowingRepository
   }
 
   @override
+  Future<void> pushToCloud() async {
+    final summaries = await _local.watchSummaries().first;
+    for (final summary in summaries) {
+      // Borrowing first: its repayments 404 on the server without a parent.
+      await _remote.pushBorrowing(summary.borrowing);
+      final repayments = await _local.watchRepayments(summary.borrowing.id).first;
+      for (final repayment in repayments) {
+        await _remote.pushRepayment(repayment);
+      }
+    }
+  }
+
+  @override
   Future<void> pullFromCloud() async {
     final borrowings = await _remote.fetchBorrowings();
     for (final borrowing in borrowings) {

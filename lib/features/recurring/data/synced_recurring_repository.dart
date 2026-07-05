@@ -33,6 +33,14 @@ class SyncedRecurringRepository
   }
 
   @override
+  Future<void> pushToCloud() async {
+    final items = await _local.watchAll().first;
+    for (final item in items) {
+      await _remote.push(item);
+    }
+  }
+
+  @override
   Future<void> pullFromCloud() async {
     final items = await _remote.fetchAll();
     for (final item in items) {

@@ -53,6 +53,19 @@ class SyncedCardRepository implements CardRepository, CloudBackedRepository {
   }
 
   @override
+  Future<void> pushToCloud() async {
+    // Cards first so their statements have a parent on the server.
+    final cards = await _local.watchCards().first;
+    for (final card in cards) {
+      await _remote.pushCard(card);
+    }
+    final statements = await _local.watchAllStatements().first;
+    for (final statement in statements) {
+      await _remote.pushStatement(statement);
+    }
+  }
+
+  @override
   Future<void> pullFromCloud() async {
     final cards = await _remote.fetchCards();
     for (final card in cards) {

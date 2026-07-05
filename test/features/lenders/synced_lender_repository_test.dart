@@ -100,6 +100,19 @@ void main() {
       expect(remote.pushed, isEmpty);
     });
 
+    test('pushToCloud back-fills user lenders and skips built-ins', () async {
+      final signedOut = SyncedLenderRepository(local, remote, _Tokens(signedIn: false));
+      await signedOut.upsert(_custom(id: 'my-card'));
+      await signedOut.upsert(_custom(id: 'slice')); // a built-in seed id
+      await Future<void>.delayed(Duration.zero);
+      expect(remote.pushed, isEmpty);
+
+      final repo = SyncedLenderRepository(local, remote, _Tokens());
+      await repo.pushToCloud();
+
+      expect(remote.pushed, ['my-card']);
+    });
+
     test('pullFromCloud loads custom lenders locally', () async {
       remote.toReturn = [_custom(id: 'server-lender')];
       final repo = SyncedLenderRepository(local, remote, _Tokens());

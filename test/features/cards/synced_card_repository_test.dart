@@ -120,6 +120,20 @@ void main() {
       expect((await repo.watchCards().first), hasLength(1));
     });
 
+    test('pushToCloud back-fills local cards AND statements', () async {
+      final signedOut = SyncedCardRepository(local, remote, _Tokens());
+      await signedOut.upsertCard(_card());
+      await signedOut.upsertStatement(_statement());
+      await Future<void>.delayed(Duration.zero);
+      expect(remote.pushedCards, isEmpty);
+
+      final repo = SyncedCardRepository(local, remote, _Tokens(signedIn: true));
+      await repo.pushToCloud();
+
+      expect(remote.pushedCards, ['c1']);
+      expect(remote.pushedStatements, ['s1']);
+    });
+
     test('pullFromCloud loads cards and their statements', () async {
       remote.cards = [_card(id: 'server-card')];
       remote.statements['server-card'] = [
