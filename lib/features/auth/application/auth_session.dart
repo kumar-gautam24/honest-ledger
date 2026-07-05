@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/api/api_exceptions.dart';
 import '../../../core/api/auth_token_store.dart';
 import '../../../core/api/cloud_refresh_service.dart';
+import '../../../core/api/local_data_wiper.dart';
 import '../../../core/di/injector.dart';
 import '../../settings/presentation/controllers/income_controller.dart';
 import '../data/auth_api.dart';
@@ -53,12 +54,32 @@ class AuthSession extends _$AuthSession {
     });
   }
 
+  /// Sign out and clear this account's data from the device, so signing into a
+  /// different account can't inherit — or upload — the previous one's rows. A
+  /// best-effort push runs first so any change that never synced still reaches
+  /// the cloud. Everything after the network calls is local and always runs, so
+  /// sign-out never gets stuck on a bad connection.
   Future<void> signOut() async {
+    if (sl.isRegistered<CloudRefreshService>()) {
+      try {
+        await sl<CloudRefreshService>().pushAll();
+      } catch (_) {
+        // Best-effort; proceed to sign out regardless.
+      }
+    }
     final refresh = _tokens.refreshToken;
     if (refresh != null) {
-      await _api.logout(refresh);
+      try {
+        await _api.logout(refresh);
+      } catch (_) {
+        // Server may be unreachable; the local session still ends.
+      }
     }
     await _tokens.clear();
+    if (sl.isRegistered<LocalDataWiper>()) {
+      await sl<LocalDataWiper>().wipe();
+    }
+    ref.invalidate(incomeControllerProvider);
     state = const AuthState();
   }
 

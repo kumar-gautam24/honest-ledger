@@ -28,6 +28,7 @@ import '../api/auth_token_store.dart';
 import '../api/cloud_backed_repository.dart';
 import '../api/cloud_refresh_service.dart';
 import '../api/cloud_refresh_service_impl.dart';
+import '../api/local_data_wiper.dart';
 import '../database/app_database.dart';
 import '../haptics/haptic_service.dart';
 
@@ -125,6 +126,12 @@ Future<void> configureDependencies({AppDatabase? database}) async {
         sl<SharedPreferences>(),
         sl<AuthTokenStore>(),
       ),
+    );
+  }
+  // Clears the account's local rows on sign-out (keeps the built-in catalog).
+  if (!sl.isRegistered<LocalDataWiper>()) {
+    sl.registerSingleton<LocalDataWiper>(
+      LocalDataWiperImpl(sl<AppDatabase>(), sl<SharedPreferences>()),
     );
   }
   await _seedLenders();

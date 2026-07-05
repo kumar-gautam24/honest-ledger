@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:recurring/core/api/api_client.dart';
 import 'package:recurring/core/api/auth_token_store.dart';
 import 'package:recurring/core/api/cloud_refresh_service.dart';
+import 'package:recurring/core/api/local_data_wiper.dart';
 import 'package:recurring/core/di/injector.dart';
 import 'package:recurring/features/auth/application/auth_session.dart';
 import 'package:recurring/features/auth/data/auth_api.dart';
@@ -69,13 +70,30 @@ class _AuthAdapter implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
-/// Records the order in which the sync steps run.
+/// Records the order in which the sync steps run. An optional shared [log] lets
+/// a test observe ordering across this and other spies (e.g. the wiper).
 class _SpyRefresh implements CloudRefreshService {
+  _SpyRefresh([this.log]);
+  final List<String>? log;
   final calls = <String>[];
   @override
-  Future<void> pushAll() async => calls.add('push');
+  Future<void> pushAll() async {
+    calls.add('push');
+    log?.add('push');
+  }
+
   @override
-  Future<void> pullAll() async => calls.add('pull');
+  Future<void> pullAll() async {
+    calls.add('pull');
+    log?.add('pull');
+  }
+}
+
+class _SpyWiper implements LocalDataWiper {
+  _SpyWiper(this.log);
+  final List<String> log;
+  @override
+  Future<void> wipe() async => log.add('wipe');
 }
 
 AuthApi _authApiWith(_AuthAdapter adapter, AuthTokenStore store) {
@@ -155,6 +173,23 @@ void main() {
     await container.read(authSessionProvider.notifier).signIn('a@b.com', 'pw');
 
     expect(spy.calls, ['push', 'pull']);
+  });
+
+  test('signOut pushes local data up, then wipes it', () async {
+    sl.registerSingleton<AuthApi>(_authApiWith(_AuthAdapter(), store));
+    final log = <String>[];
+    sl.registerSingleton<CloudRefreshService>(_SpyRefresh(log));
+    sl.registerSingleton<LocalDataWiper>(_SpyWiper(log));
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    container.listen(authSessionProvider, (_, _) {}); // keep the notifier alive
+    await container.read(authSessionProvider.notifier).signIn('a@b.com', 'pw');
+    log.clear(); // drop the sign-in sync; we only care about sign-out
+
+    await container.read(authSessionProvider.notifier).signOut();
+
+    expect(log, ['push', 'wipe']); // saved to cloud before clearing
+    expect(container.read(authSessionProvider).isSignedIn, isFalse);
   });
 
   test('signOut clears tokens and state', () async {
