@@ -36,7 +36,12 @@ class ApiClient {
           receiveTimeout: ApiConfig.receiveTimeout,
           // We handle non-2xx ourselves (esp. 401), so don't let Dio throw before
           // the error interceptor runs.
-          headers: {'Content-Type': 'application/json'},
+          headers: {
+            'Content-Type': 'application/json',
+            // Free-plan ngrok shows a browser interstitial to some clients, which
+            // would return HTML instead of JSON. This header tells ngrok to skip it.
+            'ngrok-skip-browser-warning': 'true',
+          },
         ),
       );
 
