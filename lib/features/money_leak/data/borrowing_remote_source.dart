@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/api/money_json.dart';
+import '../../../core/api/paginated.dart';
 import '../../../core/utils/finance_math.dart';
 import '../domain/entities/borrowing.dart';
 import '../domain/entities/repayment.dart';
@@ -25,22 +26,23 @@ class BorrowingRemoteSourceDio implements BorrowingRemoteSource {
   Dio get _dio => _client.dio;
 
   @override
-  Future<List<Borrowing>> fetchBorrowings() async {
-    final response = await _dio.get<dynamic>('/v1/borrowings');
-    final items = (response.data as Map<String, dynamic>)['items'] as List;
-    return items
-        .map((e) => borrowingFromJson(e as Map<String, dynamic>))
-        .toList();
-  }
+  Future<List<Borrowing>> fetchBorrowings() => fetchAllPages(
+        (cursor) => _page('/v1/borrowings', cursor),
+        borrowingFromJson,
+      );
 
   @override
-  Future<List<Repayment>> fetchRepayments(String borrowingId) async {
-    final response =
-        await _dio.get<dynamic>('/v1/borrowings/$borrowingId/repayments');
-    final items = (response.data as Map<String, dynamic>)['items'] as List;
-    return items
-        .map((e) => repaymentFromJson(e as Map<String, dynamic>))
-        .toList();
+  Future<List<Repayment>> fetchRepayments(String borrowingId) => fetchAllPages(
+        (cursor) => _page('/v1/borrowings/$borrowingId/repayments', cursor),
+        repaymentFromJson,
+      );
+
+  Future<Map<String, dynamic>> _page(String path, int cursor) async {
+    final response = await _dio.get<dynamic>(
+      path,
+      queryParameters: {'cursor': cursor, 'limit': 200},
+    );
+    return response.data as Map<String, dynamic>;
   }
 
   @override

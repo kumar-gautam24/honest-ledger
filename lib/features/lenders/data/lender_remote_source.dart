@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/api/money_json.dart';
+import '../../../core/api/paginated.dart';
 import '../../../core/utils/finance_math.dart';
 import '../domain/entities/lender.dart';
 
@@ -22,9 +23,13 @@ class LenderRemoteSourceDio implements LenderRemoteSource {
 
   @override
   Future<List<Lender>> fetchAll() async {
-    final response = await _dio.get<dynamic>('/v1/lenders');
-    final items = (response.data as Map<String, dynamic>)['items'] as List;
-    return items.map((e) => lenderFromJson(e as Map<String, dynamic>)).toList();
+    return fetchAllPages((cursor) async {
+      final response = await _dio.get<dynamic>(
+        '/v1/lenders',
+        queryParameters: {'cursor': cursor, 'limit': 200},
+      );
+      return response.data as Map<String, dynamic>;
+    }, lenderFromJson);
   }
 
   @override

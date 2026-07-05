@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/api/money_json.dart';
+import '../../../core/api/paginated.dart';
 import '../domain/entities/card_account.dart';
 import '../domain/entities/card_statement.dart';
 
@@ -23,19 +24,21 @@ class CardRemoteSourceDio implements CardRemoteSource {
   Dio get _dio => _client.dio;
 
   @override
-  Future<List<CardAccount>> fetchCards() async {
-    final response = await _dio.get<dynamic>('/v1/cards');
-    final items = (response.data as Map<String, dynamic>)['items'] as List;
-    return items.map((e) => cardFromJson(e as Map<String, dynamic>)).toList();
-  }
+  Future<List<CardAccount>> fetchCards() =>
+      fetchAllPages((cursor) => _page('/v1/cards', cursor), cardFromJson);
 
   @override
-  Future<List<CardStatement>> fetchStatements(String cardId) async {
-    final response = await _dio.get<dynamic>('/v1/cards/$cardId/statements');
-    final items = (response.data as Map<String, dynamic>)['items'] as List;
-    return items
-        .map((e) => statementFromJson(e as Map<String, dynamic>))
-        .toList();
+  Future<List<CardStatement>> fetchStatements(String cardId) => fetchAllPages(
+        (cursor) => _page('/v1/cards/$cardId/statements', cursor),
+        statementFromJson,
+      );
+
+  Future<Map<String, dynamic>> _page(String path, int cursor) async {
+    final response = await _dio.get<dynamic>(
+      path,
+      queryParameters: {'cursor': cursor, 'limit': 200},
+    );
+    return response.data as Map<String, dynamic>;
   }
 
   @override

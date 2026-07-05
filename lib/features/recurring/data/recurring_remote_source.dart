@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/api/money_json.dart';
+import '../../../core/api/paginated.dart';
 import '../domain/entities/recurring_item.dart';
 
 /// Talks to `/v1/recurring-items`. Maps entity (rupees, enums) <-> JSON (paise).
@@ -19,11 +20,13 @@ class RecurringRemoteSourceDio implements RecurringRemoteSource {
 
   @override
   Future<List<RecurringItem>> fetchAll() async {
-    final response = await _dio.get<dynamic>('/v1/recurring-items');
-    final items = (response.data as Map<String, dynamic>)['items'] as List;
-    return items
-        .map((e) => recurringFromJson(e as Map<String, dynamic>))
-        .toList();
+    return fetchAllPages((cursor) async {
+      final response = await _dio.get<dynamic>(
+        '/v1/recurring-items',
+        queryParameters: {'cursor': cursor, 'limit': 200},
+      );
+      return response.data as Map<String, dynamic>;
+    }, recurringFromJson);
   }
 
   @override
