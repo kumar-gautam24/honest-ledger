@@ -97,6 +97,7 @@ class NoCostEmiBreakdown {
     required this.processingFee,
     required this.gstOnFee,
     required this.forfeitedDiscount,
+    required this.merchantDiscount,
     required this.trueCost,
     required this.effectiveAnnualRatePct,
   });
@@ -118,6 +119,10 @@ class NoCostEmiBreakdown {
 
   /// Any upfront cash discount you gave up by choosing EMI.
   final double forfeitedDiscount;
+
+  /// The upfront discount the merchant gives so the EMIs sum back to the
+  /// sticker price — it equals the bank's interest on the financed amount.
+  final double merchantDiscount;
 
   /// price + GST-on-interest + fee + GST-on-fee + forfeited discount.
   final double trueCost;
@@ -421,7 +426,43 @@ abstract final class FinanceMath {
     return schedule;
   }
 
-  /// Reveals the real cost of a "No Cost EMI" offer.
+  /// Merchant discount D behind a no-cost EMI: the bank finances (price − D)
+  /// at [bankAnnualRatePct] and the EMIs sum back to exactly [price].
+  /// Bisection — total repayment falls monotonically as D grows.
+  static double noCostDiscount({
+    required double price,
+    required double bankAnnualRatePct,
+    required int months,
+  }) {
+    if (months <= 0 || bankAnnualRatePct <= 0) return 0;
+    var lo = 0.0, hi = price;
+    for (var i = 0; i < 100; i++) {
+      final d = (lo + hi) / 2;
+      final total = reducingEmi(price - d, bankAnnualRatePct, months) * months;
+      if (total > price) {
+        lo = d;
+      } else {
+        hi = d;
+      }
+    }
+    return (lo + hi) / 2;
+  }
+
+  /// Interest attributable to a fee that was financed into the loan
+  /// (Slice-style): the fee's proportional share of the total interest.
+  static double financedFeeInterestShare({
+    required double principal,
+    required double financedAmount,
+    required double totalInterest,
+  }) {
+    if (principal <= 0) return 0;
+    return financedAmount / principal * totalInterest;
+  }
+
+  /// Reveals the real cost of a "No Cost EMI" offer. The seller's discount
+  /// reduces the financed principal to exactly (price − discount), so the
+  /// bank's interest — and its GST — is computed on that discounted amount,
+  /// not the sticker price.
   static NoCostEmiBreakdown noCostEmi({
     required double price,
     required int months,
@@ -432,8 +473,11 @@ abstract final class FinanceMath {
     double gstRate = AppConstants.gstRate,
   }) {
     final monthly = months <= 0 ? 0.0 : price / months;
+    final discount = noCostDiscount(
+        price: price, bankAnnualRatePct: bankAnnualRatePct, months: months);
     final bankInterest =
-        reducingEmi(price, bankAnnualRatePct, months) * months - price;
+        reducingEmi(price - discount, bankAnnualRatePct, months) * months -
+            (price - discount);
     final gstInterest = gstOn(bankInterest, rate: gstRate);
     final fee = processingFee(principal: price, type: feeType, value: feeValue);
     final gstFee = gstOn(fee, rate: gstRate);
@@ -451,6 +495,7 @@ abstract final class FinanceMath {
       processingFee: fee,
       gstOnFee: gstFee,
       forfeitedDiscount: forfeitedDiscount,
+      merchantDiscount: discount,
       trueCost: trueCost,
       effectiveAnnualRatePct: effectiveAnnualRatePct(
         principal: price,

@@ -35,6 +35,9 @@ void main() {
     await tester.pump();
 
     expect(find.text('NOT ACTUALLY FREE'), findsOneWidget);
-    expect(find.text('₹11,225'), findsOneWidget); // true cost
+    // True cost is now computed on the discount-exact model (interest on the
+    // discounted principal, not the sticker price) — was ₹11,225 under the
+    // old full-price approximation.
+    expect(find.text('₹11,187'), findsOneWidget); // true cost
   });
 }

@@ -192,13 +192,16 @@ void main() {
         feeValue: 800,
       );
       expect(b.monthlyInstallment, closeTo(1111.11, 0.5));
-      expect(b.bankInterest, closeTo(1559, 5));
-      expect(b.gstOnInterest, closeTo(280.7, 1));
+      // Interest is on the DISCOUNTED principal (price − merchantDiscount),
+      // not the full sticker price — this is the discount-exact model, so
+      // it's lower than the ~1559 the old full-price approximation gave.
+      expect(b.bankInterest, closeTo(1348.77, 5));
+      expect(b.gstOnInterest, closeTo(242.78, 1));
       expect(b.gstOnFee, closeTo(144, 0.5));
       // True cost folds in GST-on-interest + fee + GST-on-fee, but NOT the
       // bank interest itself (the seller's discount cancels that):
-      // 10000 + 280.63 + 800 + 144 ≈ 11224.63
-      expect(b.trueCost, closeTo(11225, 5));
+      // 10000 + 242.78 + 800 + 144 ≈ 11186.78
+      expect(b.trueCost, closeTo(11187, 5));
       expect(b.isActuallyFree, isFalse);
       expect(b.totalExtra, greaterThan(0));
     });
