@@ -7,10 +7,10 @@
 class ApiConfig {
   const ApiConfig._();
 
-  // ngrok tunnel to the local FastAPI (free plan: this subdomain changes on every
-  // `ngrok http 8000` restart — re-paste the new URL when it does). HTTPS keeps
+  // The deployed backend: FastAPI on an AWS EC2 instance, behind Nginx with a
+  // Let's Encrypt certificate. Stable URL (unlike the old ngrok tunnel). HTTPS keeps
   // iOS App Transport Security happy on physical devices.
-  static const String baseUrl = 'https://backspin-derail-icing.ngrok-free.dev';
+  static const String baseUrl = 'https://44-223-23-55.nip.io';
 
   /// How long to wait before treating a call as failed. Kept short so a down or
   /// unreachable backend falls back to the local cache quickly instead of hanging.
