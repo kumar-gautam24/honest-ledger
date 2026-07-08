@@ -41,6 +41,8 @@ class Borrowing {
     this.gstOnFee = 0,
     this.foreclosureFee = 0,
     this.gstOnInterest = false,
+    this.isNoCostEmi = false,
+    this.feeFinanced = false,
     this.interestRatePct = 0,
     this.rateType = RateType.reducing,
     this.tenureMonths = 0,
@@ -67,6 +69,15 @@ class Borrowing {
   /// Whether 18% GST is levied on each installment's interest (as on Indian
   /// credit-card / consumer EMIs). Applies to [BorrowingKind.fixedEmi] only.
   final bool gstOnInterest;
+
+  /// This fixed EMI was taken as a "No Cost EMI": the merchant's discount
+  /// offsets the bank's interest, so installments are price/tenure and the
+  /// leak is only GST-on-interest + fees. [BorrowingKind.fixedEmi] only.
+  final bool isNoCostEmi;
+
+  /// The processing fee (and its GST) was financed into the loan, so interest
+  /// accrues on it too (Slice-style). [BorrowingKind.flexibleLoan] only.
+  final bool feeFinanced;
   final double interestRatePct;
   final RateType rateType;
 
@@ -93,6 +104,8 @@ class Borrowing {
     double? gstOnFee,
     double? foreclosureFee,
     bool? gstOnInterest,
+    bool? isNoCostEmi,
+    bool? feeFinanced,
     double? interestRatePct,
     RateType? rateType,
     int? tenureMonths,
@@ -112,6 +125,8 @@ class Borrowing {
       gstOnFee: gstOnFee ?? this.gstOnFee,
       foreclosureFee: foreclosureFee ?? this.foreclosureFee,
       gstOnInterest: gstOnInterest ?? this.gstOnInterest,
+      isNoCostEmi: isNoCostEmi ?? this.isNoCostEmi,
+      feeFinanced: feeFinanced ?? this.feeFinanced,
       interestRatePct: interestRatePct ?? this.interestRatePct,
       rateType: rateType ?? this.rateType,
       tenureMonths: tenureMonths ?? this.tenureMonths,

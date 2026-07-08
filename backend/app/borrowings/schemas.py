@@ -17,6 +17,8 @@ class BorrowingCreate(BaseModel):
     gst_on_fee_paise: int = Field(default=0, ge=0)
     foreclosure_fee_paise: int | None = Field(default=None, ge=0)
     gst_on_interest: bool = False
+    is_no_cost_emi: bool = False
+    fee_financed: bool = False
     interest_rate_pct: float = Field(default=0, ge=0)
     rate_type: str = Field(default="reducing", max_length=40)
     tenure_months: int = Field(default=0, ge=0)
@@ -40,6 +42,8 @@ class BorrowingPatch(BaseModel):
     gst_on_fee_paise: int | None = Field(default=None, ge=0)
     foreclosure_fee_paise: int | None = Field(default=None, ge=0)
     gst_on_interest: bool | None = None
+    is_no_cost_emi: bool | None = None
+    fee_financed: bool | None = None
     interest_rate_pct: float | None = Field(default=None, ge=0)
     rate_type: str | None = Field(default=None, max_length=40)
     tenure_months: int | None = Field(default=None, ge=0)
@@ -60,6 +64,8 @@ class BorrowingResponse(BaseModel):
     gst_on_fee_paise: int
     foreclosure_fee_paise: int | None
     gst_on_interest: bool
+    is_no_cost_emi: bool
+    fee_financed: bool
     interest_rate_pct: float
     rate_type: str
     tenure_months: int

@@ -811,6 +811,36 @@ class $BorrowingsTable extends Borrowings
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _isNoCostEmiMeta = const VerificationMeta(
+    'isNoCostEmi',
+  );
+  @override
+  late final GeneratedColumn<bool> isNoCostEmi = GeneratedColumn<bool>(
+    'is_no_cost_emi',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_no_cost_emi" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _feeFinancedMeta = const VerificationMeta(
+    'feeFinanced',
+  );
+  @override
+  late final GeneratedColumn<bool> feeFinanced = GeneratedColumn<bool>(
+    'fee_financed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("fee_financed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _interestRatePctMeta = const VerificationMeta(
     'interestRatePct',
   );
@@ -912,6 +942,8 @@ class $BorrowingsTable extends Borrowings
     gstOnFee,
     foreclosureFee,
     gstOnInterest,
+    isNoCostEmi,
+    feeFinanced,
     interestRatePct,
     rateType,
     tenureMonths,
@@ -1004,6 +1036,24 @@ class $BorrowingsTable extends Borrowings
         gstOnInterest.isAcceptableOrUnknown(
           data['gst_on_interest']!,
           _gstOnInterestMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_no_cost_emi')) {
+      context.handle(
+        _isNoCostEmiMeta,
+        isNoCostEmi.isAcceptableOrUnknown(
+          data['is_no_cost_emi']!,
+          _isNoCostEmiMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fee_financed')) {
+      context.handle(
+        _feeFinancedMeta,
+        feeFinanced.isAcceptableOrUnknown(
+          data['fee_financed']!,
+          _feeFinancedMeta,
         ),
       );
     }
@@ -1114,6 +1164,14 @@ class $BorrowingsTable extends Borrowings
         DriftSqlType.bool,
         data['${effectivePrefix}gst_on_interest'],
       )!,
+      isNoCostEmi: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_no_cost_emi'],
+      )!,
+      feeFinanced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}fee_financed'],
+      )!,
       interestRatePct: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}interest_rate_pct'],
@@ -1166,6 +1224,8 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
   final double gstOnFee;
   final double? foreclosureFee;
   final bool gstOnInterest;
+  final bool isNoCostEmi;
+  final bool feeFinanced;
   final double interestRatePct;
   final String rateType;
   final int tenureMonths;
@@ -1185,6 +1245,8 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     required this.gstOnFee,
     this.foreclosureFee,
     required this.gstOnInterest,
+    required this.isNoCostEmi,
+    required this.feeFinanced,
     required this.interestRatePct,
     required this.rateType,
     required this.tenureMonths,
@@ -1211,6 +1273,8 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       map['foreclosure_fee'] = Variable<double>(foreclosureFee);
     }
     map['gst_on_interest'] = Variable<bool>(gstOnInterest);
+    map['is_no_cost_emi'] = Variable<bool>(isNoCostEmi);
+    map['fee_financed'] = Variable<bool>(feeFinanced);
     map['interest_rate_pct'] = Variable<double>(interestRatePct);
     map['rate_type'] = Variable<String>(rateType);
     map['tenure_months'] = Variable<int>(tenureMonths);
@@ -1240,6 +1304,8 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
           ? const Value.absent()
           : Value(foreclosureFee),
       gstOnInterest: Value(gstOnInterest),
+      isNoCostEmi: Value(isNoCostEmi),
+      feeFinanced: Value(feeFinanced),
       interestRatePct: Value(interestRatePct),
       rateType: Value(rateType),
       tenureMonths: Value(tenureMonths),
@@ -1269,6 +1335,8 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       gstOnFee: serializer.fromJson<double>(json['gstOnFee']),
       foreclosureFee: serializer.fromJson<double?>(json['foreclosureFee']),
       gstOnInterest: serializer.fromJson<bool>(json['gstOnInterest']),
+      isNoCostEmi: serializer.fromJson<bool>(json['isNoCostEmi']),
+      feeFinanced: serializer.fromJson<bool>(json['feeFinanced']),
       interestRatePct: serializer.fromJson<double>(json['interestRatePct']),
       rateType: serializer.fromJson<String>(json['rateType']),
       tenureMonths: serializer.fromJson<int>(json['tenureMonths']),
@@ -1293,6 +1361,8 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       'gstOnFee': serializer.toJson<double>(gstOnFee),
       'foreclosureFee': serializer.toJson<double?>(foreclosureFee),
       'gstOnInterest': serializer.toJson<bool>(gstOnInterest),
+      'isNoCostEmi': serializer.toJson<bool>(isNoCostEmi),
+      'feeFinanced': serializer.toJson<bool>(feeFinanced),
       'interestRatePct': serializer.toJson<double>(interestRatePct),
       'rateType': serializer.toJson<String>(rateType),
       'tenureMonths': serializer.toJson<int>(tenureMonths),
@@ -1315,6 +1385,8 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     double? gstOnFee,
     Value<double?> foreclosureFee = const Value.absent(),
     bool? gstOnInterest,
+    bool? isNoCostEmi,
+    bool? feeFinanced,
     double? interestRatePct,
     String? rateType,
     int? tenureMonths,
@@ -1336,6 +1408,8 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
         ? foreclosureFee.value
         : this.foreclosureFee,
     gstOnInterest: gstOnInterest ?? this.gstOnInterest,
+    isNoCostEmi: isNoCostEmi ?? this.isNoCostEmi,
+    feeFinanced: feeFinanced ?? this.feeFinanced,
     interestRatePct: interestRatePct ?? this.interestRatePct,
     rateType: rateType ?? this.rateType,
     tenureMonths: tenureMonths ?? this.tenureMonths,
@@ -1365,6 +1439,12 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       gstOnInterest: data.gstOnInterest.present
           ? data.gstOnInterest.value
           : this.gstOnInterest,
+      isNoCostEmi: data.isNoCostEmi.present
+          ? data.isNoCostEmi.value
+          : this.isNoCostEmi,
+      feeFinanced: data.feeFinanced.present
+          ? data.feeFinanced.value
+          : this.feeFinanced,
       interestRatePct: data.interestRatePct.present
           ? data.interestRatePct.value
           : this.interestRatePct,
@@ -1395,6 +1475,8 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
           ..write('gstOnFee: $gstOnFee, ')
           ..write('foreclosureFee: $foreclosureFee, ')
           ..write('gstOnInterest: $gstOnInterest, ')
+          ..write('isNoCostEmi: $isNoCostEmi, ')
+          ..write('feeFinanced: $feeFinanced, ')
           ..write('interestRatePct: $interestRatePct, ')
           ..write('rateType: $rateType, ')
           ..write('tenureMonths: $tenureMonths, ')
@@ -1419,6 +1501,8 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     gstOnFee,
     foreclosureFee,
     gstOnInterest,
+    isNoCostEmi,
+    feeFinanced,
     interestRatePct,
     rateType,
     tenureMonths,
@@ -1442,6 +1526,8 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
           other.gstOnFee == this.gstOnFee &&
           other.foreclosureFee == this.foreclosureFee &&
           other.gstOnInterest == this.gstOnInterest &&
+          other.isNoCostEmi == this.isNoCostEmi &&
+          other.feeFinanced == this.feeFinanced &&
           other.interestRatePct == this.interestRatePct &&
           other.rateType == this.rateType &&
           other.tenureMonths == this.tenureMonths &&
@@ -1463,6 +1549,8 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
   final Value<double> gstOnFee;
   final Value<double?> foreclosureFee;
   final Value<bool> gstOnInterest;
+  final Value<bool> isNoCostEmi;
+  final Value<bool> feeFinanced;
   final Value<double> interestRatePct;
   final Value<String> rateType;
   final Value<int> tenureMonths;
@@ -1483,6 +1571,8 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     this.gstOnFee = const Value.absent(),
     this.foreclosureFee = const Value.absent(),
     this.gstOnInterest = const Value.absent(),
+    this.isNoCostEmi = const Value.absent(),
+    this.feeFinanced = const Value.absent(),
     this.interestRatePct = const Value.absent(),
     this.rateType = const Value.absent(),
     this.tenureMonths = const Value.absent(),
@@ -1504,6 +1594,8 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     this.gstOnFee = const Value.absent(),
     this.foreclosureFee = const Value.absent(),
     this.gstOnInterest = const Value.absent(),
+    this.isNoCostEmi = const Value.absent(),
+    this.feeFinanced = const Value.absent(),
     this.interestRatePct = const Value.absent(),
     this.rateType = const Value.absent(),
     this.tenureMonths = const Value.absent(),
@@ -1530,6 +1622,8 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     Expression<double>? gstOnFee,
     Expression<double>? foreclosureFee,
     Expression<bool>? gstOnInterest,
+    Expression<bool>? isNoCostEmi,
+    Expression<bool>? feeFinanced,
     Expression<double>? interestRatePct,
     Expression<String>? rateType,
     Expression<int>? tenureMonths,
@@ -1551,6 +1645,8 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
       if (gstOnFee != null) 'gst_on_fee': gstOnFee,
       if (foreclosureFee != null) 'foreclosure_fee': foreclosureFee,
       if (gstOnInterest != null) 'gst_on_interest': gstOnInterest,
+      if (isNoCostEmi != null) 'is_no_cost_emi': isNoCostEmi,
+      if (feeFinanced != null) 'fee_financed': feeFinanced,
       if (interestRatePct != null) 'interest_rate_pct': interestRatePct,
       if (rateType != null) 'rate_type': rateType,
       if (tenureMonths != null) 'tenure_months': tenureMonths,
@@ -1574,6 +1670,8 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     Value<double>? gstOnFee,
     Value<double?>? foreclosureFee,
     Value<bool>? gstOnInterest,
+    Value<bool>? isNoCostEmi,
+    Value<bool>? feeFinanced,
     Value<double>? interestRatePct,
     Value<String>? rateType,
     Value<int>? tenureMonths,
@@ -1595,6 +1693,8 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
       gstOnFee: gstOnFee ?? this.gstOnFee,
       foreclosureFee: foreclosureFee ?? this.foreclosureFee,
       gstOnInterest: gstOnInterest ?? this.gstOnInterest,
+      isNoCostEmi: isNoCostEmi ?? this.isNoCostEmi,
+      feeFinanced: feeFinanced ?? this.feeFinanced,
       interestRatePct: interestRatePct ?? this.interestRatePct,
       rateType: rateType ?? this.rateType,
       tenureMonths: tenureMonths ?? this.tenureMonths,
@@ -1640,6 +1740,12 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     if (gstOnInterest.present) {
       map['gst_on_interest'] = Variable<bool>(gstOnInterest.value);
     }
+    if (isNoCostEmi.present) {
+      map['is_no_cost_emi'] = Variable<bool>(isNoCostEmi.value);
+    }
+    if (feeFinanced.present) {
+      map['fee_financed'] = Variable<bool>(feeFinanced.value);
+    }
     if (interestRatePct.present) {
       map['interest_rate_pct'] = Variable<double>(interestRatePct.value);
     }
@@ -1683,6 +1789,8 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
           ..write('gstOnFee: $gstOnFee, ')
           ..write('foreclosureFee: $foreclosureFee, ')
           ..write('gstOnInterest: $gstOnInterest, ')
+          ..write('isNoCostEmi: $isNoCostEmi, ')
+          ..write('feeFinanced: $feeFinanced, ')
           ..write('interestRatePct: $interestRatePct, ')
           ..write('rateType: $rateType, ')
           ..write('tenureMonths: $tenureMonths, ')
@@ -4106,6 +4214,8 @@ typedef $$BorrowingsTableCreateCompanionBuilder =
       Value<double> gstOnFee,
       Value<double?> foreclosureFee,
       Value<bool> gstOnInterest,
+      Value<bool> isNoCostEmi,
+      Value<bool> feeFinanced,
       Value<double> interestRatePct,
       Value<String> rateType,
       Value<int> tenureMonths,
@@ -4128,6 +4238,8 @@ typedef $$BorrowingsTableUpdateCompanionBuilder =
       Value<double> gstOnFee,
       Value<double?> foreclosureFee,
       Value<bool> gstOnInterest,
+      Value<bool> isNoCostEmi,
+      Value<bool> feeFinanced,
       Value<double> interestRatePct,
       Value<String> rateType,
       Value<int> tenureMonths,
@@ -4218,6 +4330,16 @@ class $$BorrowingsTableFilterComposer
 
   ColumnFilters<bool> get gstOnInterest => $composableBuilder(
     column: $table.gstOnInterest,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isNoCostEmi => $composableBuilder(
+    column: $table.isNoCostEmi,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get feeFinanced => $composableBuilder(
+    column: $table.feeFinanced,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4346,6 +4468,16 @@ class $$BorrowingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isNoCostEmi => $composableBuilder(
+    column: $table.isNoCostEmi,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get feeFinanced => $composableBuilder(
+    column: $table.feeFinanced,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get interestRatePct => $composableBuilder(
     column: $table.interestRatePct,
     builder: (column) => ColumnOrderings(column),
@@ -4431,6 +4563,16 @@ class $$BorrowingsTableAnnotationComposer
 
   GeneratedColumn<bool> get gstOnInterest => $composableBuilder(
     column: $table.gstOnInterest,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isNoCostEmi => $composableBuilder(
+    column: $table.isNoCostEmi,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get feeFinanced => $composableBuilder(
+    column: $table.feeFinanced,
     builder: (column) => column,
   );
 
@@ -4528,6 +4670,8 @@ class $$BorrowingsTableTableManager
                 Value<double> gstOnFee = const Value.absent(),
                 Value<double?> foreclosureFee = const Value.absent(),
                 Value<bool> gstOnInterest = const Value.absent(),
+                Value<bool> isNoCostEmi = const Value.absent(),
+                Value<bool> feeFinanced = const Value.absent(),
                 Value<double> interestRatePct = const Value.absent(),
                 Value<String> rateType = const Value.absent(),
                 Value<int> tenureMonths = const Value.absent(),
@@ -4548,6 +4692,8 @@ class $$BorrowingsTableTableManager
                 gstOnFee: gstOnFee,
                 foreclosureFee: foreclosureFee,
                 gstOnInterest: gstOnInterest,
+                isNoCostEmi: isNoCostEmi,
+                feeFinanced: feeFinanced,
                 interestRatePct: interestRatePct,
                 rateType: rateType,
                 tenureMonths: tenureMonths,
@@ -4570,6 +4716,8 @@ class $$BorrowingsTableTableManager
                 Value<double> gstOnFee = const Value.absent(),
                 Value<double?> foreclosureFee = const Value.absent(),
                 Value<bool> gstOnInterest = const Value.absent(),
+                Value<bool> isNoCostEmi = const Value.absent(),
+                Value<bool> feeFinanced = const Value.absent(),
                 Value<double> interestRatePct = const Value.absent(),
                 Value<String> rateType = const Value.absent(),
                 Value<int> tenureMonths = const Value.absent(),
@@ -4590,6 +4738,8 @@ class $$BorrowingsTableTableManager
                 gstOnFee: gstOnFee,
                 foreclosureFee: foreclosureFee,
                 gstOnInterest: gstOnInterest,
+                isNoCostEmi: isNoCostEmi,
+                feeFinanced: feeFinanced,
                 interestRatePct: interestRatePct,
                 rateType: rateType,
                 tenureMonths: tenureMonths,

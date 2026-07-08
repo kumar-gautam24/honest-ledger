@@ -21,6 +21,8 @@ def _data(**overrides) -> dict:
         "gst_on_fee_paise": 0,
         "foreclosure_fee_paise": None,
         "gst_on_interest": False,
+        "is_no_cost_emi": False,
+        "fee_financed": False,
         "interest_rate_pct": 36.0,
         "rate_type": "reducing",
         "tenure_months": 6,

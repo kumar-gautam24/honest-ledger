@@ -13,14 +13,16 @@ import asyncpg
 BORROWING_COLUMNS = """
     id, user_id, title, kind, lender_id, lender_name,
     principal_paise, processing_fee_paise, gst_on_fee_paise, foreclosure_fee_paise,
-    gst_on_interest, interest_rate_pct, rate_type, tenure_months, min_payment_paise,
+    gst_on_interest, is_no_cost_emi, fee_financed, interest_rate_pct, rate_type,
+    tenure_months, min_payment_paise,
     start_date, status, notes, created_at, updated_at, deleted_at, server_seq
 """
 
 _PATCHABLE = {
     "title", "kind", "lender_id", "lender_name",
     "principal_paise", "processing_fee_paise", "gst_on_fee_paise",
-    "foreclosure_fee_paise", "gst_on_interest", "interest_rate_pct",
+    "foreclosure_fee_paise", "gst_on_interest", "is_no_cost_emi",
+    "fee_financed", "interest_rate_pct",
     "rate_type", "tenure_months", "min_payment_paise",
     "start_date", "status", "notes",
 }
@@ -36,12 +38,13 @@ async def insert_borrowing(
         INSERT INTO borrowings (
             id, user_id, title, kind, lender_id, lender_name,
             principal_paise, processing_fee_paise, gst_on_fee_paise,
-            foreclosure_fee_paise, gst_on_interest, interest_rate_pct,
+            foreclosure_fee_paise, gst_on_interest, is_no_cost_emi, fee_financed,
+            interest_rate_pct,
             rate_type, tenure_months, min_payment_paise,
             start_date, status, notes, created_at, updated_at
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-                $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+                $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
         ON CONFLICT (id) DO NOTHING
         RETURNING {BORROWING_COLUMNS}
         """,
@@ -49,7 +52,8 @@ async def insert_borrowing(
         data["lender_id"], data["lender_name"],
         data["principal_paise"], data["processing_fee_paise"],
         data["gst_on_fee_paise"], data["foreclosure_fee_paise"],
-        data["gst_on_interest"], data["interest_rate_pct"],
+        data["gst_on_interest"], data["is_no_cost_emi"], data["fee_financed"],
+        data["interest_rate_pct"],
         data["rate_type"], data["tenure_months"], data["min_payment_paise"],
         data["start_date"], data["status"], data["notes"],
         data["created_at"], data["updated_at"],

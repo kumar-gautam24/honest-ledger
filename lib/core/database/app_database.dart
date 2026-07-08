@@ -46,6 +46,8 @@ class Borrowings extends Table {
   RealColumn get foreclosureFee => real().nullable()();
   BoolColumn get gstOnInterest =>
       boolean().withDefault(const Constant(false))();
+  BoolColumn get isNoCostEmi => boolean().withDefault(const Constant(false))();
+  BoolColumn get feeFinanced => boolean().withDefault(const Constant(false))();
   RealColumn get interestRatePct => real().withDefault(const Constant(0))();
   TextColumn get rateType =>
       text().withDefault(const Constant('reducing'))();
@@ -150,7 +152,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -174,6 +176,10 @@ class AppDatabase extends _$AppDatabase {
           if (from < 6) {
             await m.createTable(cards);
             await m.createTable(cardStatements);
+          }
+          if (from < 7) {
+            await m.addColumn(borrowings, borrowings.isNoCostEmi);
+            await m.addColumn(borrowings, borrowings.feeFinanced);
           }
         },
         beforeOpen: (details) async {
