@@ -72,4 +72,26 @@ void main() {
       expect(apr, closeTo(40.4, 0.5));
     });
   });
+
+  group('emiSchedule noCostEmi mode', () {
+    test('rows bill price/n, GST tracks discounted-principal amortization', () {
+      final rows = FinanceMath.emiSchedule(
+        principal: 75000,
+        annualRatePct: 16,
+        months: 6,
+        startDate: DateTime(2026, 7, 8),
+        gstOnInterest: true,
+        noCostEmi: true,
+        feeValue: 299,
+      );
+      expect(rows.every((r) => (r.principal - 12500).abs() < 0.01), isTrue);
+      expect(rows.every((r) => r.interest == 0), isTrue);
+      final gst = rows.fold<double>(0, (s, r) => s + r.gstOnInterest);
+      expect(gst, closeTo(608.25, 0.15));
+      final total = rows.fold<double>(0, (s, r) => s + r.total);
+      expect(total, closeTo(75000 + 608.25 + 299 * 1.18, 0.30));
+      // GST is front-loaded like real statements: month 1 > month 6.
+      expect(rows.first.gstOnInterest, greaterThan(rows.last.gstOnInterest));
+    });
+  });
 }

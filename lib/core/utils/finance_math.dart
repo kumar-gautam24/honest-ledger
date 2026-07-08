@@ -232,6 +232,15 @@ abstract final class FinanceMath {
   /// the amortization split; flat loans spread interest evenly. GST on interest
   /// is added per row when [gstOnInterest] is set, and the processing fee + its
   /// GST land on installment 1.
+  ///
+  /// When [noCostEmi] is true (only meaningful with [RateType.reducing] —
+  /// flat-rate loans have no discount mechanism, so the flag is ignored for
+  /// them), each row bills `principal / months` with zero interest: the
+  /// merchant's discount ([noCostDiscount]) absorbs the bank's interest so the
+  /// card statement never shows it. The interest still exists on the bank's
+  /// books (on the discounted principal) purely to attract GST, so
+  /// [EmiInstallment.gstOnInterest] tracks that underlying amortization even
+  /// though [EmiInstallment.interest] is zero.
   static List<EmiInstallment> emiSchedule({
     required double principal,
     required double annualRatePct,
@@ -242,24 +251,48 @@ abstract final class FinanceMath {
     FeeType feeType = FeeType.flat,
     double feeValue = 0,
     double gstRate = AppConstants.gstRate,
+    bool noCostEmi = false,
   }) {
     if (months <= 0) return const [];
     final fee = processingFee(principal: principal, type: feeType, value: feeValue);
     final gstFee = gstOn(fee, rate: gstRate);
 
-    // (principal, interest) per month, by rate type.
+    // (principal, interest) per month, by rate type; gstBase is the per-month
+    // amount GST-on-interest is computed on — equal to `interest` in every
+    // path except no-cost EMI, where the row shows zero interest but GST
+    // still tracks the bank's underlying (discounted-principal) amortization.
     List<(double, double)> parts;
+    List<double> gstBase;
     switch (rateType) {
       case RateType.reducing:
-        parts = amortizationSchedule(
-          principal: principal,
-          annualRatePct: annualRatePct,
-          months: months,
-        ).map((e) => (e.principalComponent, e.interest)).toList();
+        if (noCostEmi) {
+          final discount = noCostDiscount(
+            price: principal,
+            bankAnnualRatePct: annualRatePct,
+            months: months,
+          );
+          final underlying = amortizationSchedule(
+            principal: principal - discount,
+            annualRatePct: annualRatePct,
+            months: months,
+          );
+          final principalEach = principal / months;
+          parts = [for (final _ in underlying) (principalEach, 0.0)];
+          gstBase = [for (final e in underlying) e.interest];
+        } else {
+          final amort = amortizationSchedule(
+            principal: principal,
+            annualRatePct: annualRatePct,
+            months: months,
+          );
+          parts = [for (final e in amort) (e.principalComponent, e.interest)];
+          gstBase = [for (final e in amort) e.interest];
+        }
       case RateType.flat:
         final interestEach = flatTotalInterest(principal, annualRatePct, months) / months;
         final principalEach = principal / months;
         parts = List.generate(months, (_) => (principalEach, interestEach));
+        gstBase = List.generate(months, (_) => interestEach);
     }
 
     return [
@@ -269,7 +302,7 @@ abstract final class FinanceMath {
           dueDate: startDate.addMonths(i + 1),
           principal: parts[i].$1,
           interest: parts[i].$2,
-          gstOnInterest: gstOnInterest ? gstOn(parts[i].$2, rate: gstRate) : 0,
+          gstOnInterest: gstOnInterest ? gstOn(gstBase[i], rate: gstRate) : 0,
           fee: i == 0 ? fee : 0,
           gstOnFee: i == 0 ? gstFee : 0,
         ),

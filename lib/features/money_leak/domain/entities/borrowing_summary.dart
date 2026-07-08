@@ -68,6 +68,7 @@ class BorrowingSummary {
         rateType: b.rateType,
         gstOnInterest: b.gstOnInterest,
         feeValue: b.processingFee,
+        noCostEmi: b.isNoCostEmi,
       );
       final scheduledTotal = schedule.fold<double>(0, (s, e) => s + e.total);
       final outstanding = scheduledTotal - totalRepaid;
@@ -108,8 +109,13 @@ class BorrowingSummary {
     }
 
     // Flexible loan: outstanding accrues interest on the reducing balance.
+    // When the fee was financed into the loan (Slice-style), interest accrues
+    // on principal + fee + GST-on-fee, not just principal — the fee is part
+    // of the balance the bank charges interest on.
+    final effectivePrincipal =
+        b.feeFinanced ? b.principal + b.processingFee + b.gstOnFee : b.principal;
     final outstanding = FinanceMath.outstandingFlexible(
-      principal: b.principal,
+      principal: effectivePrincipal,
       annualRatePct: b.interestRatePct,
       startDate: b.startDate,
       payments: [for (final r in repayments) (r.date, r.amount)],
@@ -118,7 +124,7 @@ class BorrowingSummary {
     final fees = b.processingFee + b.gstOnFee;
     final planned = b.minPayment;
     final interestPast = FinanceMath.accruedInterestFlexible(
-      principal: b.principal,
+      principal: effectivePrincipal,
       annualRatePct: b.interestRatePct,
       startDate: b.startDate,
       payments: [for (final r in repayments) (r.date, r.amount)],
@@ -137,7 +143,7 @@ class BorrowingSummary {
     final baseline = planned > 0
         ? fees +
             FinanceMath.projectedInterestFlexible(
-              principal: b.principal,
+              principal: effectivePrincipal,
               annualRatePct: b.interestRatePct,
               monthlyPayment: planned,
             )

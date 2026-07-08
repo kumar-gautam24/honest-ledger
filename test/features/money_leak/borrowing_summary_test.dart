@@ -170,4 +170,53 @@ void main() {
       expect(s.projectedSaved, greaterThan(0));
     });
   });
+
+  group('no-cost EMI leak accounting', () {
+    test('projectedExtra is GST-on-interest + fee + GST-on-fee only', () {
+      final b = Borrowing(
+        id: 'nce1',
+        title: 'Phone, no-cost EMI',
+        lenderName: 'HDFC',
+        kind: BorrowingKind.fixedEmi,
+        principal: 75000,
+        interestRatePct: 16,
+        tenureMonths: 6,
+        gstOnInterest: true,
+        isNoCostEmi: true,
+        processingFee: 299,
+        startDate: DateTime(2026, 7, 8),
+        createdAt: DateTime(2026, 7, 8),
+      );
+      final s = BorrowingSummary.from(b, const []);
+      // Rows bill price/n with zero interest; the only leak is GST-on-interest
+      // (on the discounted principal) plus the fee and its GST.
+      expect(s.schedule.every((e) => e.interest == 0), isTrue);
+      expect(s.projectedExtra, closeTo(608.25 + 299 + 299 * 0.18, 0.5));
+    });
+  });
+
+  group('feeFinanced flexible loan accrual', () {
+    test('financing the fee into the loan accrues more interest than not', () {
+      Borrowing loan({required bool feeFinanced}) => Borrowing(
+            id: 'lf1',
+            title: 'Slice draw',
+            lenderName: 'Slice',
+            kind: BorrowingKind.flexibleLoan,
+            principal: 10000,
+            interestRatePct: 36,
+            minPayment: 2000,
+            processingFee: 500,
+            gstOnFee: 90,
+            feeFinanced: feeFinanced,
+            startDate: DateTime(2026, 7, 8),
+            createdAt: DateTime(2026, 7, 8),
+          );
+      final financed = BorrowingSummary.from(loan(feeFinanced: true), const []);
+      final notFinanced =
+          BorrowingSummary.from(loan(feeFinanced: false), const []);
+      // Same fee is counted as leak either way; financing it into the balance
+      // additionally accrues interest on it, so the projected extra is larger.
+      expect(financed.projectedExtra, greaterThan(notFinanced.projectedExtra));
+    });
+  });
 }
