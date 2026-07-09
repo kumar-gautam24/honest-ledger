@@ -51,6 +51,8 @@ class _AddEditBorrowingScreenState
   late BorrowingKind _kind;
   RateType _rateType = RateType.reducing;
   bool _gstOnInterest = false;
+  bool _isNoCostEmi = false;
+  bool _feeFinanced = false;
   late DateTime _startDate;
   Lender? _lender;
   bool _saving = false;
@@ -87,6 +89,8 @@ class _AddEditBorrowingScreenState
     _notes = TextEditingController(text: e?.notes ?? '');
     _rateType = e?.rateType ?? RateType.reducing;
     _gstOnInterest = e?.gstOnInterest ?? false;
+    _isNoCostEmi = e?.isNoCostEmi ?? false;
+    _feeFinanced = e?.feeFinanced ?? false;
     _startDate = e?.startDate ?? DateTime.now();
     // Live-update the EMI preview as figures change.
     for (final ctrl in [_principal, _rate, _tenure, _fee]) {
@@ -166,15 +170,17 @@ class _AddEditBorrowingScreenState
       principal: _parse(_principal),
       processingFee: fee,
       gstOnFee: fee * AppConstants.gstRate,
-      gstOnInterest: _isEmi && _gstOnInterest,
+      gstOnInterest: _isEmi && (_isNoCostEmi || _gstOnInterest),
       interestRatePct: _parse(_rate),
-      rateType: _rateType,
+      rateType: _isEmi && _isNoCostEmi ? RateType.reducing : _rateType,
       tenureMonths: _isEmi ? (int.tryParse(_tenure.text.trim()) ?? 0) : 0,
       minPayment: _isEmi ? 0 : _parse(_minPayment),
       startDate: _startDate,
       status: existing?.status ?? BorrowingStatus.active,
       notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
       createdAt: existing?.createdAt ?? DateTime.now(),
+      isNoCostEmi: _isEmi && _isNoCostEmi,
+      feeFinanced: !_isEmi && _feeFinanced,
     );
 
     try {
@@ -267,6 +273,7 @@ class _AddEditBorrowingScreenState
                 fee: _parse(_fee),
                 rateType: _rateType,
                 gstOnInterest: _gstOnInterest,
+                isNoCostEmi: _isNoCostEmi,
               ),
             ],
             const SizedBox(height: AppSpacing.xl),
@@ -288,7 +295,9 @@ class _AddEditBorrowingScreenState
           children: [
             Expanded(
               child: AppTextField(
-                label: 'Interest % p.a.',
+                label: _isNoCostEmi
+                    ? 'Bank rate behind the offer (% p.a.)'
+                    : 'Interest % p.a.',
                 controller: _rate,
                 hint: '0',
                 keyboardType:
@@ -317,34 +326,56 @@ class _AddEditBorrowingScreenState
           controller: _fee,
           validator: Validators.number(),
         ),
+        if (!_isNoCostEmi) ...[
+          const SizedBox(height: AppSpacing.lg),
+          Text('Interest type', style: AppTypography.eyebrow(c)),
+          const SizedBox(height: AppSpacing.sm),
+          SegmentedButton<RateType>(
+            segments: const [
+              ButtonSegment(value: RateType.reducing, label: Text('Reducing')),
+              ButtonSegment(value: RateType.flat, label: Text('Flat')),
+            ],
+            selected: {_rateType},
+            showSelectedIcon: false,
+            onSelectionChanged: (s) {
+              sl<HapticService>().select();
+              setState(() => _rateType = s.first);
+            },
+          ),
+        ],
         const SizedBox(height: AppSpacing.lg),
-        Text('Interest type', style: AppTypography.eyebrow(c)),
-        const SizedBox(height: AppSpacing.sm),
-        SegmentedButton<RateType>(
-          segments: const [
-            ButtonSegment(value: RateType.reducing, label: Text('Reducing')),
-            ButtonSegment(value: RateType.flat, label: Text('Flat')),
-          ],
-          selected: {_rateType},
-          showSelectedIcon: false,
-          onSelectionChanged: (s) {
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          title: Text('No-cost EMI', style: context.text.titleMedium),
+          subtitle: Text(
+            'Seller discount covers the interest — you still pay GST on it',
+            style: context.text.bodySmall,
+          ),
+          value: _isNoCostEmi,
+          onChanged: (v) {
             sl<HapticService>().select();
-            setState(() => _rateType = s.first);
+            setState(() {
+              _isNoCostEmi = v;
+              if (v) _gstOnInterest = true;
+            });
           },
         ),
-        const SizedBox(height: AppSpacing.lg),
         SwitchListTile.adaptive(
           contentPadding: EdgeInsets.zero,
           title: Text('GST on interest (18%)', style: context.text.titleMedium),
           subtitle: Text(
-            'Charged on credit-card & consumer EMIs',
+            _isNoCostEmi
+                ? 'Always charged on no-cost EMIs'
+                : 'Charged on credit-card & consumer EMIs',
             style: context.text.bodySmall,
           ),
-          value: _gstOnInterest,
-          onChanged: (v) {
-            sl<HapticService>().select();
-            setState(() => _gstOnInterest = v);
-          },
+          value: _isNoCostEmi ? true : _gstOnInterest,
+          onChanged: _isNoCostEmi
+              ? null
+              : (v) {
+                  sl<HapticService>().select();
+                  setState(() => _gstOnInterest = v);
+                },
         ),
       ];
 
@@ -368,6 +399,20 @@ class _AddEditBorrowingScreenState
           label: 'Processing fee',
           controller: _fee,
           validator: Validators.number(),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          title: Text('Fee added to the loan', style: context.text.titleMedium),
+          subtitle: Text(
+            'Slice-style: you pay interest on the fee too',
+            style: context.text.bodySmall,
+          ),
+          value: _feeFinanced,
+          onChanged: (v) {
+            sl<HapticService>().select();
+            setState(() => _feeFinanced = v);
+          },
         ),
       ];
 }
@@ -472,6 +517,7 @@ class _EmiPreview extends StatelessWidget {
     required this.fee,
     required this.rateType,
     required this.gstOnInterest,
+    required this.isNoCostEmi,
   });
 
   final double principal;
@@ -480,11 +526,44 @@ class _EmiPreview extends StatelessWidget {
   final double fee;
   final RateType rateType;
   final bool gstOnInterest;
+  final bool isNoCostEmi;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     if (principal <= 0 || months <= 0) return const SizedBox.shrink();
+
+    if (isNoCostEmi) {
+      final b = FinanceMath.noCostEmi(
+        price: principal,
+        months: months,
+        bankAnnualRatePct: ratePct,
+        feeValue: fee,
+      );
+      return AppCard(
+        color: c.surfaceHigh,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('NO-COST EMI — ADVERTISED VS ACTUAL',
+                style: AppTypography.eyebrow(c)),
+            const SizedBox(height: AppSpacing.md),
+            _row(context, 'Monthly on your card', b.monthlyInstallment),
+            _row(context, 'Seller discount covers interest',
+                -b.merchantDiscount,
+                color: c.positive),
+            _row(context, 'GST on that interest (18%)', b.gstOnInterest,
+                color: c.cost),
+            if (fee > 0)
+              _row(context, 'Fee + GST', b.processingFee + b.gstOnFee,
+                  color: c.cost),
+            const Divider(height: AppSpacing.xl),
+            _row(context, 'Really costs you extra', b.totalExtra,
+                emphasise: true),
+          ],
+        ),
+      );
+    }
 
     final b = FinanceMath.emiBreakdown(
       principal: principal,
