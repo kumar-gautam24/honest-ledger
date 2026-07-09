@@ -190,20 +190,27 @@ class _LenderField extends StatelessWidget {
 }
 
 /// The one-line comparison a shopper actually faces at checkout: does the
-/// no-cost EMI's true cost beat simply paying upfront and taking the same
-/// discount in cash? Null when no discount was entered — there's nothing to
-/// compare against.
+/// no-cost EMI beat simply paying upfront and taking the same discount in
+/// cash? Null when no discount was entered — there's nothing to compare
+/// against.
+///
+/// The gap between the two options is exactly [NoCostEmiBreakdown.totalExtra]:
+/// via EMI you pay `price + gstOnInterest + fee + gstOnFee` in cash, upfront
+/// you'd pay `price − forfeitedDiscount`, and the difference collapses to
+/// `gstOnInterest + fee + gstOnFee + forfeitedDiscount = totalExtra`. (Do NOT
+/// compare `trueCost` against the upfront outlay — `trueCost` already carries
+/// the forfeited discount as a cost line, so that would double-count it.)
 String? noCostVerdict({
-  required double trueCost,
-  required double price,
+  required double totalExtra,
   required double forfeitedDiscount,
 }) {
   if (forfeitedDiscount <= 0) return null;
-  final upfrontCost = price - forfeitedDiscount;
-  final diff = trueCost - upfrontCost;
-  if (diff.abs() <= 1) return 'Either way costs about the same.';
-  if (diff > 0) return 'Paying upfront is cheaper by ${Money.format(diff)}.';
-  return 'No-cost EMI wins by ${Money.format(-diff)}.';
+  if (totalExtra.abs() <= 1) return 'Either way costs about the same.';
+  if (totalExtra > 0) {
+    return 'Paying upfront is cheaper by ${Money.format(totalExtra)}.';
+  }
+  // Unreachable while every leak term is non-negative, kept for symmetry.
+  return 'No-cost EMI wins by ${Money.format(-totalExtra)}.';
 }
 
 class _ResultCard extends StatelessWidget {
@@ -217,8 +224,7 @@ class _ResultCard extends StatelessWidget {
     final free = result.isActuallyFree;
     final accentColor = free ? c.positive : c.cost;
     final verdict = noCostVerdict(
-      trueCost: result.trueCost,
-      price: result.price,
+      totalExtra: result.totalExtra,
       forfeitedDiscount: result.forfeitedDiscount,
     );
 

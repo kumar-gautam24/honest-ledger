@@ -20,6 +20,7 @@ class BorrowingSummary {
     required this.projectedExtra,
     required this.projectedSaved,
     required this.neverClears,
+    required this.accruedInterest,
     required this.schedule,
   });
 
@@ -53,6 +54,13 @@ class BorrowingSummary {
   /// the cost incurred so far, not a true lifetime figure.
   final bool neverClears;
 
+  /// Interest (only — no GST, no fees) incurred so far. For a flexible loan
+  /// this is the month-by-month accrual on the reducing balance from the start
+  /// date to today ([FinanceMath.accruedInterestFlexible]); it grows with time
+  /// whether or not anything has been repaid. For a fixed EMI it is the
+  /// interest component of the installments already paid.
+  final double accruedInterest;
+
   /// The dated installment plan. Empty for a flexible loan.
   final List<EmiInstallment> schedule;
 
@@ -83,6 +91,10 @@ class BorrowingSummary {
       final wastedSoFar = schedule
           .where((e) => paidNums.contains(e.number))
           .fold<double>(0, (s, e) => s + (e.total - e.principal));
+      // Interest alone (no GST/fees) on the installments already paid.
+      final interestPaid = schedule
+          .where((e) => paidNums.contains(e.number))
+          .fold<double>(0, (s, e) => s + e.interest);
       final fullExtra = scheduledTotal - b.principal;
       final foreclosed = b.isClosed && paidNums.length < schedule.length;
       // A foreclosed EMI stops accruing future interest: its true extra is the
@@ -104,6 +116,7 @@ class BorrowingSummary {
         projectedExtra: displayExtra,
         projectedSaved: projectedSaved,
         neverClears: false,
+        accruedInterest: interestPaid,
         schedule: schedule,
       );
     }
@@ -162,6 +175,7 @@ class BorrowingSummary {
       projectedExtra: projectedExtra,
       projectedSaved: projectedSaved,
       neverClears: neverClears,
+      accruedInterest: interestPast,
       schedule: const [],
     );
   }

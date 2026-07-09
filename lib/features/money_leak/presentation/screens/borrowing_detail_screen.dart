@@ -552,13 +552,16 @@ class _LoanSummaryCard extends StatelessWidget {
     // Illustrate the saving from paying double the minimum.
     final saved =
         b.minPayment > 0 ? summary.interestSavedIfPaid(b.minPayment * 2) : 0.0;
-    // Share of the interest accrued so far (the "Wasted" figure below)
-    // attributable to the financed fee rather than the principal itself.
+    // Share of the interest accrued so far attributable to the financed fee
+    // (fee + its GST) rather than the principal. `accruedInterest` is the
+    // reducing-balance accrual the summary already computed on the
+    // fee-inclusive balance — NOT `wastedSoFar`, which for a flexible loan is
+    // just max(0, repaid − principal) and says nothing about accrual.
     final financedFeeInterest = b.feeFinanced
         ? FinanceMath.financedFeeInterestShare(
             principal: b.principal + b.processingFee + b.gstOnFee,
             financedAmount: b.processingFee + b.gstOnFee,
-            totalInterest: summary.wastedSoFar,
+            totalInterest: summary.accruedInterest,
           )
         : 0.0;
     return AppCard(

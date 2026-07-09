@@ -64,7 +64,14 @@ void main() {
     // Forfeiting a real cash discount to take the EMI is never cheaper once
     // the bank's hidden interest/GST is added on top, so this direction is
     // the one an ordinary checkout actually produces.
-    expect(find.text('Paying upfront is cheaper by ₹1,787.'), findsOneWidget);
+    //
+    // The gap is exactly totalExtra: EMI cash outlay (price + ≈₹243 GST on
+    // the bank's interest + ₹800 fee + ₹144 GST on the fee) minus the upfront
+    // outlay (price − ₹300) = 243 + 800 + 144 + 300 ≈ ₹1,487. Comparing
+    // trueCost against the upfront outlay instead double-counts the forfeited
+    // ₹300 (trueCost already carries it as a cost line) and wrongly showed
+    // ₹1,787 here.
+    expect(find.text('Paying upfront is cheaper by ₹1,487.'), findsOneWidget);
   });
 
   testWidgets('No-Cost EMI analyzer hides the verdict without a discount',
@@ -87,30 +94,36 @@ void main() {
   });
 
   group('noCostVerdict', () {
+    // The verdict amount is totalExtra itself — the exact difference between
+    // the EMI cash outlay and the upfront outlay (see noCostVerdict docs).
     test('upfront cheaper', () {
       expect(
-        noCostVerdict(trueCost: 11500, price: 10000, forfeitedDiscount: 500),
+        noCostVerdict(totalExtra: 2000, forfeitedDiscount: 500),
         'Paying upfront is cheaper by ${Money.format(2000)}.',
       );
     });
 
-    test('no-cost EMI wins', () {
+    test('no-cost EMI wins (guarded branch, unreachable via real inputs)', () {
       expect(
-        noCostVerdict(trueCost: 9000, price: 10000, forfeitedDiscount: 500),
+        noCostVerdict(totalExtra: -500, forfeitedDiscount: 500),
         'No-cost EMI wins by ${Money.format(500)}.',
       );
     });
 
     test('a wash within a rupee', () {
       expect(
-        noCostVerdict(trueCost: 9500.5, price: 10000, forfeitedDiscount: 500),
+        noCostVerdict(totalExtra: 0.5, forfeitedDiscount: 500),
+        'Either way costs about the same.',
+      );
+      expect(
+        noCostVerdict(totalExtra: -0.5, forfeitedDiscount: 500),
         'Either way costs about the same.',
       );
     });
 
     test('no discount entered means no verdict', () {
       expect(
-        noCostVerdict(trueCost: 11500, price: 10000, forfeitedDiscount: 0),
+        noCostVerdict(totalExtra: 2000, forfeitedDiscount: 0),
         isNull,
       );
     });
