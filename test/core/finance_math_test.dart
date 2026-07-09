@@ -252,6 +252,31 @@ void main() {
         150,
       );
     });
+
+    test('percent fee below the min is floored (SBI 2% of ₹5,000 → ₹199)', () {
+      expect(
+        FinanceMath.processingFee(
+          principal: 5000,
+          type: FeeType.percent,
+          value: 2,
+          min: 199,
+          cap: 1000,
+        ),
+        closeTo(199, 0.001),
+      );
+    });
+
+    test('percent fee above the min is unaffected by it', () {
+      expect(
+        FinanceMath.processingFee(
+          principal: 75000,
+          type: FeeType.percent,
+          value: 2,
+          min: 199,
+        ),
+        closeTo(1500, 0.001),
+      );
+    });
   });
 
   group('emiBreakdown gstOnInterest', () {

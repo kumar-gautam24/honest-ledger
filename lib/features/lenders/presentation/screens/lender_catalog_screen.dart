@@ -62,14 +62,17 @@ class _LenderRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
+    final feeBounds = [
+      if (lender.feeMin != null) 'min ${Money.format(lender.feeMin!)}',
+      if (lender.feeCap != null) 'max ${Money.format(lender.feeCap!)}',
+    ].join(', ');
     final feeLabel = lender.feeValue <= 0
         ? null
         : lender.feeType == FeeType.flat
             ? '${Money.format(lender.feeValue)} fee'
-            : lender.feeCap != null
-                ? '${Percent.format(lender.feeValue)} fee '
-                    '(max ${Money.format(lender.feeCap!)})'
-                : '${Percent.format(lender.feeValue)} fee';
+            : feeBounds.isEmpty
+                ? '${Percent.format(lender.feeValue)} fee'
+                : '${Percent.format(lender.feeValue)} fee ($feeBounds)';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),

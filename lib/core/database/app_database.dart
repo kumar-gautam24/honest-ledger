@@ -22,6 +22,7 @@ class Lenders extends Table {
   TextColumn get feeType => text().withDefault(const Constant('flat'))();
   RealColumn get feeValue => real().withDefault(const Constant(0))();
   RealColumn get feeCap => real().nullable()();
+  RealColumn get feeMin => real().nullable()();
   BoolColumn get isMine => boolean().withDefault(const Constant(false))();
   TextColumn get notes => text().nullable()();
 
@@ -180,6 +181,7 @@ class AppDatabase extends _$AppDatabase {
           if (from < 7) {
             await m.addColumn(borrowings, borrowings.isNoCostEmi);
             await m.addColumn(borrowings, borrowings.feeFinanced);
+            await m.addColumn(lenders, lenders.feeMin);
           }
         },
         beforeOpen: (details) async {

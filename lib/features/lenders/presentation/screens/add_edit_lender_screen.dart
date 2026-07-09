@@ -36,6 +36,7 @@ class _AddEditLenderScreenState extends ConsumerState<AddEditLenderScreen> {
   late final TextEditingController _rate;
   late final TextEditingController _fee;
   late final TextEditingController _feeCap;
+  late final TextEditingController _feeMin;
   late final TextEditingController _notes;
 
   LenderType _type = LenderType.card;
@@ -62,6 +63,9 @@ class _AddEditLenderScreenState extends ConsumerState<AddEditLenderScreen> {
     _feeCap = TextEditingController(
       text: e?.feeCap == null ? '' : Money.input(e!.feeCap!),
     );
+    _feeMin = TextEditingController(
+      text: e?.feeMin == null ? '' : Money.input(e!.feeMin!),
+    );
     _notes = TextEditingController(text: e?.notes ?? '');
     _type = e?.type ?? LenderType.card;
     _rateType = e?.rateType ?? RateType.reducing;
@@ -71,7 +75,16 @@ class _AddEditLenderScreenState extends ConsumerState<AddEditLenderScreen> {
 
   @override
   void dispose() {
-    for (final c in [_name, _issuer, _network, _rate, _fee, _feeCap, _notes]) {
+    for (final c in [
+      _name,
+      _issuer,
+      _network,
+      _rate,
+      _fee,
+      _feeCap,
+      _feeMin,
+      _notes,
+    ]) {
       c.dispose();
     }
     super.dispose();
@@ -102,6 +115,9 @@ class _AddEditLenderScreenState extends ConsumerState<AddEditLenderScreen> {
       feeValue: _d(_fee),
       feeCap: _feeType == FeeType.percent && _feeCap.text.trim().isNotEmpty
           ? _d(_feeCap)
+          : null,
+      feeMin: _feeType == FeeType.percent && _feeMin.text.trim().isNotEmpty
+          ? _d(_feeMin)
           : null,
       isMine: _isMine,
       notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
@@ -196,9 +212,22 @@ class _AddEditLenderScreenState extends ConsumerState<AddEditLenderScreen> {
             ),
             if (_feeType == FeeType.percent) ...[
               const SizedBox(height: AppSpacing.lg),
-              AppTextField.amount(
-                label: 'Max fee cap (optional)',
-                controller: _feeCap,
+              Row(
+                children: [
+                  Expanded(
+                    child: AppTextField.amount(
+                      label: 'Min fee (optional)',
+                      controller: _feeMin,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: AppTextField.amount(
+                      label: 'Max fee cap (optional)',
+                      controller: _feeCap,
+                    ),
+                  ),
+                ],
               ),
             ],
             const SizedBox(height: AppSpacing.lg),

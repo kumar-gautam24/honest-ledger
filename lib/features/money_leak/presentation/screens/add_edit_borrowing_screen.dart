@@ -137,6 +137,7 @@ class _AddEditBorrowingScreenState
           type: lender.feeType,
           value: lender.feeValue,
           cap: lender.feeCap,
+          min: lender.feeMin,
         );
         if (fee > 0) _fee.text = Money.input(fee);
       }

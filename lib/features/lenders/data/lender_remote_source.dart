@@ -67,6 +67,7 @@ Map<String, dynamic> lenderFields(Lender l) => {
       'fee_type': l.feeType.name,
       'fee_value': l.feeValue,
       'fee_cap': l.feeCap,
+      'fee_min': l.feeMin,
       'is_mine': l.isMine,
       'notes': l.notes,
     };
@@ -84,6 +85,7 @@ Lender lenderFromJson(Map<String, dynamic> j) => Lender(
       feeType: _enumByName(FeeType.values, j['fee_type'], FeeType.flat),
       feeValue: ((j['fee_value'] as num?) ?? 0).toDouble(),
       feeCap: (j['fee_cap'] as num?)?.toDouble(),
+      feeMin: (j['fee_min'] as num?)?.toDouble(),
       isMine: (j['is_mine'] as bool?) ?? false,
       notes: j['notes'] as String?,
     );

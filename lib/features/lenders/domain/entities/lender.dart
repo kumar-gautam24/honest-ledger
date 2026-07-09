@@ -24,6 +24,7 @@ class Lender {
     this.feeType = FeeType.flat,
     this.feeValue = 0,
     this.feeCap,
+    this.feeMin,
     this.isMine = false,
     this.notes,
   });
@@ -49,6 +50,9 @@ class Lender {
   /// Upper cap on a percent fee (e.g. ICICI 2.99% but max ₹299). Null = no cap.
   final double? feeCap;
 
+  /// Lower floor on a percent fee (e.g. SBI 2% but min ₹199). Null = no floor.
+  final double? feeMin;
+
   /// One of the user's own cards/accounts.
   final bool isMine;
   final String? notes;
@@ -63,6 +67,7 @@ class Lender {
     FeeType? feeType,
     double? feeValue,
     double? feeCap,
+    double? feeMin,
     bool? isMine,
     String? notes,
   }) {
@@ -77,6 +82,7 @@ class Lender {
       feeType: feeType ?? this.feeType,
       feeValue: feeValue ?? this.feeValue,
       feeCap: feeCap ?? this.feeCap,
+      feeMin: feeMin ?? this.feeMin,
       isMine: isMine ?? this.isMine,
       notes: notes ?? this.notes,
     );

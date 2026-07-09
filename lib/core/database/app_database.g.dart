@@ -113,6 +113,15 @@ class $LendersTable extends Lenders with TableInfo<$LendersTable, LenderRow> {
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _feeMinMeta = const VerificationMeta('feeMin');
+  @override
+  late final GeneratedColumn<double> feeMin = GeneratedColumn<double>(
+    'fee_min',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _isMineMeta = const VerificationMeta('isMine');
   @override
   late final GeneratedColumn<bool> isMine = GeneratedColumn<bool>(
@@ -147,6 +156,7 @@ class $LendersTable extends Lenders with TableInfo<$LendersTable, LenderRow> {
     feeType,
     feeValue,
     feeCap,
+    feeMin,
     isMine,
     notes,
   ];
@@ -226,6 +236,12 @@ class $LendersTable extends Lenders with TableInfo<$LendersTable, LenderRow> {
         feeCap.isAcceptableOrUnknown(data['fee_cap']!, _feeCapMeta),
       );
     }
+    if (data.containsKey('fee_min')) {
+      context.handle(
+        _feeMinMeta,
+        feeMin.isAcceptableOrUnknown(data['fee_min']!, _feeMinMeta),
+      );
+    }
     if (data.containsKey('is_mine')) {
       context.handle(
         _isMineMeta,
@@ -287,6 +303,10 @@ class $LendersTable extends Lenders with TableInfo<$LendersTable, LenderRow> {
         DriftSqlType.double,
         data['${effectivePrefix}fee_cap'],
       ),
+      feeMin: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}fee_min'],
+      ),
       isMine: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_mine'],
@@ -315,6 +335,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
   final String feeType;
   final double feeValue;
   final double? feeCap;
+  final double? feeMin;
   final bool isMine;
   final String? notes;
   const LenderRow({
@@ -328,6 +349,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
     required this.feeType,
     required this.feeValue,
     this.feeCap,
+    this.feeMin,
     required this.isMine,
     this.notes,
   });
@@ -349,6 +371,9 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
     map['fee_value'] = Variable<double>(feeValue);
     if (!nullToAbsent || feeCap != null) {
       map['fee_cap'] = Variable<double>(feeCap);
+    }
+    if (!nullToAbsent || feeMin != null) {
+      map['fee_min'] = Variable<double>(feeMin);
     }
     map['is_mine'] = Variable<bool>(isMine);
     if (!nullToAbsent || notes != null) {
@@ -375,6 +400,9 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
       feeCap: feeCap == null && nullToAbsent
           ? const Value.absent()
           : Value(feeCap),
+      feeMin: feeMin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(feeMin),
       isMine: Value(isMine),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
@@ -398,6 +426,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
       feeType: serializer.fromJson<String>(json['feeType']),
       feeValue: serializer.fromJson<double>(json['feeValue']),
       feeCap: serializer.fromJson<double?>(json['feeCap']),
+      feeMin: serializer.fromJson<double?>(json['feeMin']),
       isMine: serializer.fromJson<bool>(json['isMine']),
       notes: serializer.fromJson<String?>(json['notes']),
     );
@@ -416,6 +445,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
       'feeType': serializer.toJson<String>(feeType),
       'feeValue': serializer.toJson<double>(feeValue),
       'feeCap': serializer.toJson<double?>(feeCap),
+      'feeMin': serializer.toJson<double?>(feeMin),
       'isMine': serializer.toJson<bool>(isMine),
       'notes': serializer.toJson<String?>(notes),
     };
@@ -432,6 +462,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
     String? feeType,
     double? feeValue,
     Value<double?> feeCap = const Value.absent(),
+    Value<double?> feeMin = const Value.absent(),
     bool? isMine,
     Value<String?> notes = const Value.absent(),
   }) => LenderRow(
@@ -445,6 +476,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
     feeType: feeType ?? this.feeType,
     feeValue: feeValue ?? this.feeValue,
     feeCap: feeCap.present ? feeCap.value : this.feeCap,
+    feeMin: feeMin.present ? feeMin.value : this.feeMin,
     isMine: isMine ?? this.isMine,
     notes: notes.present ? notes.value : this.notes,
   );
@@ -462,6 +494,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
       feeType: data.feeType.present ? data.feeType.value : this.feeType,
       feeValue: data.feeValue.present ? data.feeValue.value : this.feeValue,
       feeCap: data.feeCap.present ? data.feeCap.value : this.feeCap,
+      feeMin: data.feeMin.present ? data.feeMin.value : this.feeMin,
       isMine: data.isMine.present ? data.isMine.value : this.isMine,
       notes: data.notes.present ? data.notes.value : this.notes,
     );
@@ -480,6 +513,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
           ..write('feeType: $feeType, ')
           ..write('feeValue: $feeValue, ')
           ..write('feeCap: $feeCap, ')
+          ..write('feeMin: $feeMin, ')
           ..write('isMine: $isMine, ')
           ..write('notes: $notes')
           ..write(')'))
@@ -498,6 +532,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
     feeType,
     feeValue,
     feeCap,
+    feeMin,
     isMine,
     notes,
   );
@@ -515,6 +550,7 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
           other.feeType == this.feeType &&
           other.feeValue == this.feeValue &&
           other.feeCap == this.feeCap &&
+          other.feeMin == this.feeMin &&
           other.isMine == this.isMine &&
           other.notes == this.notes);
 }
@@ -530,6 +566,7 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
   final Value<String> feeType;
   final Value<double> feeValue;
   final Value<double?> feeCap;
+  final Value<double?> feeMin;
   final Value<bool> isMine;
   final Value<String?> notes;
   final Value<int> rowid;
@@ -544,6 +581,7 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
     this.feeType = const Value.absent(),
     this.feeValue = const Value.absent(),
     this.feeCap = const Value.absent(),
+    this.feeMin = const Value.absent(),
     this.isMine = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -559,6 +597,7 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
     this.feeType = const Value.absent(),
     this.feeValue = const Value.absent(),
     this.feeCap = const Value.absent(),
+    this.feeMin = const Value.absent(),
     this.isMine = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -575,6 +614,7 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
     Expression<String>? feeType,
     Expression<double>? feeValue,
     Expression<double>? feeCap,
+    Expression<double>? feeMin,
     Expression<bool>? isMine,
     Expression<String>? notes,
     Expression<int>? rowid,
@@ -590,6 +630,7 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
       if (feeType != null) 'fee_type': feeType,
       if (feeValue != null) 'fee_value': feeValue,
       if (feeCap != null) 'fee_cap': feeCap,
+      if (feeMin != null) 'fee_min': feeMin,
       if (isMine != null) 'is_mine': isMine,
       if (notes != null) 'notes': notes,
       if (rowid != null) 'rowid': rowid,
@@ -607,6 +648,7 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
     Value<String>? feeType,
     Value<double>? feeValue,
     Value<double?>? feeCap,
+    Value<double?>? feeMin,
     Value<bool>? isMine,
     Value<String?>? notes,
     Value<int>? rowid,
@@ -622,6 +664,7 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
       feeType: feeType ?? this.feeType,
       feeValue: feeValue ?? this.feeValue,
       feeCap: feeCap ?? this.feeCap,
+      feeMin: feeMin ?? this.feeMin,
       isMine: isMine ?? this.isMine,
       notes: notes ?? this.notes,
       rowid: rowid ?? this.rowid,
@@ -661,6 +704,9 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
     if (feeCap.present) {
       map['fee_cap'] = Variable<double>(feeCap.value);
     }
+    if (feeMin.present) {
+      map['fee_min'] = Variable<double>(feeMin.value);
+    }
     if (isMine.present) {
       map['is_mine'] = Variable<bool>(isMine.value);
     }
@@ -686,6 +732,7 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
           ..write('feeType: $feeType, ')
           ..write('feeValue: $feeValue, ')
           ..write('feeCap: $feeCap, ')
+          ..write('feeMin: $feeMin, ')
           ..write('isMine: $isMine, ')
           ..write('notes: $notes, ')
           ..write('rowid: $rowid')
@@ -3885,6 +3932,7 @@ typedef $$LendersTableCreateCompanionBuilder =
       Value<String> feeType,
       Value<double> feeValue,
       Value<double?> feeCap,
+      Value<double?> feeMin,
       Value<bool> isMine,
       Value<String?> notes,
       Value<int> rowid,
@@ -3901,6 +3949,7 @@ typedef $$LendersTableUpdateCompanionBuilder =
       Value<String> feeType,
       Value<double> feeValue,
       Value<double?> feeCap,
+      Value<double?> feeMin,
       Value<bool> isMine,
       Value<String?> notes,
       Value<int> rowid,
@@ -3962,6 +4011,11 @@ class $$LendersTableFilterComposer
 
   ColumnFilters<double> get feeCap => $composableBuilder(
     column: $table.feeCap,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get feeMin => $composableBuilder(
+    column: $table.feeMin,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4035,6 +4089,11 @@ class $$LendersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get feeMin => $composableBuilder(
+    column: $table.feeMin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get isMine => $composableBuilder(
     column: $table.isMine,
     builder: (column) => ColumnOrderings(column),
@@ -4087,6 +4146,9 @@ class $$LendersTableAnnotationComposer
   GeneratedColumn<double> get feeCap =>
       $composableBuilder(column: $table.feeCap, builder: (column) => column);
 
+  GeneratedColumn<double> get feeMin =>
+      $composableBuilder(column: $table.feeMin, builder: (column) => column);
+
   GeneratedColumn<bool> get isMine =>
       $composableBuilder(column: $table.isMine, builder: (column) => column);
 
@@ -4132,6 +4194,7 @@ class $$LendersTableTableManager
                 Value<String> feeType = const Value.absent(),
                 Value<double> feeValue = const Value.absent(),
                 Value<double?> feeCap = const Value.absent(),
+                Value<double?> feeMin = const Value.absent(),
                 Value<bool> isMine = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -4146,6 +4209,7 @@ class $$LendersTableTableManager
                 feeType: feeType,
                 feeValue: feeValue,
                 feeCap: feeCap,
+                feeMin: feeMin,
                 isMine: isMine,
                 notes: notes,
                 rowid: rowid,
@@ -4162,6 +4226,7 @@ class $$LendersTableTableManager
                 Value<String> feeType = const Value.absent(),
                 Value<double> feeValue = const Value.absent(),
                 Value<double?> feeCap = const Value.absent(),
+                Value<double?> feeMin = const Value.absent(),
                 Value<bool> isMine = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -4176,6 +4241,7 @@ class $$LendersTableTableManager
                 feeType: feeType,
                 feeValue: feeValue,
                 feeCap: feeCap,
+                feeMin: feeMin,
                 isMine: isMine,
                 notes: notes,
                 rowid: rowid,

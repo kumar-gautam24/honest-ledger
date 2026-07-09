@@ -22,6 +22,7 @@ class LenderCreate(BaseModel):
     fee_type: str = Field(default="flat", max_length=40)
     fee_value: float = Field(default=0, ge=0)
     fee_cap: float | None = Field(default=None, ge=0)
+    fee_min: float | None = Field(default=None, ge=0)
     is_mine: bool = False
     notes: str | None = Field(default=None, max_length=2000)
     created_at: datetime | None = None
@@ -40,6 +41,7 @@ class LenderPatch(BaseModel):
     fee_type: str | None = Field(default=None, max_length=40)
     fee_value: float | None = Field(default=None, ge=0)
     fee_cap: float | None = Field(default=None, ge=0)
+    fee_min: float | None = Field(default=None, ge=0)
     is_mine: bool | None = None
     notes: str | None = Field(default=None, max_length=2000)
 
@@ -55,6 +57,7 @@ class LenderResponse(BaseModel):
     fee_type: str
     fee_value: float
     fee_cap: float | None
+    fee_min: float | None
     is_mine: bool
     notes: str | None
     created_at: datetime
