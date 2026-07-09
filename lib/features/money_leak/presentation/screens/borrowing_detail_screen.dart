@@ -253,7 +253,15 @@ class _EmiSummaryCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(b.lenderName, style: AppTypography.eyebrow(c)),
+              Row(
+                children: [
+                  Text(b.lenderName, style: AppTypography.eyebrow(c)),
+                  if (b.isNoCostEmi) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    const _NoCostBadge(),
+                  ],
+                ],
+              ),
               Text(
                 '${summary.paidInstallments}/${summary.totalInstallments}',
                 style: AppTypography.money(c, color: c.accent),
@@ -271,6 +279,18 @@ class _EmiSummaryCard extends StatelessWidget {
               ),
             ],
           ),
+          if (b.isNoCostEmi) ...[
+            const Divider(height: AppSpacing.xl),
+            BreakdownRow(
+              label: 'Seller discount covered',
+              amount: FinanceMath.noCostDiscount(
+                price: b.principal,
+                bankAnnualRatePct: b.interestRatePct,
+                months: b.tenureMonths,
+              ),
+              color: c.positive,
+            ),
+          ],
           const SizedBox(height: AppSpacing.xl),
           InstallmentStrip(
             total: summary.totalInstallments,
@@ -532,6 +552,15 @@ class _LoanSummaryCard extends StatelessWidget {
     // Illustrate the saving from paying double the minimum.
     final saved =
         b.minPayment > 0 ? summary.interestSavedIfPaid(b.minPayment * 2) : 0.0;
+    // Share of the interest accrued so far (the "Wasted" figure below)
+    // attributable to the financed fee rather than the principal itself.
+    final financedFeeInterest = b.feeFinanced
+        ? FinanceMath.financedFeeInterestShare(
+            principal: b.principal + b.processingFee + b.gstOnFee,
+            financedAmount: b.processingFee + b.gstOnFee,
+            totalInterest: summary.wastedSoFar,
+          )
+        : 0.0;
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -570,7 +599,40 @@ class _LoanSummaryCard extends StatelessWidget {
               style: context.text.bodySmall?.copyWith(color: c.positive),
             ),
           ],
+          if (b.feeFinanced && financedFeeInterest > 0) ...[
+            const Divider(height: AppSpacing.xl),
+            BreakdownRow(
+              label: 'Interest on the financed fee',
+              amount: financedFeeInterest,
+              color: c.cost,
+            ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+/// Small pill marking a fixed EMI that was sold as "No Cost" — matches the
+/// tag style used on the borrowing cards ([BorrowingCard]'s `_Tag`).
+class _NoCostBadge extends StatelessWidget {
+  const _NoCostBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: c.positive.withValues(alpha: 0.14),
+        borderRadius: AppRadius.brPill,
+      ),
+      child: Text(
+        'NO-COST EMI',
+        style: AppTypography.eyebrow(c).copyWith(color: c.positive),
       ),
     );
   }
