@@ -9,6 +9,88 @@ enum FeeType { flat, percent }
 /// Interest calculation method.
 enum RateType { reducing, flat }
 
+/// How interest is accrued between installments.
+///
+/// [monthlyUniform] — one twelfth of the annual rate per installment, whatever
+/// the calendar says. What Indian card EMIs quote and what closed-form EMI
+/// formulas assume.
+/// [actual365] — interest accrues per day on the reducing balance
+/// (`balance × rate/365 × days`), so an irregular first period costs more.
+/// Personal loans disbursed mid-month bill this way (slice SFB, most NBFCs).
+enum DayCountConvention { monthlyUniform, actual365 }
+
+/// One billed period of a day-count schedule.
+class DayCountRow {
+  const DayCountRow({
+    required this.number,
+    required this.dueDate,
+    required this.days,
+    required this.openingBalance,
+    required this.interest,
+    required this.principal,
+    required this.payment,
+    required this.closingBalance,
+  });
+
+  final int number;
+  final DateTime dueDate;
+
+  /// Days this period accrued over — the first one is usually irregular.
+  final int days;
+  final double openingBalance;
+  final double interest;
+
+  /// Principal retired this period (`payment − interest`). Larger when the
+  /// borrower paid more than the installment.
+  final double principal;
+
+  /// Cash actually leaving the borrower's hands this period.
+  final double payment;
+  final double closingBalance;
+}
+
+/// A day-count schedule rolled forward from real payments. When the borrower
+/// only ever pays the installment this is the lender's own schedule; extra
+/// payments retire principal early, so [rows] runs short and [totalPaid] falls.
+class DayCountRun {
+  const DayCountRun(this.rows);
+
+  final List<DayCountRow> rows;
+
+  /// Every rupee handed over across the schedule.
+  double get totalPaid => rows.fold<double>(0, (s, r) => s + r.payment);
+
+  /// Interest alone — no fees, no GST.
+  double get totalInterest => rows.fold<double>(0, (s, r) => s + r.interest);
+
+  /// What is still owed after the last row.
+  double get closingBalance => rows.isEmpty ? 0 : rows.last.closingBalance;
+}
+
+/// The cost of clearing a borrowing today.
+class ForeclosureQuote {
+  const ForeclosureQuote({
+    required this.outstandingPrincipal,
+    required this.accruedInterest,
+    required this.fee,
+    required this.gstOnFee,
+  });
+
+  final double outstandingPrincipal;
+
+  /// Interest since the last due date, plus any settlement-delay days the
+  /// lender tacks on (slice charges 1).
+  final double accruedInterest;
+  final double fee;
+  final double gstOnFee;
+
+  /// The cheque you write to walk away.
+  double get total => outstandingPrincipal + accruedInterest + fee + gstOnFee;
+
+  /// Everything beyond the principal — the true price of foreclosing.
+  double get cost => accruedInterest + fee + gstOnFee;
+}
+
 /// Result of a standard EMI calculation.
 class EmiBreakdown {
   const EmiBreakdown({
@@ -578,5 +660,237 @@ abstract final class FinanceMath {
       }
     }
     return (lo + hi) / 2 * 12 * 100;
+  }
+
+  // ---- Day-count (actual/365) schedules ------------------------------------
+
+  /// Whole days each period covers. The first runs from disbursal to the first
+  /// due date and is usually irregular; [firstPeriodDays] overrides it when the
+  /// lender's own count differs from the calendar (slice's KFS says 34 where
+  /// the dates give 33).
+  static List<int> _periodDays({
+    required DateTime disbursalDate,
+    required DateTime firstDueDate,
+    required int months,
+    int? firstPeriodDays,
+  }) {
+    final days = <int>[];
+    var previous = disbursalDate.dateOnly;
+    for (var i = 0; i < months; i++) {
+      final due = firstDueDate.dateOnly.addMonths(i);
+      days.add(
+        i == 0 && firstPeriodDays != null
+            ? firstPeriodDays
+            : due.difference(previous).inDays,
+      );
+      previous = due;
+    }
+    return days;
+  }
+
+  /// Balance left after paying a level [emi] across the whole schedule, with no
+  /// clamping — negative once the EMI overshoots. Strictly decreasing in [emi],
+  /// which is what makes [dayCountEmi]'s bisection valid.
+  static double _dayCountResidual({
+    required double financedPrincipal,
+    required double annualRatePct,
+    required List<int> periodDays,
+    required double emi,
+  }) {
+    final daily = annualRatePct / 100 / 365;
+    var balance = financedPrincipal;
+    for (final days in periodDays) {
+      balance += balance * daily * days;
+      balance -= emi;
+    }
+    return balance;
+  }
+
+  /// The level installment that exactly clears [financedPrincipal] under
+  /// actual/365 accrual. There is no closed form once periods differ in length,
+  /// so this bisects on the residual balance.
+  ///
+  /// Recovers slice's ₹7,936.53 from the loan terms alone.
+  static double dayCountEmi({
+    required double financedPrincipal,
+    required double annualRatePct,
+    required DateTime disbursalDate,
+    required DateTime firstDueDate,
+    required int months,
+    int? firstPeriodDays,
+  }) {
+    if (months <= 0 || financedPrincipal <= 0) return 0;
+    final periodDays = _periodDays(
+      disbursalDate: disbursalDate,
+      firstDueDate: firstDueDate,
+      months: months,
+      firstPeriodDays: firstPeriodDays,
+    );
+    var lo = 0.0;
+    // Repaying everything (principal + simple interest) in the first period is
+    // always more than enough, so the root is bracketed.
+    var hi = financedPrincipal * (1 + annualRatePct / 100 * months / 12) + 1;
+    for (var i = 0; i < 200; i++) {
+      final mid = (lo + hi) / 2;
+      if (_dayCountResidual(
+            financedPrincipal: financedPrincipal,
+            annualRatePct: annualRatePct,
+            periodDays: periodDays,
+            emi: mid,
+          ) >
+          0) {
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    // Lenders bill in whole paise, and the final installment absorbs whatever
+    // residual that rounding leaves — which is exactly why slice's last EPI is
+    // ₹7,936.47 against the ₹7,936.53 of the other eleven.
+    return ((lo + hi) / 2 * 100).roundToDouble() / 100;
+  }
+
+  /// Roll a day-count loan forward, billing [emi] each period plus whatever the
+  /// borrower paid on top. Interest for a period is
+  /// `balance × rate/365 × days`, matching how personal-loan lenders actually
+  /// compute it.
+  ///
+  /// A period never bills more than clears the loan, so the final row is the
+  /// residual — and an extra payment simply ends the schedule early. That is
+  /// what makes prepayment recompute the waste: fewer rows, less interest.
+  ///
+  /// [extraPayments] are matched to the due date they fall on (by calendar day).
+  static DayCountRun runDayCount({
+    required double financedPrincipal,
+    required double annualRatePct,
+    required DateTime disbursalDate,
+    required DateTime firstDueDate,
+    required int months,
+    required double emi,
+    int? firstPeriodDays,
+    List<(DateTime, double)> extraPayments = const [],
+  }) {
+    if (months <= 0 || financedPrincipal <= 0) return const DayCountRun([]);
+    final periodDays = _periodDays(
+      disbursalDate: disbursalDate,
+      firstDueDate: firstDueDate,
+      months: months,
+      firstPeriodDays: firstPeriodDays,
+    );
+    final daily = annualRatePct / 100 / 365;
+    final rows = <DayCountRow>[];
+    var balance = financedPrincipal;
+
+    for (var i = 0; i < months; i++) {
+      if (balance <= 0.01) break;
+      final due = firstDueDate.dateOnly.addMonths(i);
+      final interest = balance * daily * periodDays[i];
+      final extra = extraPayments
+          .where((p) => p.$1.dateOnly == due)
+          .fold<double>(0, (s, p) => s + p.$2);
+      // Never take more than settles the loan: this both absorbs the final
+      // residual installment and lets a prepayment close the schedule early.
+      final payment = math.min(emi + extra, balance + interest);
+      final principalPart = payment - interest;
+      final closing = balance - principalPart;
+      rows.add(
+        DayCountRow(
+          number: i + 1,
+          dueDate: due,
+          days: periodDays[i],
+          openingBalance: balance,
+          interest: interest,
+          principal: principalPart,
+          payment: payment,
+          closingBalance: closing < 0.01 ? 0 : closing,
+        ),
+      );
+      balance = closing;
+    }
+    return DayCountRun(rows);
+  }
+
+  // ---- Advertised vs true annualised cost ----------------------------------
+
+  /// The monthly IRR that discounts a level [emi] annuity back to [netAmount].
+  static double _monthlyIrr({
+    required double netAmount,
+    required double emi,
+    required int months,
+  }) {
+    if (netAmount <= 0 || emi <= 0 || months <= 0) return 0;
+    double pv(double m) {
+      if (m <= 1e-12) return emi * months;
+      return emi * (1 - math.pow(1 + m, -months)) / m;
+    }
+
+    var lo = 1e-9, hi = 1.0;
+    for (var i = 0; i < 300; i++) {
+      final mid = (lo + hi) / 2;
+      if (pv(mid) > netAmount) {
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    return (lo + hi) / 2;
+  }
+
+  /// The APR lenders publish: the monthly IRR simply multiplied by 12, with no
+  /// compounding. slice's KFS quotes 39.73% this way. Flattering but standard.
+  static double nominalAprPct({
+    required double netAmount,
+    required double emi,
+    required int months,
+  }) =>
+      _monthlyIrr(netAmount: netAmount, emi: emi, months: months) * 12 * 100;
+
+  /// What the same loan actually costs once monthly compounding is honoured.
+  /// On slice's loan this is 47.83% against the advertised 39.73%.
+  static double effectiveAprPct({
+    required double netAmount,
+    required double emi,
+    required int months,
+  }) {
+    final m = _monthlyIrr(netAmount: netAmount, emi: emi, months: months);
+    return (math.pow(1 + m, 12) - 1) * 100;
+  }
+
+  // ---- Foreclosure ---------------------------------------------------------
+
+  /// What it costs to clear a borrowing today: the principal still owed, the
+  /// interest accrued since the last due date, the lender's foreclosure fee
+  /// (a percent of the outstanding, floored at [feeMin]) and GST on that fee.
+  ///
+  /// [extraInterestDays] covers the days a lender tacks on for settlement —
+  /// slice charges 1, which is invisible until you read the KFS footnote.
+  static ForeclosureQuote foreclosureQuote({
+    required double outstandingPrincipal,
+    required double annualRatePct,
+    required int daysSinceLastDue,
+    required double feePct,
+    required double feeMin,
+    required int extraInterestDays,
+    required bool gstOnFee,
+    double gstRate = AppConstants.gstRate,
+  }) {
+    if (outstandingPrincipal <= 0) {
+      return const ForeclosureQuote(
+        outstandingPrincipal: 0,
+        accruedInterest: 0,
+        fee: 0,
+        gstOnFee: 0,
+      );
+    }
+    final daily = annualRatePct / 100 / 365;
+    final days = daysSinceLastDue + extraInterestDays;
+    final accrued = outstandingPrincipal * daily * days;
+    final fee = math.max(outstandingPrincipal * feePct / 100, feeMin);
+    return ForeclosureQuote(
+      outstandingPrincipal: outstandingPrincipal,
+      accruedInterest: accrued < 0 ? 0 : accrued,
+      fee: fee,
+      gstOnFee: gstOnFee ? gstOn(fee, rate: gstRate) : 0,
+    );
   }
 }

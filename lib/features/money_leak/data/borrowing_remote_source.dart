@@ -115,6 +115,10 @@ Map<String, dynamic> borrowingFields(Borrowing b) => {
       'rate_type': b.rateType.name,
       'tenure_months': b.tenureMonths,
       'min_payment_paise': rupeesToPaise(b.minPayment),
+      'day_count': b.dayCount.name,
+      'first_due_date':
+          b.firstDueDate == null ? null : formatApiDate(b.firstDueDate!),
+      'first_period_days': b.firstPeriodDays,
       'start_date': formatApiDate(b.startDate),
       'status': b.status.name,
       'notes': b.notes,
@@ -143,6 +147,15 @@ Borrowing borrowingFromJson(Map<String, dynamic> j) => Borrowing(
       rateType: _enumByName(RateType.values, j['rate_type'], RateType.reducing),
       tenureMonths: (j['tenure_months'] as int?) ?? 0,
       minPayment: paiseToRupees((j['min_payment_paise'] as int?) ?? 0),
+      dayCount: _enumByName(
+        DayCountConvention.values,
+        j['day_count'],
+        DayCountConvention.monthlyUniform,
+      ),
+      firstDueDate: j['first_due_date'] == null
+          ? null
+          : parseApiDate(j['first_due_date'] as String),
+      firstPeriodDays: j['first_period_days'] as int?,
       startDate: parseApiDate(j['start_date'] as String),
       status: _enumByName(BorrowingStatus.values, j['status'], BorrowingStatus.active),
       notes: j['notes'] as String?,
@@ -152,6 +165,7 @@ Borrowing borrowingFromJson(Map<String, dynamic> j) => Borrowing(
 Map<String, dynamic> repaymentFields(Repayment r) => {
       'amount_paise': rupeesToPaise(r.amount),
       'date': formatApiDate(r.date),
+      'kind': r.kind.name,
       'installment_no': r.installmentNo,
       'note': r.note,
     };
@@ -166,6 +180,7 @@ Repayment repaymentFromJson(Map<String, dynamic> j) => Repayment(
       borrowingId: j['borrowing_id'] as String,
       amount: paiseToRupees(j['amount_paise'] as int),
       date: parseApiDate(j['date'] as String),
+      kind: _enumByName(RepaymentKind.values, j['kind'], RepaymentKind.payment),
       installmentNo: j['installment_no'] as int?,
       note: j['note'] as String?,
     );

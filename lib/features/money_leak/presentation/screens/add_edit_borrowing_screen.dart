@@ -53,6 +53,9 @@ class _AddEditBorrowingScreenState
   bool _gstOnInterest = false;
   bool _isNoCostEmi = false;
   bool _feeFinanced = false;
+  DayCountConvention _dayCount = DayCountConvention.monthlyUniform;
+  DateTime? _firstDueDate;
+  late final TextEditingController _firstPeriodDays;
   late DateTime _startDate;
   Lender? _lender;
   bool _saving = false;
@@ -91,6 +94,11 @@ class _AddEditBorrowingScreenState
     _gstOnInterest = e?.gstOnInterest ?? false;
     _isNoCostEmi = e?.isNoCostEmi ?? false;
     _feeFinanced = e?.feeFinanced ?? false;
+    _dayCount = e?.dayCount ?? DayCountConvention.monthlyUniform;
+    _firstDueDate = e?.firstDueDate;
+    _firstPeriodDays = TextEditingController(
+      text: e?.firstPeriodDays?.toString() ?? '',
+    );
     _startDate = e?.startDate ?? DateTime.now();
     // Live-update the EMI preview as figures change.
     for (final ctrl in [_principal, _rate, _tenure, _fee]) {
@@ -108,6 +116,7 @@ class _AddEditBorrowingScreenState
       _tenure,
       _minPayment,
       _notes,
+      _firstPeriodDays,
     ]) {
       ctrl.dispose();
     }
@@ -149,6 +158,21 @@ class _AddEditBorrowingScreenState
     });
   }
 
+  /// Personal loans accrue interest per day, so a long first period costs more.
+  /// Only meaningful on a fixed EMI that is not a no-cost offer.
+  bool get _isDailyInterest =>
+      _isEmi && !_isNoCostEmi && _dayCount == DayCountConvention.actual365;
+
+  Future<void> _pickFirstDueDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _firstDueDate ?? _startDate.addMonths(1),
+      firstDate: _startDate,
+      lastDate: _startDate.add(const Duration(days: 400)),
+    );
+    if (picked != null) setState(() => _firstDueDate = picked);
+  }
+
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -186,7 +210,13 @@ class _AddEditBorrowingScreenState
       notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
       createdAt: existing?.createdAt ?? DateTime.now(),
       isNoCostEmi: _isEmi && _isNoCostEmi,
-      feeFinanced: !_isEmi && _feeFinanced,
+      feeFinanced: _feeFinanced,
+      dayCount: _isDailyInterest ? DayCountConvention.actual365
+          : DayCountConvention.monthlyUniform,
+      firstDueDate: _isDailyInterest ? _firstDueDate : null,
+      firstPeriodDays: _isDailyInterest
+          ? int.tryParse(_firstPeriodDays.text.trim())
+          : null,
     );
 
     try {
@@ -334,6 +364,56 @@ class _AddEditBorrowingScreenState
         ),
         if (!_isNoCostEmi) ...[
           const SizedBox(height: AppSpacing.lg),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: Text('Fee added to the loan',
+                style: context.text.titleMedium),
+            subtitle: Text(
+              'Deducted from what you received, so you pay interest on it too',
+              style: context.text.bodySmall,
+            ),
+            value: _feeFinanced,
+            onChanged: (v) {
+              sl<HapticService>().select();
+              setState(() => _feeFinanced = v);
+            },
+          ),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: Text('Daily interest (actual/365)',
+                style: context.text.titleMedium),
+            subtitle: Text(
+              'Personal loans accrue per day, so a long first month costs more',
+              style: context.text.bodySmall,
+            ),
+            value: _dayCount == DayCountConvention.actual365,
+            onChanged: (v) {
+              sl<HapticService>().select();
+              setState(() => _dayCount = v
+                  ? DayCountConvention.actual365
+                  : DayCountConvention.monthlyUniform);
+            },
+          ),
+          if (_isDailyInterest) ...[
+            const SizedBox(height: AppSpacing.lg),
+            Text('First EMI due', style: AppTypography.eyebrow(c)),
+            const SizedBox(height: AppSpacing.sm),
+            _DateField(
+              date: _firstDueDate ?? _startDate.addMonths(1),
+              onTap: _pickFirstDueDate,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            AppTextField(
+              label: 'First period days (optional)',
+              controller: _firstPeriodDays,
+              hint: 'From your KFS, if it differs from the dates',
+              keyboardType: TextInputType.number,
+              validator: Validators.integer(),
+            ),
+          ],
+        ],
+        if (!_isNoCostEmi) ...[
+          const SizedBox(height: AppSpacing.lg),
           Text('Interest type', style: AppTypography.eyebrow(c)),
           const SizedBox(height: AppSpacing.sm),
           SegmentedButton<RateType>(
@@ -411,7 +491,7 @@ class _AddEditBorrowingScreenState
           contentPadding: EdgeInsets.zero,
           title: Text('Fee added to the loan', style: context.text.titleMedium),
           subtitle: Text(
-            'Slice-style: you pay interest on the fee too',
+            'Deducted from what you received, so you pay interest on it too',
             style: context.text.bodySmall,
           ),
           value: _feeFinanced,

@@ -23,6 +23,9 @@ class BorrowingCreate(BaseModel):
     rate_type: str = Field(default="reducing", max_length=40)
     tenure_months: int = Field(default=0, ge=0)
     min_payment_paise: int = Field(default=0, ge=0)
+    day_count: str = Field(default="monthlyUniform", max_length=40)
+    first_due_date: datetime | None = None
+    first_period_days: int | None = Field(default=None, ge=0)
     start_date: datetime
     status: str = Field(default="active", max_length=40)
     notes: str | None = Field(default=None, max_length=2000)
@@ -48,6 +51,9 @@ class BorrowingPatch(BaseModel):
     rate_type: str | None = Field(default=None, max_length=40)
     tenure_months: int | None = Field(default=None, ge=0)
     min_payment_paise: int | None = Field(default=None, ge=0)
+    day_count: str | None = Field(default=None, max_length=40)
+    first_due_date: datetime | None = None
+    first_period_days: int | None = Field(default=None, ge=0)
     start_date: datetime | None = None
     status: str | None = Field(default=None, max_length=40)
     notes: str | None = Field(default=None, max_length=2000)
@@ -70,6 +76,9 @@ class BorrowingResponse(BaseModel):
     rate_type: str
     tenure_months: int
     min_payment_paise: int
+    day_count: str
+    first_due_date: datetime | None
+    first_period_days: int | None
     start_date: datetime
     status: str
     notes: str | None
@@ -89,6 +98,7 @@ class RepaymentCreate(BaseModel):
     id: uuid.UUID
     amount_paise: int = Field(ge=0)
     date: datetime
+    kind: str = Field(default="payment", max_length=40)
     installment_no: int | None = Field(default=None, ge=0)
     note: str | None = Field(default=None, max_length=500)
     created_at: datetime | None = None
@@ -99,6 +109,7 @@ class RepaymentPatch(BaseModel):
     updated_at: datetime
     amount_paise: int | None = Field(default=None, ge=0)
     date: datetime | None = None
+    kind: str | None = Field(default=None, max_length=40)
     installment_no: int | None = Field(default=None, ge=0)
     note: str | None = Field(default=None, max_length=500)
 
@@ -108,6 +119,7 @@ class RepaymentResponse(BaseModel):
     borrowing_id: uuid.UUID
     amount_paise: int
     date: datetime
+    kind: str
     installment_no: int | None
     note: str | None
     created_at: datetime

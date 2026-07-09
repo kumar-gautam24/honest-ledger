@@ -23,6 +23,13 @@ class Lenders extends Table {
   RealColumn get feeValue => real().withDefault(const Constant(0))();
   RealColumn get feeCap => real().nullable()();
   RealColumn get feeMin => real().nullable()();
+  RealColumn get foreclosurePct => real().nullable()();
+  RealColumn get foreclosureMin => real().nullable()();
+  IntColumn get foreclosureFreeWindowDays => integer().nullable()();
+  BoolColumn get foreclosureGst =>
+      boolean().withDefault(const Constant(true))();
+  IntColumn get foreclosureExtraInterestDays =>
+      integer().withDefault(const Constant(0))();
   BoolColumn get isMine => boolean().withDefault(const Constant(false))();
   TextColumn get notes => text().nullable()();
 
@@ -54,6 +61,10 @@ class Borrowings extends Table {
       text().withDefault(const Constant('reducing'))();
   IntColumn get tenureMonths => integer().withDefault(const Constant(0))();
   RealColumn get minPayment => real().withDefault(const Constant(0))();
+  TextColumn get dayCount =>
+      text().withDefault(const Constant('monthlyUniform'))();
+  DateTimeColumn get firstDueDate => dateTime().nullable()();
+  IntColumn get firstPeriodDays => integer().nullable()();
   DateTimeColumn get startDate => dateTime()();
   TextColumn get status => text().withDefault(const Constant('active'))();
   TextColumn get notes => text().nullable()();
@@ -71,6 +82,7 @@ class Repayments extends Table {
       text().references(Borrowings, #id, onDelete: KeyAction.cascade)();
   RealColumn get amount => real()();
   DateTimeColumn get date => dateTime()();
+  TextColumn get kind => text().withDefault(const Constant('payment'))();
   IntColumn get installmentNo => integer().nullable()();
   TextColumn get note => text().nullable()();
 
@@ -153,7 +165,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -182,6 +194,17 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(borrowings, borrowings.isNoCostEmi);
             await m.addColumn(borrowings, borrowings.feeFinanced);
             await m.addColumn(lenders, lenders.feeMin);
+          }
+          if (from < 8) {
+            await m.addColumn(borrowings, borrowings.dayCount);
+            await m.addColumn(borrowings, borrowings.firstDueDate);
+            await m.addColumn(borrowings, borrowings.firstPeriodDays);
+            await m.addColumn(repayments, repayments.kind);
+            await m.addColumn(lenders, lenders.foreclosurePct);
+            await m.addColumn(lenders, lenders.foreclosureMin);
+            await m.addColumn(lenders, lenders.foreclosureFreeWindowDays);
+            await m.addColumn(lenders, lenders.foreclosureGst);
+            await m.addColumn(lenders, lenders.foreclosureExtraInterestDays);
           }
         },
         beforeOpen: (details) async {

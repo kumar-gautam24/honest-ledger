@@ -18,6 +18,11 @@ Lender lenderFromRow(LenderRow r) => Lender(
       feeValue: r.feeValue,
       feeCap: r.feeCap,
       feeMin: r.feeMin,
+      foreclosurePct: r.foreclosurePct,
+      foreclosureMin: r.foreclosureMin,
+      foreclosureFreeWindowDays: r.foreclosureFreeWindowDays,
+      foreclosureGst: r.foreclosureGst,
+      foreclosureExtraInterestDays: r.foreclosureExtraInterestDays,
       isMine: r.isMine,
       notes: r.notes,
     );
@@ -34,6 +39,11 @@ LendersCompanion lenderToCompanion(Lender l) => LendersCompanion.insert(
       feeValue: Value(l.feeValue),
       feeCap: Value(l.feeCap),
       feeMin: Value(l.feeMin),
+      foreclosurePct: Value(l.foreclosurePct),
+      foreclosureMin: Value(l.foreclosureMin),
+      foreclosureFreeWindowDays: Value(l.foreclosureFreeWindowDays),
+      foreclosureGst: Value(l.foreclosureGst),
+      foreclosureExtraInterestDays: Value(l.foreclosureExtraInterestDays),
       isMine: Value(l.isMine),
       notes: Value(l.notes),
     );

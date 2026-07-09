@@ -6,11 +6,11 @@ from datetime import datetime
 import asyncpg
 
 REPAYMENT_COLUMNS = """
-    id, user_id, borrowing_id, amount_paise, date, installment_no, note,
+    id, user_id, borrowing_id, amount_paise, date, kind, installment_no, note,
     created_at, updated_at, deleted_at, server_seq
 """
 
-_PATCHABLE = {"amount_paise", "date", "installment_no", "note"}
+_PATCHABLE = {"amount_paise", "date", "kind", "installment_no", "note"}
 
 
 async def insert_repayment(
@@ -19,15 +19,16 @@ async def insert_repayment(
     return await pool.fetchrow(
         f"""
         INSERT INTO repayments (
-            id, user_id, borrowing_id, amount_paise, date,
+            id, user_id, borrowing_id, amount_paise, date, kind,
             installment_no, note, created_at, updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         ON CONFLICT (id) DO NOTHING
         RETURNING {REPAYMENT_COLUMNS}
         """,
         data["id"], user_id, borrowing_id, data["amount_paise"], data["date"],
-        data["installment_no"], data["note"], data["created_at"], data["updated_at"],
+        data["kind"], data["installment_no"], data["note"],
+        data["created_at"], data["updated_at"],
     )
 
 

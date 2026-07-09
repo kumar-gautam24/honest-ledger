@@ -42,12 +42,12 @@ void main() {
     expect(all, hasLength(16));
   });
 
-  test('sbi-card-emi carries a fee floor that threads through '
-      'processingFee (2% of ₹5,000 = ₹100, floored to ₹199)', () async {
+  test('sbi-card-emi has no fee floor: Flexipay is 1% capped at ₹2,000 '
+      '(w.e.f. 23 Nov 2025), so a small booking pays 1%', () async {
     final sbi = await repo.getById('sbi-card-emi');
     expect(sbi, isNotNull);
-    expect(sbi!.feeMin, 199);
-    expect(sbi.feeCap, 1000);
+    expect(sbi!.feeMin, isNull);
+    expect(sbi.feeCap, 2000);
 
     final fee = FinanceMath.processingFee(
       principal: 5000,
@@ -56,13 +56,31 @@ void main() {
       cap: sbi.feeCap,
       min: sbi.feeMin,
     );
-    expect(fee, 199);
+    expect(fee, 50); // 1% of 5,000 — no floor to lift it
   });
 
   test('reseed refreshing built-ins carries feeMin through the round trip', () async {
     await reseedLenders(db);
-    final sbi = await repo.getById('sbi-card-emi');
-    expect(sbi!.feeMin, 199);
+    final hdfc = await repo.getById('hdfc-card-emi');
+    expect(hdfc!.feeMin, 149);
+  });
+
+  test('seed v5 carries foreclosure rules through the round trip', () async {
+    await reseedLenders(db);
+    // slice: free to foreclose (RBI 2025 Directions) but one extra day of
+    // interest, and no GST since there is no fee to tax.
+    final slice = await repo.getById('slice');
+    expect(slice!.foreclosurePct, 0);
+    expect(slice.foreclosureExtraInterestDays, 1);
+    expect(slice.foreclosureGst, isFalse);
+    // Axis: 3% or ₹300, whichever is higher, free within 7 days.
+    final axis = await repo.getById('axis-card-emi');
+    expect(axis!.foreclosurePct, 3);
+    expect(axis.foreclosureMin, 300);
+    expect(axis.foreclosureFreeWindowDays, 7);
+    // HDFC: free within 30 days of booking.
+    final hdfc = await repo.getById('hdfc-card-emi');
+    expect(hdfc!.foreclosureFreeWindowDays, 30);
   });
 
   test('hdfc-card-emi carries a fee floor that threads through '
@@ -95,7 +113,8 @@ void main() {
 
     await reseedLenders(db);
 
-    expect((await repo.getById('slice'))!.typicalRatePct, 36); // refreshed
+    // Refreshed to the rate verified against the user's own slice KFS.
+    expect((await repo.getById('slice'))!.typicalRatePct, 31.15);
     expect(await repo.getById('mine'), isNotNull); // preserved
   });
 }

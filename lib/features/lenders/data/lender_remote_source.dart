@@ -68,6 +68,11 @@ Map<String, dynamic> lenderFields(Lender l) => {
       'fee_value': l.feeValue,
       'fee_cap': l.feeCap,
       'fee_min': l.feeMin,
+      'foreclosure_pct': l.foreclosurePct,
+      'foreclosure_min': l.foreclosureMin,
+      'foreclosure_free_window_days': l.foreclosureFreeWindowDays,
+      'foreclosure_gst': l.foreclosureGst,
+      'foreclosure_extra_interest_days': l.foreclosureExtraInterestDays,
       'is_mine': l.isMine,
       'notes': l.notes,
     };
@@ -86,6 +91,12 @@ Lender lenderFromJson(Map<String, dynamic> j) => Lender(
       feeValue: ((j['fee_value'] as num?) ?? 0).toDouble(),
       feeCap: (j['fee_cap'] as num?)?.toDouble(),
       feeMin: (j['fee_min'] as num?)?.toDouble(),
+      foreclosurePct: (j['foreclosure_pct'] as num?)?.toDouble(),
+      foreclosureMin: (j['foreclosure_min'] as num?)?.toDouble(),
+      foreclosureFreeWindowDays: j['foreclosure_free_window_days'] as int?,
+      foreclosureGst: (j['foreclosure_gst'] as bool?) ?? true,
+      foreclosureExtraInterestDays:
+          (j['foreclosure_extra_interest_days'] as int?) ?? 0,
       isMine: (j['is_mine'] as bool?) ?? false,
       notes: j['notes'] as String?,
     );

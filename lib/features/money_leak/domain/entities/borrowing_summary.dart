@@ -64,8 +64,141 @@ class BorrowingSummary {
   /// The dated installment plan. Empty for a flexible loan.
   final List<EmiInstallment> schedule;
 
+  /// A day-count (actual/365) fixed EMI — a personal loan, not a card EMI.
+  ///
+  /// The schedule is not a fixed list to tick off: it is rolled forward from
+  /// what was actually paid. Pay the installment and you get the lender's own
+  /// schedule back; pay extra and the remaining rows are recomputed, so the
+  /// projected waste falls the moment the payment is logged.
+  ///
+  /// A financed fee never appears as an installment line — it was netted out of
+  /// the disbursal, so it is already spent on day one and shows up directly in
+  /// [wastedSoFar].
+  factory BorrowingSummary._dayCountEmi(
+    Borrowing b,
+    List<Repayment> allLines,
+    List<Repayment> payments,
+    double charges,
+  ) {
+    final firstDue = b.firstDueDate ?? b.startDate.addMonths(1);
+    final emi = FinanceMath.dayCountEmi(
+      financedPrincipal: b.financedPrincipal,
+      annualRatePct: b.interestRatePct,
+      disbursalDate: b.startDate,
+      firstDueDate: firstDue,
+      months: b.tenureMonths,
+      firstPeriodDays: b.firstPeriodDays,
+    );
+
+    // Anything paid above the installment retires principal early. A payment
+    // with no installment number is a standalone prepayment; attribute it to
+    // the first due date it could land on.
+    final extras = <(DateTime, double)>[];
+    for (final r in payments) {
+      if (r.installmentNo != null) {
+        final extra = r.amount - emi;
+        if (extra > 0.01) extras.add((b.dueDateOf(r.installmentNo!), extra));
+      } else if (r.amount > 0.01) {
+        extras.add((_nextDueOnOrAfter(b, firstDue, r.date), r.amount));
+      }
+    }
+
+    final run = FinanceMath.runDayCount(
+      financedPrincipal: b.financedPrincipal,
+      annualRatePct: b.interestRatePct,
+      disbursalDate: b.startDate,
+      firstDueDate: firstDue,
+      months: b.tenureMonths,
+      emi: emi,
+      firstPeriodDays: b.firstPeriodDays,
+      extraPayments: extras,
+    );
+
+    final schedule = [
+      for (final row in run.rows)
+        EmiInstallment(
+          number: row.number,
+          dueDate: row.dueDate,
+          principal: row.principal,
+          interest: row.interest,
+          gstOnInterest: 0, // Loan interest carries no GST — only the fee does.
+          fee: 0, // Financed: already netted out of the disbursal.
+          gstOnFee: 0,
+        ),
+    ];
+
+    final paidNums = {
+      for (final r in payments)
+        if (r.installmentNo != null) r.installmentNo!,
+    };
+    final interestPaid = run.rows
+        .where((e) => paidNums.contains(e.number))
+        .fold<double>(0, (s, e) => s + e.interest);
+
+    // Everything beyond the cash that reached the borrower: the sunk fee, the
+    // interest across the (recomputed) schedule, and any charges taken.
+    final projectedExtra = b.sunkFee + run.totalInterest + charges;
+    // What the loan would have cost had every installment simply been paid.
+    final baselineInterest = FinanceMath.runDayCount(
+      financedPrincipal: b.financedPrincipal,
+      annualRatePct: b.interestRatePct,
+      disbursalDate: b.startDate,
+      firstDueDate: firstDue,
+      months: b.tenureMonths,
+      emi: emi,
+      firstPeriodDays: b.firstPeriodDays,
+    ).totalInterest;
+
+    final totalRepaid = payments.fold<double>(0, (s, r) => s + r.amount);
+    final outstanding = run.totalPaid - totalRepaid;
+
+    return BorrowingSummary(
+      borrowing: b,
+      repayments: allLines,
+      totalRepaid: totalRepaid,
+      scheduledTotal: run.totalPaid,
+      outstanding: b.isClosed ? 0 : (outstanding < 0 ? 0 : outstanding),
+      wastedSoFar: b.sunkFee + interestPaid + charges,
+      projectedExtra: projectedExtra,
+      projectedSaved:
+          (baselineInterest - run.totalInterest).clamp(0.0, double.infinity),
+      neverClears: false,
+      accruedInterest: interestPaid,
+      schedule: schedule,
+    );
+  }
+
+  /// The first installment due on or after [date] — where a standalone
+  /// prepayment lands.
+  static DateTime _nextDueOnOrAfter(
+    Borrowing b,
+    DateTime firstDue,
+    DateTime date,
+  ) {
+    for (var n = 1; n <= b.tenureMonths; n++) {
+      final due = firstDue.addMonths(n - 1);
+      if (!due.isBefore(date)) return due;
+    }
+    return firstDue.addMonths(b.tenureMonths - 1);
+  }
+
+  /// Ledger lines that service the debt. A [RepaymentKind.charge] is money gone
+  /// but retires no principal, so it never belongs in schedule math.
+  static List<Repayment> _payments(List<Repayment> all) =>
+      [for (final r in all) if (!r.isCharge) r];
+
+  /// Penal charges and the like, entered by hand. Pure waste.
+  static double _charges(List<Repayment> all) =>
+      all.where((r) => r.isCharge).fold<double>(0, (s, r) => s + r.amount);
+
   factory BorrowingSummary.from(Borrowing b, List<Repayment> repayments) {
-    final totalRepaid = repayments.fold<double>(0, (s, r) => s + r.amount);
+    final payments = _payments(repayments);
+    final charges = _charges(repayments);
+    final totalRepaid = payments.fold<double>(0, (s, r) => s + r.amount);
+
+    if (b.isEmi && b.dayCount == DayCountConvention.actual365) {
+      return BorrowingSummary._dayCountEmi(b, repayments, payments, charges);
+    }
 
     if (b.isEmi && b.tenureMonths > 0) {
       final schedule = FinanceMath.emiSchedule(
@@ -85,17 +218,18 @@ class BorrowingSummary {
       // principal early on, so counting `repaid − principal` would wrongly read
       // zero until the whole loan is paid off.)
       final paidNums = {
-        for (final r in repayments)
+        for (final r in payments)
           if (r.installmentNo != null) r.installmentNo!,
       };
-      final wastedSoFar = schedule
-          .where((e) => paidNums.contains(e.number))
-          .fold<double>(0, (s, e) => s + (e.total - e.principal));
+      final wastedSoFar = charges +
+          schedule
+              .where((e) => paidNums.contains(e.number))
+              .fold<double>(0, (s, e) => s + (e.total - e.principal));
       // Interest alone (no GST/fees) on the installments already paid.
       final interestPaid = schedule
           .where((e) => paidNums.contains(e.number))
           .fold<double>(0, (s, e) => s + e.interest);
-      final fullExtra = scheduledTotal - b.principal;
+      final fullExtra = scheduledTotal - b.principal + charges;
       final foreclosed = b.isClosed && paidNums.length < schedule.length;
       // A foreclosed EMI stops accruing future interest: its true extra is the
       // non-principal already paid plus the foreclosure fee.
@@ -125,13 +259,12 @@ class BorrowingSummary {
     // When the fee was financed into the loan (Slice-style), interest accrues
     // on principal + fee + GST-on-fee, not just principal — the fee is part
     // of the balance the bank charges interest on.
-    final effectivePrincipal =
-        b.feeFinanced ? b.principal + b.processingFee + b.gstOnFee : b.principal;
+    final effectivePrincipal = b.financedPrincipal;
     final outstanding = FinanceMath.outstandingFlexible(
       principal: effectivePrincipal,
       annualRatePct: b.interestRatePct,
       startDate: b.startDate,
-      payments: [for (final r in repayments) (r.date, r.amount)],
+      payments: [for (final r in payments) (r.date, r.amount)],
     );
     final scheduledTotal = b.principal + b.processingFee + b.gstOnFee;
     final fees = b.processingFee + b.gstOnFee;
@@ -140,7 +273,7 @@ class BorrowingSummary {
       principal: effectivePrincipal,
       annualRatePct: b.interestRatePct,
       startDate: b.startDate,
-      payments: [for (final r in repayments) (r.date, r.amount)],
+      payments: [for (final r in payments) (r.date, r.amount)],
     );
     final future = planned > 0
         ? FinanceMath.projectedInterestFlexible(
@@ -150,8 +283,8 @@ class BorrowingSummary {
           )
         : double.infinity;
     final neverClears = outstanding > 0 && planned > 0 && !future.isFinite;
-    final projectedExtra =
-        future.isFinite ? fees + interestPast + future : fees + interestPast;
+    final projectedExtra = charges +
+        (future.isFinite ? fees + interestPast + future : fees + interestPast);
     // Day-one baseline: paying the planned amount from the start, no prepays.
     final baseline = planned > 0
         ? fees +
@@ -170,7 +303,7 @@ class BorrowingSummary {
       totalRepaid: totalRepaid,
       scheduledTotal: scheduledTotal,
       outstanding: outstanding,
-      wastedSoFar:
+      wastedSoFar: charges +
           FinanceMath.extraPaid(principal: b.principal, totalRepaid: totalRepaid),
       projectedExtra: projectedExtra,
       projectedSaved: projectedSaved,

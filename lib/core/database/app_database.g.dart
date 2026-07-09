@@ -122,6 +122,66 @@ class $LendersTable extends Lenders with TableInfo<$LendersTable, LenderRow> {
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _foreclosurePctMeta = const VerificationMeta(
+    'foreclosurePct',
+  );
+  @override
+  late final GeneratedColumn<double> foreclosurePct = GeneratedColumn<double>(
+    'foreclosure_pct',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _foreclosureMinMeta = const VerificationMeta(
+    'foreclosureMin',
+  );
+  @override
+  late final GeneratedColumn<double> foreclosureMin = GeneratedColumn<double>(
+    'foreclosure_min',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _foreclosureFreeWindowDaysMeta =
+      const VerificationMeta('foreclosureFreeWindowDays');
+  @override
+  late final GeneratedColumn<int> foreclosureFreeWindowDays =
+      GeneratedColumn<int>(
+        'foreclosure_free_window_days',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _foreclosureGstMeta = const VerificationMeta(
+    'foreclosureGst',
+  );
+  @override
+  late final GeneratedColumn<bool> foreclosureGst = GeneratedColumn<bool>(
+    'foreclosure_gst',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("foreclosure_gst" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _foreclosureExtraInterestDaysMeta =
+      const VerificationMeta('foreclosureExtraInterestDays');
+  @override
+  late final GeneratedColumn<int> foreclosureExtraInterestDays =
+      GeneratedColumn<int>(
+        'foreclosure_extra_interest_days',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      );
   static const VerificationMeta _isMineMeta = const VerificationMeta('isMine');
   @override
   late final GeneratedColumn<bool> isMine = GeneratedColumn<bool>(
@@ -157,6 +217,11 @@ class $LendersTable extends Lenders with TableInfo<$LendersTable, LenderRow> {
     feeValue,
     feeCap,
     feeMin,
+    foreclosurePct,
+    foreclosureMin,
+    foreclosureFreeWindowDays,
+    foreclosureGst,
+    foreclosureExtraInterestDays,
     isMine,
     notes,
   ];
@@ -242,6 +307,51 @@ class $LendersTable extends Lenders with TableInfo<$LendersTable, LenderRow> {
         feeMin.isAcceptableOrUnknown(data['fee_min']!, _feeMinMeta),
       );
     }
+    if (data.containsKey('foreclosure_pct')) {
+      context.handle(
+        _foreclosurePctMeta,
+        foreclosurePct.isAcceptableOrUnknown(
+          data['foreclosure_pct']!,
+          _foreclosurePctMeta,
+        ),
+      );
+    }
+    if (data.containsKey('foreclosure_min')) {
+      context.handle(
+        _foreclosureMinMeta,
+        foreclosureMin.isAcceptableOrUnknown(
+          data['foreclosure_min']!,
+          _foreclosureMinMeta,
+        ),
+      );
+    }
+    if (data.containsKey('foreclosure_free_window_days')) {
+      context.handle(
+        _foreclosureFreeWindowDaysMeta,
+        foreclosureFreeWindowDays.isAcceptableOrUnknown(
+          data['foreclosure_free_window_days']!,
+          _foreclosureFreeWindowDaysMeta,
+        ),
+      );
+    }
+    if (data.containsKey('foreclosure_gst')) {
+      context.handle(
+        _foreclosureGstMeta,
+        foreclosureGst.isAcceptableOrUnknown(
+          data['foreclosure_gst']!,
+          _foreclosureGstMeta,
+        ),
+      );
+    }
+    if (data.containsKey('foreclosure_extra_interest_days')) {
+      context.handle(
+        _foreclosureExtraInterestDaysMeta,
+        foreclosureExtraInterestDays.isAcceptableOrUnknown(
+          data['foreclosure_extra_interest_days']!,
+          _foreclosureExtraInterestDaysMeta,
+        ),
+      );
+    }
     if (data.containsKey('is_mine')) {
       context.handle(
         _isMineMeta,
@@ -307,6 +417,26 @@ class $LendersTable extends Lenders with TableInfo<$LendersTable, LenderRow> {
         DriftSqlType.double,
         data['${effectivePrefix}fee_min'],
       ),
+      foreclosurePct: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}foreclosure_pct'],
+      ),
+      foreclosureMin: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}foreclosure_min'],
+      ),
+      foreclosureFreeWindowDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}foreclosure_free_window_days'],
+      ),
+      foreclosureGst: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}foreclosure_gst'],
+      )!,
+      foreclosureExtraInterestDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}foreclosure_extra_interest_days'],
+      )!,
       isMine: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_mine'],
@@ -336,6 +466,11 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
   final double feeValue;
   final double? feeCap;
   final double? feeMin;
+  final double? foreclosurePct;
+  final double? foreclosureMin;
+  final int? foreclosureFreeWindowDays;
+  final bool foreclosureGst;
+  final int foreclosureExtraInterestDays;
   final bool isMine;
   final String? notes;
   const LenderRow({
@@ -350,6 +485,11 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
     required this.feeValue,
     this.feeCap,
     this.feeMin,
+    this.foreclosurePct,
+    this.foreclosureMin,
+    this.foreclosureFreeWindowDays,
+    required this.foreclosureGst,
+    required this.foreclosureExtraInterestDays,
     required this.isMine,
     this.notes,
   });
@@ -375,6 +515,21 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
     if (!nullToAbsent || feeMin != null) {
       map['fee_min'] = Variable<double>(feeMin);
     }
+    if (!nullToAbsent || foreclosurePct != null) {
+      map['foreclosure_pct'] = Variable<double>(foreclosurePct);
+    }
+    if (!nullToAbsent || foreclosureMin != null) {
+      map['foreclosure_min'] = Variable<double>(foreclosureMin);
+    }
+    if (!nullToAbsent || foreclosureFreeWindowDays != null) {
+      map['foreclosure_free_window_days'] = Variable<int>(
+        foreclosureFreeWindowDays,
+      );
+    }
+    map['foreclosure_gst'] = Variable<bool>(foreclosureGst);
+    map['foreclosure_extra_interest_days'] = Variable<int>(
+      foreclosureExtraInterestDays,
+    );
     map['is_mine'] = Variable<bool>(isMine);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -403,6 +558,18 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
       feeMin: feeMin == null && nullToAbsent
           ? const Value.absent()
           : Value(feeMin),
+      foreclosurePct: foreclosurePct == null && nullToAbsent
+          ? const Value.absent()
+          : Value(foreclosurePct),
+      foreclosureMin: foreclosureMin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(foreclosureMin),
+      foreclosureFreeWindowDays:
+          foreclosureFreeWindowDays == null && nullToAbsent
+          ? const Value.absent()
+          : Value(foreclosureFreeWindowDays),
+      foreclosureGst: Value(foreclosureGst),
+      foreclosureExtraInterestDays: Value(foreclosureExtraInterestDays),
       isMine: Value(isMine),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
@@ -427,6 +594,15 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
       feeValue: serializer.fromJson<double>(json['feeValue']),
       feeCap: serializer.fromJson<double?>(json['feeCap']),
       feeMin: serializer.fromJson<double?>(json['feeMin']),
+      foreclosurePct: serializer.fromJson<double?>(json['foreclosurePct']),
+      foreclosureMin: serializer.fromJson<double?>(json['foreclosureMin']),
+      foreclosureFreeWindowDays: serializer.fromJson<int?>(
+        json['foreclosureFreeWindowDays'],
+      ),
+      foreclosureGst: serializer.fromJson<bool>(json['foreclosureGst']),
+      foreclosureExtraInterestDays: serializer.fromJson<int>(
+        json['foreclosureExtraInterestDays'],
+      ),
       isMine: serializer.fromJson<bool>(json['isMine']),
       notes: serializer.fromJson<String?>(json['notes']),
     );
@@ -446,6 +622,15 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
       'feeValue': serializer.toJson<double>(feeValue),
       'feeCap': serializer.toJson<double?>(feeCap),
       'feeMin': serializer.toJson<double?>(feeMin),
+      'foreclosurePct': serializer.toJson<double?>(foreclosurePct),
+      'foreclosureMin': serializer.toJson<double?>(foreclosureMin),
+      'foreclosureFreeWindowDays': serializer.toJson<int?>(
+        foreclosureFreeWindowDays,
+      ),
+      'foreclosureGst': serializer.toJson<bool>(foreclosureGst),
+      'foreclosureExtraInterestDays': serializer.toJson<int>(
+        foreclosureExtraInterestDays,
+      ),
       'isMine': serializer.toJson<bool>(isMine),
       'notes': serializer.toJson<String?>(notes),
     };
@@ -463,6 +648,11 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
     double? feeValue,
     Value<double?> feeCap = const Value.absent(),
     Value<double?> feeMin = const Value.absent(),
+    Value<double?> foreclosurePct = const Value.absent(),
+    Value<double?> foreclosureMin = const Value.absent(),
+    Value<int?> foreclosureFreeWindowDays = const Value.absent(),
+    bool? foreclosureGst,
+    int? foreclosureExtraInterestDays,
     bool? isMine,
     Value<String?> notes = const Value.absent(),
   }) => LenderRow(
@@ -477,6 +667,18 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
     feeValue: feeValue ?? this.feeValue,
     feeCap: feeCap.present ? feeCap.value : this.feeCap,
     feeMin: feeMin.present ? feeMin.value : this.feeMin,
+    foreclosurePct: foreclosurePct.present
+        ? foreclosurePct.value
+        : this.foreclosurePct,
+    foreclosureMin: foreclosureMin.present
+        ? foreclosureMin.value
+        : this.foreclosureMin,
+    foreclosureFreeWindowDays: foreclosureFreeWindowDays.present
+        ? foreclosureFreeWindowDays.value
+        : this.foreclosureFreeWindowDays,
+    foreclosureGst: foreclosureGst ?? this.foreclosureGst,
+    foreclosureExtraInterestDays:
+        foreclosureExtraInterestDays ?? this.foreclosureExtraInterestDays,
     isMine: isMine ?? this.isMine,
     notes: notes.present ? notes.value : this.notes,
   );
@@ -495,6 +697,21 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
       feeValue: data.feeValue.present ? data.feeValue.value : this.feeValue,
       feeCap: data.feeCap.present ? data.feeCap.value : this.feeCap,
       feeMin: data.feeMin.present ? data.feeMin.value : this.feeMin,
+      foreclosurePct: data.foreclosurePct.present
+          ? data.foreclosurePct.value
+          : this.foreclosurePct,
+      foreclosureMin: data.foreclosureMin.present
+          ? data.foreclosureMin.value
+          : this.foreclosureMin,
+      foreclosureFreeWindowDays: data.foreclosureFreeWindowDays.present
+          ? data.foreclosureFreeWindowDays.value
+          : this.foreclosureFreeWindowDays,
+      foreclosureGst: data.foreclosureGst.present
+          ? data.foreclosureGst.value
+          : this.foreclosureGst,
+      foreclosureExtraInterestDays: data.foreclosureExtraInterestDays.present
+          ? data.foreclosureExtraInterestDays.value
+          : this.foreclosureExtraInterestDays,
       isMine: data.isMine.present ? data.isMine.value : this.isMine,
       notes: data.notes.present ? data.notes.value : this.notes,
     );
@@ -514,6 +731,13 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
           ..write('feeValue: $feeValue, ')
           ..write('feeCap: $feeCap, ')
           ..write('feeMin: $feeMin, ')
+          ..write('foreclosurePct: $foreclosurePct, ')
+          ..write('foreclosureMin: $foreclosureMin, ')
+          ..write('foreclosureFreeWindowDays: $foreclosureFreeWindowDays, ')
+          ..write('foreclosureGst: $foreclosureGst, ')
+          ..write(
+            'foreclosureExtraInterestDays: $foreclosureExtraInterestDays, ',
+          )
           ..write('isMine: $isMine, ')
           ..write('notes: $notes')
           ..write(')'))
@@ -533,6 +757,11 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
     feeValue,
     feeCap,
     feeMin,
+    foreclosurePct,
+    foreclosureMin,
+    foreclosureFreeWindowDays,
+    foreclosureGst,
+    foreclosureExtraInterestDays,
     isMine,
     notes,
   );
@@ -551,6 +780,12 @@ class LenderRow extends DataClass implements Insertable<LenderRow> {
           other.feeValue == this.feeValue &&
           other.feeCap == this.feeCap &&
           other.feeMin == this.feeMin &&
+          other.foreclosurePct == this.foreclosurePct &&
+          other.foreclosureMin == this.foreclosureMin &&
+          other.foreclosureFreeWindowDays == this.foreclosureFreeWindowDays &&
+          other.foreclosureGst == this.foreclosureGst &&
+          other.foreclosureExtraInterestDays ==
+              this.foreclosureExtraInterestDays &&
           other.isMine == this.isMine &&
           other.notes == this.notes);
 }
@@ -567,6 +802,11 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
   final Value<double> feeValue;
   final Value<double?> feeCap;
   final Value<double?> feeMin;
+  final Value<double?> foreclosurePct;
+  final Value<double?> foreclosureMin;
+  final Value<int?> foreclosureFreeWindowDays;
+  final Value<bool> foreclosureGst;
+  final Value<int> foreclosureExtraInterestDays;
   final Value<bool> isMine;
   final Value<String?> notes;
   final Value<int> rowid;
@@ -582,6 +822,11 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
     this.feeValue = const Value.absent(),
     this.feeCap = const Value.absent(),
     this.feeMin = const Value.absent(),
+    this.foreclosurePct = const Value.absent(),
+    this.foreclosureMin = const Value.absent(),
+    this.foreclosureFreeWindowDays = const Value.absent(),
+    this.foreclosureGst = const Value.absent(),
+    this.foreclosureExtraInterestDays = const Value.absent(),
     this.isMine = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -598,6 +843,11 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
     this.feeValue = const Value.absent(),
     this.feeCap = const Value.absent(),
     this.feeMin = const Value.absent(),
+    this.foreclosurePct = const Value.absent(),
+    this.foreclosureMin = const Value.absent(),
+    this.foreclosureFreeWindowDays = const Value.absent(),
+    this.foreclosureGst = const Value.absent(),
+    this.foreclosureExtraInterestDays = const Value.absent(),
     this.isMine = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -615,6 +865,11 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
     Expression<double>? feeValue,
     Expression<double>? feeCap,
     Expression<double>? feeMin,
+    Expression<double>? foreclosurePct,
+    Expression<double>? foreclosureMin,
+    Expression<int>? foreclosureFreeWindowDays,
+    Expression<bool>? foreclosureGst,
+    Expression<int>? foreclosureExtraInterestDays,
     Expression<bool>? isMine,
     Expression<String>? notes,
     Expression<int>? rowid,
@@ -631,6 +886,13 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
       if (feeValue != null) 'fee_value': feeValue,
       if (feeCap != null) 'fee_cap': feeCap,
       if (feeMin != null) 'fee_min': feeMin,
+      if (foreclosurePct != null) 'foreclosure_pct': foreclosurePct,
+      if (foreclosureMin != null) 'foreclosure_min': foreclosureMin,
+      if (foreclosureFreeWindowDays != null)
+        'foreclosure_free_window_days': foreclosureFreeWindowDays,
+      if (foreclosureGst != null) 'foreclosure_gst': foreclosureGst,
+      if (foreclosureExtraInterestDays != null)
+        'foreclosure_extra_interest_days': foreclosureExtraInterestDays,
       if (isMine != null) 'is_mine': isMine,
       if (notes != null) 'notes': notes,
       if (rowid != null) 'rowid': rowid,
@@ -649,6 +911,11 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
     Value<double>? feeValue,
     Value<double?>? feeCap,
     Value<double?>? feeMin,
+    Value<double?>? foreclosurePct,
+    Value<double?>? foreclosureMin,
+    Value<int?>? foreclosureFreeWindowDays,
+    Value<bool>? foreclosureGst,
+    Value<int>? foreclosureExtraInterestDays,
     Value<bool>? isMine,
     Value<String?>? notes,
     Value<int>? rowid,
@@ -665,6 +932,13 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
       feeValue: feeValue ?? this.feeValue,
       feeCap: feeCap ?? this.feeCap,
       feeMin: feeMin ?? this.feeMin,
+      foreclosurePct: foreclosurePct ?? this.foreclosurePct,
+      foreclosureMin: foreclosureMin ?? this.foreclosureMin,
+      foreclosureFreeWindowDays:
+          foreclosureFreeWindowDays ?? this.foreclosureFreeWindowDays,
+      foreclosureGst: foreclosureGst ?? this.foreclosureGst,
+      foreclosureExtraInterestDays:
+          foreclosureExtraInterestDays ?? this.foreclosureExtraInterestDays,
       isMine: isMine ?? this.isMine,
       notes: notes ?? this.notes,
       rowid: rowid ?? this.rowid,
@@ -707,6 +981,25 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
     if (feeMin.present) {
       map['fee_min'] = Variable<double>(feeMin.value);
     }
+    if (foreclosurePct.present) {
+      map['foreclosure_pct'] = Variable<double>(foreclosurePct.value);
+    }
+    if (foreclosureMin.present) {
+      map['foreclosure_min'] = Variable<double>(foreclosureMin.value);
+    }
+    if (foreclosureFreeWindowDays.present) {
+      map['foreclosure_free_window_days'] = Variable<int>(
+        foreclosureFreeWindowDays.value,
+      );
+    }
+    if (foreclosureGst.present) {
+      map['foreclosure_gst'] = Variable<bool>(foreclosureGst.value);
+    }
+    if (foreclosureExtraInterestDays.present) {
+      map['foreclosure_extra_interest_days'] = Variable<int>(
+        foreclosureExtraInterestDays.value,
+      );
+    }
     if (isMine.present) {
       map['is_mine'] = Variable<bool>(isMine.value);
     }
@@ -733,6 +1026,13 @@ class LendersCompanion extends UpdateCompanion<LenderRow> {
           ..write('feeValue: $feeValue, ')
           ..write('feeCap: $feeCap, ')
           ..write('feeMin: $feeMin, ')
+          ..write('foreclosurePct: $foreclosurePct, ')
+          ..write('foreclosureMin: $foreclosureMin, ')
+          ..write('foreclosureFreeWindowDays: $foreclosureFreeWindowDays, ')
+          ..write('foreclosureGst: $foreclosureGst, ')
+          ..write(
+            'foreclosureExtraInterestDays: $foreclosureExtraInterestDays, ',
+          )
           ..write('isMine: $isMine, ')
           ..write('notes: $notes, ')
           ..write('rowid: $rowid')
@@ -936,6 +1236,40 @@ class $BorrowingsTable extends Borrowings
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _dayCountMeta = const VerificationMeta(
+    'dayCount',
+  );
+  @override
+  late final GeneratedColumn<String> dayCount = GeneratedColumn<String>(
+    'day_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('monthlyUniform'),
+  );
+  static const VerificationMeta _firstDueDateMeta = const VerificationMeta(
+    'firstDueDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> firstDueDate = GeneratedColumn<DateTime>(
+    'first_due_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _firstPeriodDaysMeta = const VerificationMeta(
+    'firstPeriodDays',
+  );
+  @override
+  late final GeneratedColumn<int> firstPeriodDays = GeneratedColumn<int>(
+    'first_period_days',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _startDateMeta = const VerificationMeta(
     'startDate',
   );
@@ -995,6 +1329,9 @@ class $BorrowingsTable extends Borrowings
     rateType,
     tenureMonths,
     minPayment,
+    dayCount,
+    firstDueDate,
+    firstPeriodDays,
     startDate,
     status,
     notes,
@@ -1134,6 +1471,30 @@ class $BorrowingsTable extends Borrowings
         minPayment.isAcceptableOrUnknown(data['min_payment']!, _minPaymentMeta),
       );
     }
+    if (data.containsKey('day_count')) {
+      context.handle(
+        _dayCountMeta,
+        dayCount.isAcceptableOrUnknown(data['day_count']!, _dayCountMeta),
+      );
+    }
+    if (data.containsKey('first_due_date')) {
+      context.handle(
+        _firstDueDateMeta,
+        firstDueDate.isAcceptableOrUnknown(
+          data['first_due_date']!,
+          _firstDueDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('first_period_days')) {
+      context.handle(
+        _firstPeriodDaysMeta,
+        firstPeriodDays.isAcceptableOrUnknown(
+          data['first_period_days']!,
+          _firstPeriodDaysMeta,
+        ),
+      );
+    }
     if (data.containsKey('start_date')) {
       context.handle(
         _startDateMeta,
@@ -1235,6 +1596,18 @@ class $BorrowingsTable extends Borrowings
         DriftSqlType.double,
         data['${effectivePrefix}min_payment'],
       )!,
+      dayCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}day_count'],
+      )!,
+      firstDueDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}first_due_date'],
+      ),
+      firstPeriodDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}first_period_days'],
+      ),
       startDate: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}start_date'],
@@ -1277,6 +1650,9 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
   final String rateType;
   final int tenureMonths;
   final double minPayment;
+  final String dayCount;
+  final DateTime? firstDueDate;
+  final int? firstPeriodDays;
   final DateTime startDate;
   final String status;
   final String? notes;
@@ -1298,6 +1674,9 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     required this.rateType,
     required this.tenureMonths,
     required this.minPayment,
+    required this.dayCount,
+    this.firstDueDate,
+    this.firstPeriodDays,
     required this.startDate,
     required this.status,
     this.notes,
@@ -1326,6 +1705,13 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     map['rate_type'] = Variable<String>(rateType);
     map['tenure_months'] = Variable<int>(tenureMonths);
     map['min_payment'] = Variable<double>(minPayment);
+    map['day_count'] = Variable<String>(dayCount);
+    if (!nullToAbsent || firstDueDate != null) {
+      map['first_due_date'] = Variable<DateTime>(firstDueDate);
+    }
+    if (!nullToAbsent || firstPeriodDays != null) {
+      map['first_period_days'] = Variable<int>(firstPeriodDays);
+    }
     map['start_date'] = Variable<DateTime>(startDate);
     map['status'] = Variable<String>(status);
     if (!nullToAbsent || notes != null) {
@@ -1357,6 +1743,13 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       rateType: Value(rateType),
       tenureMonths: Value(tenureMonths),
       minPayment: Value(minPayment),
+      dayCount: Value(dayCount),
+      firstDueDate: firstDueDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firstDueDate),
+      firstPeriodDays: firstPeriodDays == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firstPeriodDays),
       startDate: Value(startDate),
       status: Value(status),
       notes: notes == null && nullToAbsent
@@ -1388,6 +1781,9 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       rateType: serializer.fromJson<String>(json['rateType']),
       tenureMonths: serializer.fromJson<int>(json['tenureMonths']),
       minPayment: serializer.fromJson<double>(json['minPayment']),
+      dayCount: serializer.fromJson<String>(json['dayCount']),
+      firstDueDate: serializer.fromJson<DateTime?>(json['firstDueDate']),
+      firstPeriodDays: serializer.fromJson<int?>(json['firstPeriodDays']),
       startDate: serializer.fromJson<DateTime>(json['startDate']),
       status: serializer.fromJson<String>(json['status']),
       notes: serializer.fromJson<String?>(json['notes']),
@@ -1414,6 +1810,9 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       'rateType': serializer.toJson<String>(rateType),
       'tenureMonths': serializer.toJson<int>(tenureMonths),
       'minPayment': serializer.toJson<double>(minPayment),
+      'dayCount': serializer.toJson<String>(dayCount),
+      'firstDueDate': serializer.toJson<DateTime?>(firstDueDate),
+      'firstPeriodDays': serializer.toJson<int?>(firstPeriodDays),
       'startDate': serializer.toJson<DateTime>(startDate),
       'status': serializer.toJson<String>(status),
       'notes': serializer.toJson<String?>(notes),
@@ -1438,6 +1837,9 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     String? rateType,
     int? tenureMonths,
     double? minPayment,
+    String? dayCount,
+    Value<DateTime?> firstDueDate = const Value.absent(),
+    Value<int?> firstPeriodDays = const Value.absent(),
     DateTime? startDate,
     String? status,
     Value<String?> notes = const Value.absent(),
@@ -1461,6 +1863,11 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     rateType: rateType ?? this.rateType,
     tenureMonths: tenureMonths ?? this.tenureMonths,
     minPayment: minPayment ?? this.minPayment,
+    dayCount: dayCount ?? this.dayCount,
+    firstDueDate: firstDueDate.present ? firstDueDate.value : this.firstDueDate,
+    firstPeriodDays: firstPeriodDays.present
+        ? firstPeriodDays.value
+        : this.firstPeriodDays,
     startDate: startDate ?? this.startDate,
     status: status ?? this.status,
     notes: notes.present ? notes.value : this.notes,
@@ -1502,6 +1909,13 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       minPayment: data.minPayment.present
           ? data.minPayment.value
           : this.minPayment,
+      dayCount: data.dayCount.present ? data.dayCount.value : this.dayCount,
+      firstDueDate: data.firstDueDate.present
+          ? data.firstDueDate.value
+          : this.firstDueDate,
+      firstPeriodDays: data.firstPeriodDays.present
+          ? data.firstPeriodDays.value
+          : this.firstPeriodDays,
       startDate: data.startDate.present ? data.startDate.value : this.startDate,
       status: data.status.present ? data.status.value : this.status,
       notes: data.notes.present ? data.notes.value : this.notes,
@@ -1528,6 +1942,9 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
           ..write('rateType: $rateType, ')
           ..write('tenureMonths: $tenureMonths, ')
           ..write('minPayment: $minPayment, ')
+          ..write('dayCount: $dayCount, ')
+          ..write('firstDueDate: $firstDueDate, ')
+          ..write('firstPeriodDays: $firstPeriodDays, ')
           ..write('startDate: $startDate, ')
           ..write('status: $status, ')
           ..write('notes: $notes, ')
@@ -1537,7 +1954,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     title,
     kind,
@@ -1554,11 +1971,14 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     rateType,
     tenureMonths,
     minPayment,
+    dayCount,
+    firstDueDate,
+    firstPeriodDays,
     startDate,
     status,
     notes,
     createdAt,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1579,6 +1999,9 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
           other.rateType == this.rateType &&
           other.tenureMonths == this.tenureMonths &&
           other.minPayment == this.minPayment &&
+          other.dayCount == this.dayCount &&
+          other.firstDueDate == this.firstDueDate &&
+          other.firstPeriodDays == this.firstPeriodDays &&
           other.startDate == this.startDate &&
           other.status == this.status &&
           other.notes == this.notes &&
@@ -1602,6 +2025,9 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
   final Value<String> rateType;
   final Value<int> tenureMonths;
   final Value<double> minPayment;
+  final Value<String> dayCount;
+  final Value<DateTime?> firstDueDate;
+  final Value<int?> firstPeriodDays;
   final Value<DateTime> startDate;
   final Value<String> status;
   final Value<String?> notes;
@@ -1624,6 +2050,9 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     this.rateType = const Value.absent(),
     this.tenureMonths = const Value.absent(),
     this.minPayment = const Value.absent(),
+    this.dayCount = const Value.absent(),
+    this.firstDueDate = const Value.absent(),
+    this.firstPeriodDays = const Value.absent(),
     this.startDate = const Value.absent(),
     this.status = const Value.absent(),
     this.notes = const Value.absent(),
@@ -1647,6 +2076,9 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     this.rateType = const Value.absent(),
     this.tenureMonths = const Value.absent(),
     this.minPayment = const Value.absent(),
+    this.dayCount = const Value.absent(),
+    this.firstDueDate = const Value.absent(),
+    this.firstPeriodDays = const Value.absent(),
     required DateTime startDate,
     this.status = const Value.absent(),
     this.notes = const Value.absent(),
@@ -1675,6 +2107,9 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     Expression<String>? rateType,
     Expression<int>? tenureMonths,
     Expression<double>? minPayment,
+    Expression<String>? dayCount,
+    Expression<DateTime>? firstDueDate,
+    Expression<int>? firstPeriodDays,
     Expression<DateTime>? startDate,
     Expression<String>? status,
     Expression<String>? notes,
@@ -1698,6 +2133,9 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
       if (rateType != null) 'rate_type': rateType,
       if (tenureMonths != null) 'tenure_months': tenureMonths,
       if (minPayment != null) 'min_payment': minPayment,
+      if (dayCount != null) 'day_count': dayCount,
+      if (firstDueDate != null) 'first_due_date': firstDueDate,
+      if (firstPeriodDays != null) 'first_period_days': firstPeriodDays,
       if (startDate != null) 'start_date': startDate,
       if (status != null) 'status': status,
       if (notes != null) 'notes': notes,
@@ -1723,6 +2161,9 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     Value<String>? rateType,
     Value<int>? tenureMonths,
     Value<double>? minPayment,
+    Value<String>? dayCount,
+    Value<DateTime?>? firstDueDate,
+    Value<int?>? firstPeriodDays,
     Value<DateTime>? startDate,
     Value<String>? status,
     Value<String?>? notes,
@@ -1746,6 +2187,9 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
       rateType: rateType ?? this.rateType,
       tenureMonths: tenureMonths ?? this.tenureMonths,
       minPayment: minPayment ?? this.minPayment,
+      dayCount: dayCount ?? this.dayCount,
+      firstDueDate: firstDueDate ?? this.firstDueDate,
+      firstPeriodDays: firstPeriodDays ?? this.firstPeriodDays,
       startDate: startDate ?? this.startDate,
       status: status ?? this.status,
       notes: notes ?? this.notes,
@@ -1805,6 +2249,15 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     if (minPayment.present) {
       map['min_payment'] = Variable<double>(minPayment.value);
     }
+    if (dayCount.present) {
+      map['day_count'] = Variable<String>(dayCount.value);
+    }
+    if (firstDueDate.present) {
+      map['first_due_date'] = Variable<DateTime>(firstDueDate.value);
+    }
+    if (firstPeriodDays.present) {
+      map['first_period_days'] = Variable<int>(firstPeriodDays.value);
+    }
     if (startDate.present) {
       map['start_date'] = Variable<DateTime>(startDate.value);
     }
@@ -1842,6 +2295,9 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
           ..write('rateType: $rateType, ')
           ..write('tenureMonths: $tenureMonths, ')
           ..write('minPayment: $minPayment, ')
+          ..write('dayCount: $dayCount, ')
+          ..write('firstDueDate: $firstDueDate, ')
+          ..write('firstPeriodDays: $firstPeriodDays, ')
           ..write('startDate: $startDate, ')
           ..write('status: $status, ')
           ..write('notes: $notes, ')
@@ -1899,6 +2355,16 @@ class $RepaymentsTable extends Repayments
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('payment'),
+  );
   static const VerificationMeta _installmentNoMeta = const VerificationMeta(
     'installmentNo',
   );
@@ -1925,6 +2391,7 @@ class $RepaymentsTable extends Repayments
     borrowingId,
     amount,
     date,
+    kind,
     installmentNo,
     note,
   ];
@@ -1972,6 +2439,12 @@ class $RepaymentsTable extends Repayments
     } else if (isInserting) {
       context.missing(_dateMeta);
     }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    }
     if (data.containsKey('installment_no')) {
       context.handle(
         _installmentNoMeta,
@@ -2012,6 +2485,10 @@ class $RepaymentsTable extends Repayments
         DriftSqlType.dateTime,
         data['${effectivePrefix}date'],
       )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
       installmentNo: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}installment_no'],
@@ -2034,6 +2511,7 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
   final String borrowingId;
   final double amount;
   final DateTime date;
+  final String kind;
   final int? installmentNo;
   final String? note;
   const RepaymentRow({
@@ -2041,6 +2519,7 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
     required this.borrowingId,
     required this.amount,
     required this.date,
+    required this.kind,
     this.installmentNo,
     this.note,
   });
@@ -2051,6 +2530,7 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
     map['borrowing_id'] = Variable<String>(borrowingId);
     map['amount'] = Variable<double>(amount);
     map['date'] = Variable<DateTime>(date);
+    map['kind'] = Variable<String>(kind);
     if (!nullToAbsent || installmentNo != null) {
       map['installment_no'] = Variable<int>(installmentNo);
     }
@@ -2066,6 +2546,7 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
       borrowingId: Value(borrowingId),
       amount: Value(amount),
       date: Value(date),
+      kind: Value(kind),
       installmentNo: installmentNo == null && nullToAbsent
           ? const Value.absent()
           : Value(installmentNo),
@@ -2083,6 +2564,7 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
       borrowingId: serializer.fromJson<String>(json['borrowingId']),
       amount: serializer.fromJson<double>(json['amount']),
       date: serializer.fromJson<DateTime>(json['date']),
+      kind: serializer.fromJson<String>(json['kind']),
       installmentNo: serializer.fromJson<int?>(json['installmentNo']),
       note: serializer.fromJson<String?>(json['note']),
     );
@@ -2095,6 +2577,7 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
       'borrowingId': serializer.toJson<String>(borrowingId),
       'amount': serializer.toJson<double>(amount),
       'date': serializer.toJson<DateTime>(date),
+      'kind': serializer.toJson<String>(kind),
       'installmentNo': serializer.toJson<int?>(installmentNo),
       'note': serializer.toJson<String?>(note),
     };
@@ -2105,6 +2588,7 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
     String? borrowingId,
     double? amount,
     DateTime? date,
+    String? kind,
     Value<int?> installmentNo = const Value.absent(),
     Value<String?> note = const Value.absent(),
   }) => RepaymentRow(
@@ -2112,6 +2596,7 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
     borrowingId: borrowingId ?? this.borrowingId,
     amount: amount ?? this.amount,
     date: date ?? this.date,
+    kind: kind ?? this.kind,
     installmentNo: installmentNo.present
         ? installmentNo.value
         : this.installmentNo,
@@ -2125,6 +2610,7 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
           : this.borrowingId,
       amount: data.amount.present ? data.amount.value : this.amount,
       date: data.date.present ? data.date.value : this.date,
+      kind: data.kind.present ? data.kind.value : this.kind,
       installmentNo: data.installmentNo.present
           ? data.installmentNo.value
           : this.installmentNo,
@@ -2139,6 +2625,7 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
           ..write('borrowingId: $borrowingId, ')
           ..write('amount: $amount, ')
           ..write('date: $date, ')
+          ..write('kind: $kind, ')
           ..write('installmentNo: $installmentNo, ')
           ..write('note: $note')
           ..write(')'))
@@ -2147,7 +2634,7 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
 
   @override
   int get hashCode =>
-      Object.hash(id, borrowingId, amount, date, installmentNo, note);
+      Object.hash(id, borrowingId, amount, date, kind, installmentNo, note);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2156,6 +2643,7 @@ class RepaymentRow extends DataClass implements Insertable<RepaymentRow> {
           other.borrowingId == this.borrowingId &&
           other.amount == this.amount &&
           other.date == this.date &&
+          other.kind == this.kind &&
           other.installmentNo == this.installmentNo &&
           other.note == this.note);
 }
@@ -2165,6 +2653,7 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
   final Value<String> borrowingId;
   final Value<double> amount;
   final Value<DateTime> date;
+  final Value<String> kind;
   final Value<int?> installmentNo;
   final Value<String?> note;
   final Value<int> rowid;
@@ -2173,6 +2662,7 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
     this.borrowingId = const Value.absent(),
     this.amount = const Value.absent(),
     this.date = const Value.absent(),
+    this.kind = const Value.absent(),
     this.installmentNo = const Value.absent(),
     this.note = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2182,6 +2672,7 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
     required String borrowingId,
     required double amount,
     required DateTime date,
+    this.kind = const Value.absent(),
     this.installmentNo = const Value.absent(),
     this.note = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2194,6 +2685,7 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
     Expression<String>? borrowingId,
     Expression<double>? amount,
     Expression<DateTime>? date,
+    Expression<String>? kind,
     Expression<int>? installmentNo,
     Expression<String>? note,
     Expression<int>? rowid,
@@ -2203,6 +2695,7 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
       if (borrowingId != null) 'borrowing_id': borrowingId,
       if (amount != null) 'amount': amount,
       if (date != null) 'date': date,
+      if (kind != null) 'kind': kind,
       if (installmentNo != null) 'installment_no': installmentNo,
       if (note != null) 'note': note,
       if (rowid != null) 'rowid': rowid,
@@ -2214,6 +2707,7 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
     Value<String>? borrowingId,
     Value<double>? amount,
     Value<DateTime>? date,
+    Value<String>? kind,
     Value<int?>? installmentNo,
     Value<String?>? note,
     Value<int>? rowid,
@@ -2223,6 +2717,7 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
       borrowingId: borrowingId ?? this.borrowingId,
       amount: amount ?? this.amount,
       date: date ?? this.date,
+      kind: kind ?? this.kind,
       installmentNo: installmentNo ?? this.installmentNo,
       note: note ?? this.note,
       rowid: rowid ?? this.rowid,
@@ -2244,6 +2739,9 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
     if (date.present) {
       map['date'] = Variable<DateTime>(date.value);
     }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
     if (installmentNo.present) {
       map['installment_no'] = Variable<int>(installmentNo.value);
     }
@@ -2263,6 +2761,7 @@ class RepaymentsCompanion extends UpdateCompanion<RepaymentRow> {
           ..write('borrowingId: $borrowingId, ')
           ..write('amount: $amount, ')
           ..write('date: $date, ')
+          ..write('kind: $kind, ')
           ..write('installmentNo: $installmentNo, ')
           ..write('note: $note, ')
           ..write('rowid: $rowid')
@@ -3933,6 +4432,11 @@ typedef $$LendersTableCreateCompanionBuilder =
       Value<double> feeValue,
       Value<double?> feeCap,
       Value<double?> feeMin,
+      Value<double?> foreclosurePct,
+      Value<double?> foreclosureMin,
+      Value<int?> foreclosureFreeWindowDays,
+      Value<bool> foreclosureGst,
+      Value<int> foreclosureExtraInterestDays,
       Value<bool> isMine,
       Value<String?> notes,
       Value<int> rowid,
@@ -3950,6 +4454,11 @@ typedef $$LendersTableUpdateCompanionBuilder =
       Value<double> feeValue,
       Value<double?> feeCap,
       Value<double?> feeMin,
+      Value<double?> foreclosurePct,
+      Value<double?> foreclosureMin,
+      Value<int?> foreclosureFreeWindowDays,
+      Value<bool> foreclosureGst,
+      Value<int> foreclosureExtraInterestDays,
       Value<bool> isMine,
       Value<String?> notes,
       Value<int> rowid,
@@ -4016,6 +4525,31 @@ class $$LendersTableFilterComposer
 
   ColumnFilters<double> get feeMin => $composableBuilder(
     column: $table.feeMin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get foreclosurePct => $composableBuilder(
+    column: $table.foreclosurePct,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get foreclosureMin => $composableBuilder(
+    column: $table.foreclosureMin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get foreclosureFreeWindowDays => $composableBuilder(
+    column: $table.foreclosureFreeWindowDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get foreclosureGst => $composableBuilder(
+    column: $table.foreclosureGst,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get foreclosureExtraInterestDays => $composableBuilder(
+    column: $table.foreclosureExtraInterestDays,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4094,6 +4628,31 @@ class $$LendersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get foreclosurePct => $composableBuilder(
+    column: $table.foreclosurePct,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get foreclosureMin => $composableBuilder(
+    column: $table.foreclosureMin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get foreclosureFreeWindowDays => $composableBuilder(
+    column: $table.foreclosureFreeWindowDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get foreclosureGst => $composableBuilder(
+    column: $table.foreclosureGst,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get foreclosureExtraInterestDays => $composableBuilder(
+    column: $table.foreclosureExtraInterestDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get isMine => $composableBuilder(
     column: $table.isMine,
     builder: (column) => ColumnOrderings(column),
@@ -4149,6 +4708,31 @@ class $$LendersTableAnnotationComposer
   GeneratedColumn<double> get feeMin =>
       $composableBuilder(column: $table.feeMin, builder: (column) => column);
 
+  GeneratedColumn<double> get foreclosurePct => $composableBuilder(
+    column: $table.foreclosurePct,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get foreclosureMin => $composableBuilder(
+    column: $table.foreclosureMin,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get foreclosureFreeWindowDays => $composableBuilder(
+    column: $table.foreclosureFreeWindowDays,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get foreclosureGst => $composableBuilder(
+    column: $table.foreclosureGst,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get foreclosureExtraInterestDays => $composableBuilder(
+    column: $table.foreclosureExtraInterestDays,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get isMine =>
       $composableBuilder(column: $table.isMine, builder: (column) => column);
 
@@ -4195,6 +4779,11 @@ class $$LendersTableTableManager
                 Value<double> feeValue = const Value.absent(),
                 Value<double?> feeCap = const Value.absent(),
                 Value<double?> feeMin = const Value.absent(),
+                Value<double?> foreclosurePct = const Value.absent(),
+                Value<double?> foreclosureMin = const Value.absent(),
+                Value<int?> foreclosureFreeWindowDays = const Value.absent(),
+                Value<bool> foreclosureGst = const Value.absent(),
+                Value<int> foreclosureExtraInterestDays = const Value.absent(),
                 Value<bool> isMine = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -4210,6 +4799,11 @@ class $$LendersTableTableManager
                 feeValue: feeValue,
                 feeCap: feeCap,
                 feeMin: feeMin,
+                foreclosurePct: foreclosurePct,
+                foreclosureMin: foreclosureMin,
+                foreclosureFreeWindowDays: foreclosureFreeWindowDays,
+                foreclosureGst: foreclosureGst,
+                foreclosureExtraInterestDays: foreclosureExtraInterestDays,
                 isMine: isMine,
                 notes: notes,
                 rowid: rowid,
@@ -4227,6 +4821,11 @@ class $$LendersTableTableManager
                 Value<double> feeValue = const Value.absent(),
                 Value<double?> feeCap = const Value.absent(),
                 Value<double?> feeMin = const Value.absent(),
+                Value<double?> foreclosurePct = const Value.absent(),
+                Value<double?> foreclosureMin = const Value.absent(),
+                Value<int?> foreclosureFreeWindowDays = const Value.absent(),
+                Value<bool> foreclosureGst = const Value.absent(),
+                Value<int> foreclosureExtraInterestDays = const Value.absent(),
                 Value<bool> isMine = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -4242,6 +4841,11 @@ class $$LendersTableTableManager
                 feeValue: feeValue,
                 feeCap: feeCap,
                 feeMin: feeMin,
+                foreclosurePct: foreclosurePct,
+                foreclosureMin: foreclosureMin,
+                foreclosureFreeWindowDays: foreclosureFreeWindowDays,
+                foreclosureGst: foreclosureGst,
+                foreclosureExtraInterestDays: foreclosureExtraInterestDays,
                 isMine: isMine,
                 notes: notes,
                 rowid: rowid,
@@ -4286,6 +4890,9 @@ typedef $$BorrowingsTableCreateCompanionBuilder =
       Value<String> rateType,
       Value<int> tenureMonths,
       Value<double> minPayment,
+      Value<String> dayCount,
+      Value<DateTime?> firstDueDate,
+      Value<int?> firstPeriodDays,
       required DateTime startDate,
       Value<String> status,
       Value<String?> notes,
@@ -4310,6 +4917,9 @@ typedef $$BorrowingsTableUpdateCompanionBuilder =
       Value<String> rateType,
       Value<int> tenureMonths,
       Value<double> minPayment,
+      Value<String> dayCount,
+      Value<DateTime?> firstDueDate,
+      Value<int?> firstPeriodDays,
       Value<DateTime> startDate,
       Value<String> status,
       Value<String?> notes,
@@ -4426,6 +5036,21 @@ class $$BorrowingsTableFilterComposer
 
   ColumnFilters<double> get minPayment => $composableBuilder(
     column: $table.minPayment,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dayCount => $composableBuilder(
+    column: $table.dayCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get firstDueDate => $composableBuilder(
+    column: $table.firstDueDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get firstPeriodDays => $composableBuilder(
+    column: $table.firstPeriodDays,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4564,6 +5189,21 @@ class $$BorrowingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get dayCount => $composableBuilder(
+    column: $table.dayCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get firstDueDate => $composableBuilder(
+    column: $table.firstDueDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get firstPeriodDays => $composableBuilder(
+    column: $table.firstPeriodDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get startDate => $composableBuilder(
     column: $table.startDate,
     builder: (column) => ColumnOrderings(column),
@@ -4660,6 +5300,19 @@ class $$BorrowingsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get dayCount =>
+      $composableBuilder(column: $table.dayCount, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get firstDueDate => $composableBuilder(
+    column: $table.firstDueDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get firstPeriodDays => $composableBuilder(
+    column: $table.firstPeriodDays,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get startDate =>
       $composableBuilder(column: $table.startDate, builder: (column) => column);
 
@@ -4742,6 +5395,9 @@ class $$BorrowingsTableTableManager
                 Value<String> rateType = const Value.absent(),
                 Value<int> tenureMonths = const Value.absent(),
                 Value<double> minPayment = const Value.absent(),
+                Value<String> dayCount = const Value.absent(),
+                Value<DateTime?> firstDueDate = const Value.absent(),
+                Value<int?> firstPeriodDays = const Value.absent(),
                 Value<DateTime> startDate = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
@@ -4764,6 +5420,9 @@ class $$BorrowingsTableTableManager
                 rateType: rateType,
                 tenureMonths: tenureMonths,
                 minPayment: minPayment,
+                dayCount: dayCount,
+                firstDueDate: firstDueDate,
+                firstPeriodDays: firstPeriodDays,
                 startDate: startDate,
                 status: status,
                 notes: notes,
@@ -4788,6 +5447,9 @@ class $$BorrowingsTableTableManager
                 Value<String> rateType = const Value.absent(),
                 Value<int> tenureMonths = const Value.absent(),
                 Value<double> minPayment = const Value.absent(),
+                Value<String> dayCount = const Value.absent(),
+                Value<DateTime?> firstDueDate = const Value.absent(),
+                Value<int?> firstPeriodDays = const Value.absent(),
                 required DateTime startDate,
                 Value<String> status = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
@@ -4810,6 +5472,9 @@ class $$BorrowingsTableTableManager
                 rateType: rateType,
                 tenureMonths: tenureMonths,
                 minPayment: minPayment,
+                dayCount: dayCount,
+                firstDueDate: firstDueDate,
+                firstPeriodDays: firstPeriodDays,
                 startDate: startDate,
                 status: status,
                 notes: notes,
@@ -4880,6 +5545,7 @@ typedef $$RepaymentsTableCreateCompanionBuilder =
       required String borrowingId,
       required double amount,
       required DateTime date,
+      Value<String> kind,
       Value<int?> installmentNo,
       Value<String?> note,
       Value<int> rowid,
@@ -4890,6 +5556,7 @@ typedef $$RepaymentsTableUpdateCompanionBuilder =
       Value<String> borrowingId,
       Value<double> amount,
       Value<DateTime> date,
+      Value<String> kind,
       Value<int?> installmentNo,
       Value<String?> note,
       Value<int> rowid,
@@ -4938,6 +5605,11 @@ class $$RepaymentsTableFilterComposer
 
   ColumnFilters<DateTime> get date => $composableBuilder(
     column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4999,6 +5671,11 @@ class $$RepaymentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get installmentNo => $composableBuilder(
     column: $table.installmentNo,
     builder: (column) => ColumnOrderings(column),
@@ -5050,6 +5727,9 @@ class $$RepaymentsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get date =>
       $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
 
   GeneratedColumn<int> get installmentNo => $composableBuilder(
     column: $table.installmentNo,
@@ -5115,6 +5795,7 @@ class $$RepaymentsTableTableManager
                 Value<String> borrowingId = const Value.absent(),
                 Value<double> amount = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
+                Value<String> kind = const Value.absent(),
                 Value<int?> installmentNo = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -5123,6 +5804,7 @@ class $$RepaymentsTableTableManager
                 borrowingId: borrowingId,
                 amount: amount,
                 date: date,
+                kind: kind,
                 installmentNo: installmentNo,
                 note: note,
                 rowid: rowid,
@@ -5133,6 +5815,7 @@ class $$RepaymentsTableTableManager
                 required String borrowingId,
                 required double amount,
                 required DateTime date,
+                Value<String> kind = const Value.absent(),
                 Value<int?> installmentNo = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -5141,6 +5824,7 @@ class $$RepaymentsTableTableManager
                 borrowingId: borrowingId,
                 amount: amount,
                 date: date,
+                kind: kind,
                 installmentNo: installmentNo,
                 note: note,
                 rowid: rowid,

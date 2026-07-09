@@ -12,13 +12,18 @@ import asyncpg
 
 LENDER_COLUMNS = """
     id, user_id, name, type, issuer, network, typical_rate_pct, rate_type,
-    fee_type, fee_value, fee_cap, fee_min, is_mine, notes,
-    created_at, updated_at, deleted_at, server_seq
+    fee_type, fee_value, fee_cap, fee_min,
+    foreclosure_pct, foreclosure_min, foreclosure_free_window_days,
+    foreclosure_gst, foreclosure_extra_interest_days,
+    is_mine, notes, created_at, updated_at, deleted_at, server_seq
 """
 
 _PATCHABLE = {
     "name", "type", "issuer", "network", "typical_rate_pct", "rate_type",
-    "fee_type", "fee_value", "fee_cap", "fee_min", "is_mine", "notes",
+    "fee_type", "fee_value", "fee_cap", "fee_min",
+    "foreclosure_pct", "foreclosure_min", "foreclosure_free_window_days",
+    "foreclosure_gst", "foreclosure_extra_interest_days",
+    "is_mine", "notes",
 }
 
 
@@ -31,17 +36,22 @@ async def insert_lender(
         f"""
         INSERT INTO lenders (
             id, user_id, name, type, issuer, network, typical_rate_pct,
-            rate_type, fee_type, fee_value, fee_cap, fee_min, is_mine, notes,
-            created_at, updated_at
+            rate_type, fee_type, fee_value, fee_cap, fee_min,
+            foreclosure_pct, foreclosure_min, foreclosure_free_window_days,
+            foreclosure_gst, foreclosure_extra_interest_days,
+            is_mine, notes, created_at, updated_at
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-                $11, $12, $13, $14, $15, $16)
+                $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
         ON CONFLICT (id) DO NOTHING
         RETURNING {LENDER_COLUMNS}
         """,
         data["id"], user_id, data["name"], data["type"], data["issuer"],
         data["network"], data["typical_rate_pct"], data["rate_type"],
         data["fee_type"], data["fee_value"], data["fee_cap"], data["fee_min"],
+        data["foreclosure_pct"], data["foreclosure_min"],
+        data["foreclosure_free_window_days"], data["foreclosure_gst"],
+        data["foreclosure_extra_interest_days"],
         data["is_mine"], data["notes"], data["created_at"], data["updated_at"],
     )
 

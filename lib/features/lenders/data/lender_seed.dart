@@ -2,7 +2,7 @@ import '../../../../core/utils/finance_math.dart';
 import '../domain/entities/lender.dart';
 
 /// Bump when the seed values below change so the app refreshes them on upgrade.
-const int kLenderSeedVersion = 4;
+const int kLenderSeedVersion = 5;
 
 /// Ids of the built-in catalog entries. These ship with the app (and live in the
 /// server's global catalog), so they are NOT synced to the per-user `/v1/lenders`
@@ -25,14 +25,19 @@ const List<Lender> kSeedLenders = [
     id: 'slice',
     name: 'slice',
     type: LenderType.bnpl,
-    typicalRatePct: 36,
+    typicalRatePct: 31.15,
     feeType: FeeType.percent,
-    feeValue: 2.5,
-    notes: 'slice borrow ~18% p.a. (indicative); slice card ~36% online / '
-        '42% bank transfer. 2.5% transfer fee (min ₹25) + 18% GST. '
-        'Slice SFB personal loan (real KFS, Jan 2026): 31.15% p.a., fee '
-        '~4.5% financed INTO the loan, APR 39.73%. Use the "Fee added to '
-        'the loan" toggle.',
+    feeValue: 4,
+    foreclosurePct: 0,
+    foreclosureGst: false,
+    foreclosureExtraInterestDays: 1,
+    notes: 'VERIFIED against a real slice SFB personal-loan KFS (31 Jan 2026): '
+        '31.15% p.a. fixed, fee 4% + 18% GST financed INTO the loan, daily '
+        'actual/365 interest, APR 39.73% (effective 47.83%). Turn on "Fee '
+        'added to the loan" and "Daily interest". Foreclosure is free (RBI '
+        'Pre-payment Charges Directions, 2025) but costs 1 extra day of '
+        'interest. Penal charge: ₹500 or 30% of the EMI, whichever is lower. '
+        'slice card is a different product: ~36% online / 42% bank transfer.',
   ),
   Lender(
     id: 'mpokket',
@@ -74,6 +79,8 @@ const List<Lender> kSeedLenders = [
     type: LenderType.card,
     issuer: 'HDFC',
     typicalRatePct: 16.05,
+    foreclosurePct: 3,
+    foreclosureFreeWindowDays: 30,
     feeType: FeeType.percent,
     feeValue: 2,
     feeMin: 149,
@@ -91,9 +98,12 @@ const List<Lender> kSeedLenders = [
     feeType: FeeType.percent,
     feeValue: 2.99,
     feeCap: 299,
-    notes: 'Instant EMI 15.99% p.a.; 2.99% fee (max ₹299) + 18% GST. '
-        'EMI-on-call: up to 2% of the amount. Verified from ICICI Instant '
-        'EMI T&C, Jul 2026.',
+    foreclosurePct: 3,
+    notes: 'Fee VERIFIED from ICICI Instant EMI T&C (w.e.f. 01 Sep 2025): '
+        '2.99% capped at ₹299 + 18% GST. The 15.99% is INDICATIVE — the T&C '
+        'says the rate is set per cardholder and merchant, and is quoted on '
+        'the charge-slip. Two-wheelers: up to 20% and ₹999 fee. '
+        'Foreclosure 3% + GST.',
   ),
   Lender(
     id: 'sbi-card-emi',
@@ -102,11 +112,13 @@ const List<Lender> kSeedLenders = [
     issuer: 'SBI',
     typicalRatePct: 15,
     feeType: FeeType.percent,
-    feeValue: 2,
-    feeMin: 199,
-    feeCap: 1000,
-    notes: 'Merchant EMI ~15%. Post-purchase Flexipay is 22% p.a.; fee 2% '
-        '(min ₹199, max ₹1,000) + GST. Verified Jun 2026.',
+    feeValue: 1,
+    feeCap: 2000,
+    foreclosurePct: 3,
+    notes: 'VERIFIED w.e.f. 23 Nov 2025: Flexipay 9.75–24% p.a. by segment; '
+        'fee 1% of the booking or ₹2,000, whichever is LESS (zero at 24/36 '
+        'months). Foreclosure 3%. Post-purchase conversion window: 30 days, '
+        'minimum booking ₹2,500.',
   ),
   Lender(
     id: 'axis-card-emi',
@@ -115,6 +127,9 @@ const List<Lender> kSeedLenders = [
     issuer: 'Axis',
     typicalRatePct: 16,
     feeValue: 150,
+    foreclosurePct: 3,
+    foreclosureMin: 300,
+    foreclosureFreeWindowDays: 7,
     notes: 'Merchant EMI ~14% / post-purchase ~18% p.a. (indicative). '
         'Processing ₹150 (+18% GST); some products up to 2%.',
   ),

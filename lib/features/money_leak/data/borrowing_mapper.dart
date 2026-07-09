@@ -23,6 +23,13 @@ Borrowing borrowingFromRow(BorrowingRow r) => Borrowing(
       rateType: enumByName(RateType.values, r.rateType, RateType.reducing),
       tenureMonths: r.tenureMonths,
       minPayment: r.minPayment,
+      dayCount: enumByName(
+        DayCountConvention.values,
+        r.dayCount,
+        DayCountConvention.monthlyUniform,
+      ),
+      firstDueDate: r.firstDueDate,
+      firstPeriodDays: r.firstPeriodDays,
       startDate: r.startDate,
       status: enumByName(BorrowingStatus.values, r.status, BorrowingStatus.active),
       notes: r.notes,
@@ -49,6 +56,9 @@ BorrowingsCompanion borrowingToCompanion(Borrowing b) =>
       rateType: Value(b.rateType.name),
       tenureMonths: Value(b.tenureMonths),
       minPayment: Value(b.minPayment),
+      dayCount: Value(b.dayCount.name),
+      firstDueDate: Value(b.firstDueDate),
+      firstPeriodDays: Value(b.firstPeriodDays),
       status: Value(b.status.name),
       notes: Value(b.notes),
     );
@@ -58,6 +68,7 @@ Repayment repaymentFromRow(RepaymentRow r) => Repayment(
       borrowingId: r.borrowingId,
       amount: r.amount,
       date: r.date,
+      kind: enumByName(RepaymentKind.values, r.kind, RepaymentKind.payment),
       installmentNo: r.installmentNo,
       note: r.note,
     );
@@ -68,6 +79,7 @@ RepaymentsCompanion repaymentToCompanion(Repayment r) =>
       borrowingId: r.borrowingId,
       amount: r.amount,
       date: r.date,
+      kind: Value(r.kind.name),
       installmentNo: Value(r.installmentNo),
       note: Value(r.note),
     );
