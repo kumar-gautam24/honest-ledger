@@ -59,9 +59,14 @@ class _NoCostEmiScreenState extends State<NoCostEmiScreen> {
       if (_rate.text.isEmpty && lender.typicalRatePct > 0) {
         _rate.text = _n(lender.typicalRatePct);
       }
-      if (_fee.text.isEmpty && lender.feeValue > 0) {
+      // A percent fee needs a real price to compute off of — with nothing
+      // typed yet it would floor to the lender's minimum and never
+      // recompute once a price is entered.
+      final price = _d(_price);
+      final skipPercentFee = lender.feeType == FeeType.percent && price <= 0;
+      if (_fee.text.isEmpty && lender.feeValue > 0 && !skipPercentFee) {
         final fee = FinanceMath.processingFee(
-          principal: _d(_price),
+          principal: price,
           type: lender.feeType,
           value: lender.feeValue,
           cap: lender.feeCap,

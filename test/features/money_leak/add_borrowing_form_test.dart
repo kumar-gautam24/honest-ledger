@@ -105,6 +105,41 @@ void main() {
     expect(find.text('Really costs you extra'), findsOneWidget);
   });
 
+  testWidgets(
+      'picking a percent-fee lender with the amount empty leaves the fee '
+      'field empty (no floored ghost fee)', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.dark(),
+          home: const AddEditBorrowingScreen(),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // Amount is left empty on purpose — a percent fee can't be computed yet.
+    final lenderField = find.text('Choose lender or card');
+    await tester.ensureVisible(lenderField);
+    await tester.tap(lenderField);
+    await tester.pumpAndSettle();
+
+    // HDFC Swiggy is a "My cards" entry with a 2% fee and a ₹149 floor;
+    // picking it before typing the amount must not ghost-fill the floored fee.
+    final lenderTile = find.text('HDFC Swiggy');
+    await tester.scrollUntilVisible(
+      lenderTile,
+      50,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(lenderTile);
+    await tester.pumpAndSettle();
+
+    final feeField =
+        tester.widget<TextFormField>(find.byType(TextFormField).at(4));
+    expect(feeField.controller!.text, isEmpty);
+  });
+
   testWidgets('saving a no-cost EMI persists isNoCostEmi and gstOnInterest',
       (tester) async {
     await tester.pumpWidget(_routedApp());

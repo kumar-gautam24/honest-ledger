@@ -131,9 +131,14 @@ class _AddEditBorrowingScreenState
       }
       // Autofill the fee: flat amount directly, percent computed off the
       // amount (respecting any cap) when it's entered. Title stays the purchase.
-      if (_fee.text.isEmpty && lender.feeValue > 0) {
+      // A percent fee needs a real amount to compute off of — with nothing
+      // typed yet it would floor to the lender's minimum (e.g. ₹199) and
+      // never recompute once an amount is entered.
+      final principal = _parse(_principal);
+      final skipPercentFee = lender.feeType == FeeType.percent && principal <= 0;
+      if (_fee.text.isEmpty && lender.feeValue > 0 && !skipPercentFee) {
         final fee = FinanceMath.processingFee(
-          principal: _parse(_principal),
+          principal: principal,
           type: lender.feeType,
           value: lender.feeValue,
           cap: lender.feeCap,

@@ -65,6 +65,21 @@ void main() {
     expect(sbi!.feeMin, 199);
   });
 
+  test('hdfc-card-emi carries a fee floor that threads through '
+      'processingFee (1% of ₹5,000 = ₹50, floored to ₹149)', () async {
+    final hdfc = await repo.getById('hdfc-card-emi');
+    expect(hdfc, isNotNull);
+    expect(hdfc!.feeMin, 149);
+
+    final fee = FinanceMath.processingFee(
+      principal: 5000,
+      type: hdfc.feeType,
+      value: 1,
+      min: hdfc.feeMin,
+    );
+    expect(fee, 149);
+  });
+
   test('seed v4 adds kotak and amex card-EMI entries', () {
     expect(kSeedLenders.map((l) => l.id), contains('kotak-card-emi'));
     expect(kSeedLenders.map((l) => l.id), contains('amex-card-emi'));

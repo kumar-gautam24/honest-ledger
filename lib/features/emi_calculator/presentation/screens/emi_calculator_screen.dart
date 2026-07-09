@@ -52,9 +52,14 @@ class _EmiCalculatorScreenState extends State<EmiCalculatorScreen> {
     setState(() {
       _rateType = lender.rateType;
       if (lender.typicalRatePct > 0) _rate.text = _fmt(lender.typicalRatePct);
-      if (lender.feeValue > 0) {
+      // A percent fee needs a real principal to compute off of — with
+      // nothing typed yet it would floor to the lender's minimum and never
+      // recompute once a principal is entered.
+      final principal = _d(_principal);
+      final skipPercentFee = lender.feeType == FeeType.percent && principal <= 0;
+      if (lender.feeValue > 0 && !skipPercentFee) {
         final fee = FinanceMath.processingFee(
-          principal: _d(_principal),
+          principal: principal,
           type: lender.feeType,
           value: lender.feeValue,
           cap: lender.feeCap,

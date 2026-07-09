@@ -76,6 +76,7 @@ const List<Lender> kSeedLenders = [
     typicalRatePct: 16.05,
     feeType: FeeType.percent,
     feeValue: 2,
+    feeMin: 149,
     feeCap: 849,
     notes: 'SmartEMI: POS ~16.05% p.a., post-purchase ~18% p.a. '
         'Promotional rates as low as 0.99%/month on select merchants '
@@ -162,6 +163,7 @@ const List<Lender> kSeedLenders = [
     typicalRatePct: 16,
     feeType: FeeType.percent,
     feeValue: 2,
+    feeMin: 149,
     feeCap: 849,
     isMine: true,
     notes: 'HDFC SmartEMI (indicative): up to 2% fee (min ₹149, max ₹849) '
@@ -176,6 +178,7 @@ const List<Lender> kSeedLenders = [
     typicalRatePct: 16,
     feeType: FeeType.percent,
     feeValue: 2,
+    feeMin: 149,
     feeCap: 849,
     isMine: true,
     notes: 'HDFC SmartEMI (indicative): up to 2% fee (min ₹149, max ₹849) '
