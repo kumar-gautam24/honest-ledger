@@ -9,12 +9,16 @@ import asyncpg
 
 CATALOG_COLUMNS = """
     id, name, type, issuer, network, typical_rate_pct, rate_type,
-    fee_type, fee_value, fee_cap, notes, is_active, sort_order, updated_at, version
+    fee_type, fee_value, fee_cap, fee_min, foreclosure_pct, foreclosure_min,
+    foreclosure_free_window_days, foreclosure_gst, foreclosure_extra_interest_days,
+    notes, is_active, sort_order, updated_at, version
 """
 
 _PATCHABLE = {
     "name", "type", "issuer", "network", "typical_rate_pct", "rate_type",
-    "fee_type", "fee_value", "fee_cap", "notes", "is_active", "sort_order",
+    "fee_type", "fee_value", "fee_cap", "fee_min", "foreclosure_pct",
+    "foreclosure_min", "foreclosure_free_window_days", "foreclosure_gst",
+    "foreclosure_extra_interest_days", "notes", "is_active", "sort_order",
 }
 
 
@@ -49,14 +53,22 @@ async def upsert_lender(pool: asyncpg.Pool, data: dict) -> asyncpg.Record:
         f"""
         INSERT INTO catalog_lenders (
             id, name, type, issuer, network, typical_rate_pct, rate_type,
-            fee_type, fee_value, fee_cap, notes, is_active, sort_order
+            fee_type, fee_value, fee_cap, fee_min, foreclosure_pct,
+            foreclosure_min, foreclosure_free_window_days, foreclosure_gst,
+            foreclosure_extra_interest_days, notes, is_active, sort_order
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+                $15, $16, $17, $18, $19)
         ON CONFLICT (id) DO UPDATE SET
             name = EXCLUDED.name, type = EXCLUDED.type, issuer = EXCLUDED.issuer,
             network = EXCLUDED.network, typical_rate_pct = EXCLUDED.typical_rate_pct,
             rate_type = EXCLUDED.rate_type, fee_type = EXCLUDED.fee_type,
             fee_value = EXCLUDED.fee_value, fee_cap = EXCLUDED.fee_cap,
+            fee_min = EXCLUDED.fee_min, foreclosure_pct = EXCLUDED.foreclosure_pct,
+            foreclosure_min = EXCLUDED.foreclosure_min,
+            foreclosure_free_window_days = EXCLUDED.foreclosure_free_window_days,
+            foreclosure_gst = EXCLUDED.foreclosure_gst,
+            foreclosure_extra_interest_days = EXCLUDED.foreclosure_extra_interest_days,
             notes = EXCLUDED.notes, is_active = EXCLUDED.is_active,
             sort_order = EXCLUDED.sort_order, deleted_at = NULL,
             updated_at = now(), version = nextval('catalog_seq')
@@ -64,7 +76,10 @@ async def upsert_lender(pool: asyncpg.Pool, data: dict) -> asyncpg.Record:
         """,
         data["id"], data["name"], data["type"], data["issuer"], data["network"],
         data["typical_rate_pct"], data["rate_type"], data["fee_type"],
-        data["fee_value"], data["fee_cap"], data["notes"], data["is_active"],
+        data["fee_value"], data["fee_cap"], data["fee_min"],
+        data["foreclosure_pct"], data["foreclosure_min"],
+        data["foreclosure_free_window_days"], data["foreclosure_gst"],
+        data["foreclosure_extra_interest_days"], data["notes"], data["is_active"],
         data["sort_order"],
     )
 

@@ -28,7 +28,13 @@ class _NoCostEmiScreenState extends State<NoCostEmiScreen> {
   @override
   void initState() {
     super.initState();
-    for (final c in [_price, _tenure, _rate, _fee, _discount]) {
+    // Entering the price also resolves a percent fee that couldn't be computed
+    // at lender-pick time.
+    _price.addListener(() {
+      _maybeAutofillFee();
+      setState(() {});
+    });
+    for (final c in [_tenure, _rate, _fee, _discount]) {
       c.addListener(() => setState(() {}));
     }
   }
@@ -59,22 +65,26 @@ class _NoCostEmiScreenState extends State<NoCostEmiScreen> {
       if (_rate.text.isEmpty && lender.typicalRatePct > 0) {
         _rate.text = _n(lender.typicalRatePct);
       }
-      // A percent fee needs a real price to compute off of — with nothing
-      // typed yet it would floor to the lender's minimum and never
-      // recompute once a price is entered.
-      final price = _d(_price);
-      final skipPercentFee = lender.feeType == FeeType.percent && price <= 0;
-      if (_fee.text.isEmpty && lender.feeValue > 0 && !skipPercentFee) {
-        final fee = FinanceMath.processingFee(
-          principal: price,
-          type: lender.feeType,
-          value: lender.feeValue,
-          cap: lender.feeCap,
-          min: lender.feeMin,
-        );
-        if (fee > 0) _fee.text = Money.input(fee);
-      }
+      _maybeAutofillFee();
     });
+  }
+
+  /// Autofills the processing fee from the picked lender while [_fee] is empty.
+  /// A flat fee fills at once; a percent fee needs a real price to take the
+  /// percent of, so the price listener calls this again once it's entered.
+  void _maybeAutofillFee() {
+    final lender = _lender;
+    if (lender == null || _fee.text.isNotEmpty || lender.feeValue <= 0) return;
+    final price = _d(_price);
+    if (lender.feeType == FeeType.percent && price <= 0) return;
+    final fee = FinanceMath.processingFee(
+      principal: price,
+      type: lender.feeType,
+      value: lender.feeValue,
+      cap: lender.feeCap,
+      min: lender.feeMin,
+    );
+    if (fee > 0) _fee.text = Money.input(fee);
   }
 
   @override

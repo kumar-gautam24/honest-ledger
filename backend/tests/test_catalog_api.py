@@ -15,14 +15,22 @@ def catalog_lender(**overrides) -> dict:
 
 
 async def test_public_read_needs_no_auth(client):
-    # The migration seeds 14 lenders; anyone can read them without a token.
+    # The migrations seed 20 lenders (0005 + 0010's EMI-on-Call variants and
+    # Kotak/Amex); anyone can read them without a token.
     response = await client.get("/v1/catalog/lenders")
     assert response.status_code == 200
     body = response.json()
     assert body["version"] > 0
     ids = [item["id"] for item in body["items"]]
     assert "slice" in ids
-    assert len(body["items"]) == 14
+    assert "icici-emi-on-call" in ids
+    assert len(body["items"]) == 20
+    # 0010's new columns are exposed on the response.
+    icici = next(i for i in body["items"] if i["id"] == "icici-emi-on-call")
+    assert icici["typical_rate_pct"] == 18
+    assert icici["fee_value"] == 2
+    assert icici["fee_cap"] is None
+    assert icici["foreclosure_pct"] == 3
 
 
 async def test_version_endpoint(client):
