@@ -8,6 +8,8 @@ import '../../features/cards/data/card_remote_source.dart';
 import '../../features/cards/data/card_repository_impl.dart';
 import '../../features/cards/data/synced_card_repository.dart';
 import '../../features/cards/domain/repositories/card_repository.dart';
+import '../../features/lenders/data/catalog_refresh_service.dart';
+import '../../features/lenders/data/catalog_remote_source.dart';
 import '../../features/lenders/data/lender_remote_source.dart';
 import '../../features/lenders/data/lender_repository_impl.dart';
 import '../../features/lenders/data/lender_seed.dart';
@@ -134,7 +136,22 @@ Future<void> configureDependencies({AppDatabase? database}) async {
       LocalDataWiperImpl(sl<AppDatabase>(), sl<SharedPreferences>()),
     );
   }
+  // Refreshes the built-in catalog from the server (public read) so term
+  // corrections ship without an app update; writes to the LOCAL repository only.
+  if (!sl.isRegistered<CatalogRefreshService>()) {
+    sl.registerSingleton<CatalogRefreshService>(
+      CatalogRefreshService(
+        CatalogRemoteSourceDio(sl<ApiClient>()),
+        LenderRepositoryImpl(sl<AppDatabase>()),
+        sl<SharedPreferences>(),
+      ),
+    );
+  }
   await _seedLenders();
+
+  // Pull server catalog updates in the background: public read, safe when signed
+  // out, never blocks startup, never throws (the seeded catalog stands in offline).
+  unawaited(sl<CatalogRefreshService>().refresh());
 
   // If already signed in from a previous session, sync in the background so a
   // fresh launch both uploads anything that failed to push earlier and reflects
