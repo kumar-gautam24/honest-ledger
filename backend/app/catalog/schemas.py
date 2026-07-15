@@ -20,6 +20,12 @@ class CatalogLenderUpsert(BaseModel):
     fee_type: str = Field(default="flat", max_length=40)
     fee_value: float = Field(default=0, ge=0)
     fee_cap: float | None = Field(default=None, ge=0)
+    fee_min: float | None = Field(default=None, ge=0)
+    foreclosure_pct: float | None = Field(default=None, ge=0)
+    foreclosure_min: float | None = Field(default=None, ge=0)
+    foreclosure_free_window_days: int | None = Field(default=None, ge=0)
+    foreclosure_gst: bool = True
+    foreclosure_extra_interest_days: int = Field(default=0, ge=0)
     notes: str | None = Field(default=None, max_length=2000)
     is_active: bool = True
     sort_order: int = 0
@@ -36,6 +42,12 @@ class CatalogLenderPatch(BaseModel):
     fee_type: str | None = Field(default=None, max_length=40)
     fee_value: float | None = Field(default=None, ge=0)
     fee_cap: float | None = Field(default=None, ge=0)
+    fee_min: float | None = Field(default=None, ge=0)
+    foreclosure_pct: float | None = Field(default=None, ge=0)
+    foreclosure_min: float | None = Field(default=None, ge=0)
+    foreclosure_free_window_days: int | None = Field(default=None, ge=0)
+    foreclosure_gst: bool | None = None
+    foreclosure_extra_interest_days: int | None = Field(default=None, ge=0)
     notes: str | None = Field(default=None, max_length=2000)
     is_active: bool | None = None
     sort_order: int | None = None
@@ -52,6 +64,12 @@ class CatalogLenderResponse(BaseModel):
     fee_type: str
     fee_value: float
     fee_cap: float | None
+    fee_min: float | None
+    foreclosure_pct: float | None
+    foreclosure_min: float | None
+    foreclosure_free_window_days: int | None
+    foreclosure_gst: bool
+    foreclosure_extra_interest_days: int
     notes: str | None
     is_active: bool
     sort_order: int

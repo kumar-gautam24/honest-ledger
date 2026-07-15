@@ -2,7 +2,7 @@ import '../../../../core/utils/finance_math.dart';
 import '../domain/entities/lender.dart';
 
 /// Bump when the seed values below change so the app refreshes them on upgrade.
-const int kLenderSeedVersion = 5;
+const int kLenderSeedVersion = 6;
 
 /// Ids of the built-in catalog entries. These ship with the app (and live in the
 /// server's global catalog), so they are NOT synced to the per-user `/v1/lenders`
@@ -17,6 +17,22 @@ final Set<String> kSeedLenderIds = {for (final l in kSeedLenders) l.id};
 ///
 /// Card EMI processing fees are usually a **percent of the purchase** (≈1–2%),
 /// not a small flat amount — modelled with [FeeType.percent].
+///
+/// An issuer has ONE card but several EMI *products*, and the rate + fee differ
+/// by conversion channel — so each channel is its own template:
+///  - **Instant / POS** (chosen at checkout): lower rate (≈13–16%), e.g. ICICI
+///    Instant EMI 15.99% with a 2.99% fee capped at ₹299.
+///  - **EMI-on-Call / post-purchase** (convert an already-billed txn): higher
+///    rate (≈18%) and a bigger, uncapped fee (ICICI up to 2% of the amount, no
+///    ₹299 cap). Ids end in `-emi-on-call` / `-post-purchase`.
+/// Pick the channel that matches how a purchase was actually converted.
+///
+/// **No-Cost EMI is not a separate lender** — it is the per-purchase toggle
+/// ([RateType]/`isNoCostEmi` on the borrowing). The bank still books interest at
+/// the channel's rate and the merchant's discount cancels it on the bill, but
+/// 18% GST on that hidden interest (and any fee) is still real. No-cost runs on
+/// the Instant/POS channel (≈13–16%, tenors 3/6 mo), so toggle it on an
+/// Instant template, not an EMI-on-Call one.
 ///
 /// `isMine` marks the cards the user actually holds.
 const List<Lender> kSeedLenders = [
@@ -85,9 +101,26 @@ const List<Lender> kSeedLenders = [
     feeValue: 2,
     feeMin: 149,
     feeCap: 849,
-    notes: 'SmartEMI: POS ~16.05% p.a., post-purchase ~18% p.a. '
-        'Promotional rates as low as 0.99%/month on select merchants '
-        '(indicative). Processing up to 2% (min ₹149, max ₹849) + 18% GST.',
+    notes: 'SmartEMI at POS (checkout) ~16.05% p.a. Promotional rates as low as '
+        '0.99%/month on select merchants (indicative). Processing up to 2% '
+        '(min ₹149, max ₹849) + 18% GST. For a No-Cost EMI offer, toggle No-Cost '
+        'on this entry (bank still books the interest; 18% GST on it is real).',
+  ),
+  Lender(
+    id: 'hdfc-post-purchase',
+    name: 'HDFC SmartEMI (post-purchase)',
+    type: LenderType.card,
+    issuer: 'HDFC',
+    typicalRatePct: 18,
+    foreclosurePct: 3,
+    foreclosureFreeWindowDays: 30,
+    feeType: FeeType.percent,
+    feeValue: 2,
+    feeMin: 149,
+    feeCap: 849,
+    notes: 'Post-purchase SmartEMI (convert a billed transaction / Dial-an-EMI): '
+        '~18% p.a. (indicative — POS is lower, ~16%). Processing up to 2% '
+        '(min ₹149, max ₹849) + 18% GST. Foreclosure 3% (free within 30 days).',
   ),
   Lender(
     id: 'icici-card-emi',
@@ -99,11 +132,28 @@ const List<Lender> kSeedLenders = [
     feeValue: 2.99,
     feeCap: 299,
     foreclosurePct: 3,
-    notes: 'Fee VERIFIED from ICICI Instant EMI T&C (w.e.f. 01 Sep 2025): '
-        '2.99% capped at ₹299 + 18% GST. The 15.99% is INDICATIVE — the T&C '
-        'says the rate is set per cardholder and merchant, and is quoted on '
-        'the charge-slip. Two-wheelers: up to 20% and ₹999 fee. '
-        'Foreclosure 3% + GST.',
+    notes: 'Instant EMI (chosen at checkout). Fee VERIFIED from ICICI Instant '
+        'EMI T&C (w.e.f. 01 Sep 2025): 2.99% capped at ₹299 + 18% GST. The '
+        '15.99% is INDICATIVE — the T&C says the rate is set per cardholder and '
+        'merchant, and is quoted on the charge-slip. Two-wheelers: up to 20% and '
+        '₹999 fee. Foreclosure 3% + GST. For a No-Cost EMI offer, toggle No-Cost '
+        'on THIS Instant entry: the bank still books ~15.99% interest and you pay '
+        '18% GST on it even though the merchant discount hides it.',
+  ),
+  Lender(
+    id: 'icici-emi-on-call',
+    name: 'ICICI EMI-on-Call',
+    type: LenderType.card,
+    issuer: 'ICICI',
+    typicalRatePct: 18,
+    feeType: FeeType.percent,
+    feeValue: 2,
+    foreclosurePct: 3,
+    notes: 'Post-purchase conversion (convert an already-billed transaction). '
+        'Per ICICI EMI-on-Call T&C: up to 1.5%/month (~18% p.a. reducing) and '
+        'up to 2% of the amount as processing fee — no ₹299 Instant-EMI cap — '
+        '+ 18% GST, foreclosure 3%. Use this, not Instant EMI, for a '
+        'merchant/post-purchase conversion.',
   ),
   Lender(
     id: 'sbi-card-emi',
@@ -115,10 +165,25 @@ const List<Lender> kSeedLenders = [
     feeValue: 1,
     feeCap: 2000,
     foreclosurePct: 3,
-    notes: 'VERIFIED w.e.f. 23 Nov 2025: Flexipay 9.75–24% p.a. by segment; '
-        'fee 1% of the booking or ₹2,000, whichever is LESS (zero at 24/36 '
-        'months). Foreclosure 3%. Post-purchase conversion window: 30 days, '
-        'minimum booking ₹2,500.',
+    notes: 'Flexipay — SBI\'s post-purchase conversion. VERIFIED w.e.f. 23 Nov '
+        '2025: 9.75–24% p.a. by segment; fee 1% of the booking or ₹2,000, '
+        'whichever is LESS (zero at 24/36 months). Foreclosure 3%. Conversion '
+        'window 30 days, minimum booking ₹2,500.',
+  ),
+  Lender(
+    id: 'sbi-merchant-emi',
+    name: 'SBI Merchant EMI',
+    type: LenderType.card,
+    issuer: 'SBI',
+    typicalRatePct: 18,
+    feeType: FeeType.percent,
+    feeValue: 1,
+    feeCap: 2000,
+    foreclosurePct: 3,
+    notes: 'Merchant/instant EMI at checkout (indicative ~18% upper; SBI rates '
+        'are 9.75–24% p.a. by segment). Fee 1% of the booking, max ₹2,000, '
+        '+ 18% GST. Foreclosure 3%. For post-purchase conversions use SBI '
+        'Flexipay instead.',
   ),
   Lender(
     id: 'axis-card-emi',
@@ -130,8 +195,25 @@ const List<Lender> kSeedLenders = [
     foreclosurePct: 3,
     foreclosureMin: 300,
     foreclosureFreeWindowDays: 7,
-    notes: 'Merchant EMI ~14% / post-purchase ~18% p.a. (indicative). '
-        'Processing ₹150 (+18% GST); some products up to 2%.',
+    notes: 'Merchant EMI at checkout ~14% p.a. (indicative). Processing ₹150 '
+        '(+18% GST); some products up to 2%. Foreclosure 3% or ₹300 (whichever '
+        'is more), free within 7 days. For post-purchase conversions use Axis '
+        'EMI-on-Call (~18%).',
+  ),
+  Lender(
+    id: 'axis-emi-on-call',
+    name: 'Axis EMI-on-Call (post-purchase)',
+    type: LenderType.card,
+    issuer: 'Axis',
+    typicalRatePct: 18,
+    feeValue: 150,
+    foreclosurePct: 3,
+    foreclosureMin: 300,
+    foreclosureFreeWindowDays: 7,
+    notes: 'Post-purchase conversion (convert a billed transaction, 1.5%/month '
+        '= ~18% p.a., indicative). Processing ₹150 flat (+18% GST); some '
+        'products up to 2%. Foreclosure 3% or ₹300 (whichever is more) after '
+        '30 days.',
   ),
   Lender(
     id: 'kotak-card-emi',
@@ -207,8 +289,9 @@ const List<Lender> kSeedLenders = [
     typicalRatePct: 16,
     feeValue: 150,
     isMine: true,
-    notes: 'Axis EMI terms: ~14–18% p.a. (indicative); ₹150 fee '
-        '(+18% GST); some products up to 2%.',
+    notes: 'Merchant EMI at checkout ~14–16% p.a. (indicative); ₹150 fee '
+        '(+18% GST); some products up to 2%. For a post-purchase conversion '
+        'use "Axis EMI-on-Call" (~18%). Foreclosure 3%.',
   ),
   Lender(
     id: 'icici-amazon-pay',
@@ -221,7 +304,9 @@ const List<Lender> kSeedLenders = [
     feeValue: 2.99,
     feeCap: 299,
     isMine: true,
-    notes: 'ICICI Instant EMI 15.99% p.a.; 2.99% fee (max ₹299) + 18% GST. '
-        'Verified from ICICI Instant EMI T&C, Jul 2026.',
+    notes: 'Modelled as ICICI Instant EMI: 15.99% p.a.; 2.99% fee (max ₹299) '
+        '+ 18% GST (per ICICI Instant EMI T&C). For a merchant/post-purchase '
+        'conversion on this card use "ICICI EMI-on-Call" (18% + 2% fee). For a '
+        'No-Cost offer, toggle No-Cost here.',
   ),
 ];

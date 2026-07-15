@@ -8,6 +8,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/finance_math.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../shared/widgets/widgets.dart';
+import '../../../lenders/domain/entities/lender.dart';
 import '../../../lenders/presentation/widgets/lender_picker.dart';
 
 /// Price → EMI. A live calculator: results update as you type. Picking a lender
@@ -25,11 +26,18 @@ class _EmiCalculatorScreenState extends State<EmiCalculatorScreen> {
   final _tenure = TextEditingController();
   final _fee = TextEditingController();
   RateType _rateType = RateType.reducing;
+  Lender? _lender;
 
   @override
   void initState() {
     super.initState();
-    for (final c in [_principal, _rate, _tenure, _fee]) {
+    // Entering the amount also resolves a percent fee that couldn't be computed
+    // at lender-pick time.
+    _principal.addListener(() {
+      _maybeAutofillFee();
+      setState(() {});
+    });
+    for (final c in [_rate, _tenure, _fee]) {
       c.addListener(() => setState(() {}));
     }
   }
@@ -50,24 +58,29 @@ class _EmiCalculatorScreenState extends State<EmiCalculatorScreen> {
     final lender = await showLenderPicker(context);
     if (lender == null) return;
     setState(() {
+      _lender = lender;
       _rateType = lender.rateType;
       if (lender.typicalRatePct > 0) _rate.text = _fmt(lender.typicalRatePct);
-      // A percent fee needs a real principal to compute off of — with
-      // nothing typed yet it would floor to the lender's minimum and never
-      // recompute once a principal is entered.
-      final principal = _d(_principal);
-      final skipPercentFee = lender.feeType == FeeType.percent && principal <= 0;
-      if (lender.feeValue > 0 && !skipPercentFee) {
-        final fee = FinanceMath.processingFee(
-          principal: principal,
-          type: lender.feeType,
-          value: lender.feeValue,
-          cap: lender.feeCap,
-          min: lender.feeMin,
-        );
-        if (fee > 0) _fee.text = Money.input(fee);
-      }
+      _maybeAutofillFee();
     });
+  }
+
+  /// Autofills the processing fee from the picked lender while [_fee] is empty.
+  /// A flat fee fills at once; a percent fee needs a real principal to take the
+  /// percent of, so the principal listener calls this again once it's entered.
+  void _maybeAutofillFee() {
+    final lender = _lender;
+    if (lender == null || _fee.text.isNotEmpty || lender.feeValue <= 0) return;
+    final principal = _d(_principal);
+    if (lender.feeType == FeeType.percent && principal <= 0) return;
+    final fee = FinanceMath.processingFee(
+      principal: principal,
+      type: lender.feeType,
+      value: lender.feeValue,
+      cap: lender.feeCap,
+      min: lender.feeMin,
+    );
+    if (fee > 0) _fee.text = Money.input(fee);
   }
 
   static String _fmt(double v) =>

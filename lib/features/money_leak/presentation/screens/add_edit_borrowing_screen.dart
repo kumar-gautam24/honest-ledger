@@ -100,8 +100,13 @@ class _AddEditBorrowingScreenState
       text: e?.firstPeriodDays?.toString() ?? '',
     );
     _startDate = e?.startDate ?? DateTime.now();
-    // Live-update the EMI preview as figures change.
-    for (final ctrl in [_principal, _rate, _tenure, _fee]) {
+    // Live-update the EMI preview as figures change. Entering the amount also
+    // resolves a percent fee that couldn't be computed at lender-pick time.
+    _principal.addListener(() {
+      _maybeAutofillFee();
+      setState(() {});
+    });
+    for (final ctrl in [_rate, _tenure, _fee]) {
       ctrl.addListener(() => setState(() {}));
     }
   }
@@ -138,24 +143,28 @@ class _AddEditBorrowingScreenState
       if (_rate.text.isEmpty && lender.typicalRatePct > 0) {
         _rate.text = _n(lender.typicalRatePct);
       }
-      // Autofill the fee: flat amount directly, percent computed off the
-      // amount (respecting any cap) when it's entered. Title stays the purchase.
-      // A percent fee needs a real amount to compute off of — with nothing
-      // typed yet it would floor to the lender's minimum (e.g. ₹199) and
-      // never recompute once an amount is entered.
-      final principal = _parse(_principal);
-      final skipPercentFee = lender.feeType == FeeType.percent && principal <= 0;
-      if (_fee.text.isEmpty && lender.feeValue > 0 && !skipPercentFee) {
-        final fee = FinanceMath.processingFee(
-          principal: principal,
-          type: lender.feeType,
-          value: lender.feeValue,
-          cap: lender.feeCap,
-          min: lender.feeMin,
-        );
-        if (fee > 0) _fee.text = Money.input(fee);
-      }
+      _maybeAutofillFee();
     });
+  }
+
+  /// Autofills the processing fee from the selected lender while [_fee] is still
+  /// empty (a user-typed fee is never clobbered). A flat fee fills immediately;
+  /// a percent fee needs a real amount to take the percent of, so it can't fill
+  /// at lender-pick time with nothing typed — [initState]'s principal listener
+  /// calls this again once the amount is entered.
+  void _maybeAutofillFee() {
+    final lender = _lender;
+    if (lender == null || _fee.text.isNotEmpty || lender.feeValue <= 0) return;
+    final principal = _parse(_principal);
+    if (lender.feeType == FeeType.percent && principal <= 0) return;
+    final fee = FinanceMath.processingFee(
+      principal: principal,
+      type: lender.feeType,
+      value: lender.feeValue,
+      cap: lender.feeCap,
+      min: lender.feeMin,
+    );
+    if (fee > 0) _fee.text = Money.input(fee);
   }
 
   /// Personal loans accrue interest per day, so a long first period costs more.

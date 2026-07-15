@@ -39,7 +39,7 @@ void main() {
   test('seeding is idempotent (only once)', () async {
     await seedLendersIfEmpty(db); // second call is a no-op
     final all = await repo.watchAll().first;
-    expect(all, hasLength(16));
+    expect(all, hasLength(20));
   });
 
   test('sbi-card-emi has no fee floor: Flexipay is 1% capped at ₹2,000 '
