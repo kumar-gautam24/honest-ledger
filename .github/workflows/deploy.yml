@@ -1,0 +1,31 @@
+name: Deploy to server
+
+# WHEN this runs: on every push to the main branch.
+on:
+  push:
+    branches: [main]
+
+# Don't let two deploys run at once (e.g. if you push twice quickly).
+# They queue instead of trampling each other on the server.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest          # GitHub gives us a fresh, throwaway Linux machine
+    steps:
+      - name: Deploy over SSH
+        run: |
+          # Write the deploy key from the encrypted secret into a file on the runner.
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519          # ssh refuses keys that others could read
+
+          # Learn the server's host key so ssh doesn't stop to ask "are you sure?".
+          ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+          # Log into the server and run the SAME deploy.sh we use by hand.
+          # The server pulls its own code, so the runner doesn't need a checkout.
+          ssh -i ~/.ssh/id_ed25519 "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
+            "cd honest-ledger && ./scripts/deploy.sh"
