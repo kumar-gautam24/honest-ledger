@@ -13,7 +13,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/../backend"
 
-echo "==> Pulling latest code..."
+echo "==> Fetching latest refs (prune first)..."
+# Prune stale remote-tracking refs and force-update tags BEFORE pulling. A leftover
+# ref like origin/release/ios-1.0.0 collides with a new origin/release branch and makes
+# plain `git pull` abort with "some local refs could not be updated" — which once wedged
+# the whole deploy. Pruning clears that collision so a stray branch/tag can't jam us.
+git fetch origin --prune --tags --force
+
+echo "==> Fast-forwarding..."
 # --ff-only refuses to create a merge commit. On a server that only *consumes* code,
 # a pull that can't fast-forward means someone edited on the server — we want to fail loud.
 git pull --ff-only
