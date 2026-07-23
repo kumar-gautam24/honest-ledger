@@ -5,6 +5,7 @@ import '../../core/di/injector.dart';
 import '../../core/haptics/haptic_service.dart';
 import '../../features/auth/presentation/sign_in_screen.dart';
 import '../../core/utils/enum_x.dart';
+import '../../features/assistant/presentation/screens/assistant_screen.dart';
 import '../../features/cards/domain/entities/card_account.dart';
 import '../../features/cards/presentation/screens/add_edit_card_screen.dart';
 import '../../features/cards/presentation/screens/card_detail_screen.dart';
@@ -48,6 +49,10 @@ final GoRouter appRouter = GoRouter(
                 GoRoute(
                   path: 'waste',
                   builder: (_, _) => const WasteScreen(),
+                ),
+                GoRoute(
+                  path: 'assistant',
+                  builder: (_, _) => const AssistantScreen(),
                 ),
                 GoRoute(
                   path: 'add',

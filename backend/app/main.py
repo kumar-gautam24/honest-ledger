@@ -16,6 +16,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from app.ai.router import ai_router
 from app.auth.router import account_router, auth_router
 from app.borrowings.router import borrowings_router, repayments_router
 from app.cards.router import cards_router, statements_router
@@ -102,6 +103,11 @@ def create_app() -> FastAPI:
         max_requests=settings.auth_rate_limit_max_requests,
         window_seconds=settings.auth_rate_limit_window_seconds,
     )
+    # Separate limiter for the AI proxy, keyed per user (see ai/dependencies.py).
+    app.state.ai_limiter = SlidingWindowRateLimiter(
+        max_requests=settings.ai_rate_limit_max_requests,
+        window_seconds=settings.ai_rate_limit_window_seconds,
+    )
 
     app.include_router(auth_router)
     app.include_router(account_router)
@@ -115,6 +121,7 @@ def create_app() -> FastAPI:
     app.include_router(catalog_router)
     app.include_router(settings_router)
     app.include_router(sync_router)
+    app.include_router(ai_router)
 
     @app.get("/health", tags=["ops"])
     async def health() -> dict[str, str]:

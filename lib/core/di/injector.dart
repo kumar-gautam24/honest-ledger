@@ -19,6 +19,9 @@ import '../../features/money_leak/data/borrowing_remote_source.dart';
 import '../../features/money_leak/data/borrowing_repository_impl.dart';
 import '../../features/money_leak/data/synced_borrowing_repository.dart';
 import '../../features/money_leak/domain/repositories/borrowing_repository.dart';
+import '../../features/assistant/assistant_config.dart';
+import '../../features/assistant/data/ai_service.dart';
+import '../../features/assistant/data/demo_ai_service.dart';
 import '../../features/auth/data/auth_api.dart';
 import '../../features/recurring/data/recurring_remote_source.dart';
 import '../../features/recurring/data/recurring_repository_impl.dart';
@@ -78,6 +81,14 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   }
   if (!sl.isRegistered<AuthApi>()) {
     sl.registerSingleton<AuthApi>(AuthApi(sl<ApiClient>()));
+  }
+  // AI assistant. In demo mode a local, no-network stand-in drives the flow so
+  // the UX works with no model/key; otherwise the real proxy client calls
+  // `/v1/ai/chat`, which holds the model key server-side.
+  if (!sl.isRegistered<AiService>()) {
+    sl.registerSingleton<AiService>(
+      kAssistantDemoMode ? DemoAiService() : AiServiceDio(sl<ApiClient>()),
+    );
   }
   if (!sl.isRegistered<SettingsRemoteSource>()) {
     sl.registerSingleton<SettingsRemoteSource>(
