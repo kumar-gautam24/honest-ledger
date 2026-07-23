@@ -12,6 +12,32 @@ async def test_create_returns_201_with_row(client, auth_headers):
     assert body["deleted_at"] is None
 
 
+async def test_card_id_round_trips_and_defaults_null(client, auth_headers):
+    # v1 client omits card_id → NULL; a newer client sends and patches it.
+    omitted = borrowing_payload()
+    body = (
+        await client.post("/v1/borrowings", json=omitted, headers=auth_headers)
+    ).json()
+    assert body["card_id"] is None
+
+    linked = borrowing_payload(card_id="card-abc")
+    created = (
+        await client.post("/v1/borrowings", json=linked, headers=auth_headers)
+    ).json()
+    assert created["card_id"] == "card-abc"
+    fetched = await client.get(
+        f"/v1/borrowings/{linked['id']}", headers=auth_headers
+    )
+    assert fetched.json()["card_id"] == "card-abc"
+
+    patched = await client.patch(
+        f"/v1/borrowings/{linked['id']}",
+        json={"card_id": "card-xyz", "updated_at": "2027-01-01T00:00:00Z"},
+        headers=auth_headers,
+    )
+    assert patched.json()["card_id"] == "card-xyz"
+
+
 async def test_create_accepts_text_lender_id_slug(client, auth_headers):
     # Client lender ids are catalog slugs, not UUIDs (see migration 0006).
     payload = borrowing_payload(lender_id="slice")

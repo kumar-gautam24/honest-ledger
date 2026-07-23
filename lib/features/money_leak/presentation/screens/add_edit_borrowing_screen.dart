@@ -13,6 +13,9 @@ import '../../../../core/utils/finance_math.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/validation/validators.dart';
 import '../../../../shared/widgets/widgets.dart';
+import '../../../cards/domain/entities/card_account.dart';
+import '../../../cards/presentation/controllers/card_providers.dart';
+import '../../../cards/presentation/widgets/card_picker.dart';
 import '../../../lenders/domain/entities/lender.dart';
 import '../../../lenders/presentation/widgets/lender_picker.dart';
 import '../../domain/entities/borrowing.dart';
@@ -58,6 +61,11 @@ class _AddEditBorrowingScreenState
   late final TextEditingController _firstPeriodDays;
   late DateTime _startDate;
   Lender? _lender;
+
+  /// The card this borrowing is billed on, when linked. Seeded from the
+  /// existing borrowing so an unchanged edit preserves it, and cleared to null
+  /// when the user picks "Not linked".
+  String? _cardId;
   bool _saving = false;
 
   bool get _isEditing => widget.existing != null;
@@ -100,6 +108,7 @@ class _AddEditBorrowingScreenState
       text: e?.firstPeriodDays?.toString() ?? '',
     );
     _startDate = e?.startDate ?? DateTime.now();
+    _cardId = e?.cardId;
     // Live-update the EMI preview as figures change. Entering the amount also
     // resolves a percent fee that couldn't be computed at lender-pick time.
     _principal.addListener(() {
@@ -133,6 +142,12 @@ class _AddEditBorrowingScreenState
 
   double _parse(TextEditingController c) =>
       double.tryParse(c.text.replaceAll(',', '').trim()) ?? 0;
+
+  Future<void> _pickCard() async {
+    final result = await showCardPicker(context);
+    if (result == null) return; // dismissed — leave selection untouched
+    setState(() => _cardId = result.card?.id);
+  }
 
   Future<void> _pickLender() async {
     final lender = await showLenderPicker(context);
@@ -205,6 +220,7 @@ class _AddEditBorrowingScreenState
       title: _title.text.trim(),
       kind: _kind,
       lenderId: _lender?.id ?? existing?.lenderId,
+      cardId: _cardId,
       lenderName: _lender?.name ?? existing?.lenderName ?? 'Other',
       principal: _parse(_principal),
       processingFee: fee,
@@ -245,6 +261,12 @@ class _AddEditBorrowingScreenState
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final cards =
+        ref.watch(cardsProvider).asData?.value ?? const <CardAccount>[];
+    CardAccount? selectedCard;
+    for (final cc in cards) {
+      if (cc.id == _cardId) selectedCard = cc;
+    }
     return AppScaffold(
       title: _isEditing ? 'Edit borrowing' : 'Add borrowing',
       body: AppForm(
@@ -255,6 +277,8 @@ class _AddEditBorrowingScreenState
             Text('LENDER / CARD', style: AppTypography.eyebrow(c)),
             const SizedBox(height: AppSpacing.sm),
             _LenderField(lender: _lender, onTap: _pickLender),
+            const SizedBox(height: AppSpacing.sm),
+            _CardLinkField(card: selectedCard, onTap: _pickCard),
             const SizedBox(height: AppSpacing.lg),
             AppTextField(
               label: 'What did you buy',
@@ -533,6 +557,42 @@ class _LenderField extends StatelessWidget {
               style: lender == null
                   ? context.text.bodyMedium
                   : context.text.titleMedium,
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: c.textLow),
+        ],
+      ),
+    );
+  }
+}
+
+/// Optional link to the card this borrowing is billed on. When set, the EMI
+/// folds into that card's statement instead of being matched by lender.
+class _CardLinkField extends StatelessWidget {
+  const _CardLinkField({required this.card, required this.onTap});
+
+  final CardAccount? card;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final linked = card != null;
+    return AppCard(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(
+            linked ? Icons.credit_card_rounded : Icons.credit_card_off_outlined,
+            color: linked ? c.accent : c.textLow,
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Text(
+              linked ? 'Billed on ${card!.name}' : 'Not billed on a card',
+              style: linked
+                  ? context.text.titleMedium
+                  : context.text.bodyMedium,
             ),
           ),
           Icon(Icons.chevron_right_rounded, color: c.textLow),

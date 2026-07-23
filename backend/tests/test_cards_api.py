@@ -13,6 +13,32 @@ async def test_create_returns_201_with_row(client, auth_headers):
     assert body["deleted_at"] is None
 
 
+async def test_nickname_round_trips_and_defaults_null(client, auth_headers):
+    # A shipped v1 client omits nickname → stored NULL, returned null.
+    omitted = card_payload()
+    body = (
+        await client.post("/v1/cards", json=omitted, headers=auth_headers)
+    ).json()
+    assert body["nickname"] is None
+
+    # A newer client sends it → round-trips on create and on GET.
+    named = card_payload(nickname="ICICI Amazon Pay")
+    created = (
+        await client.post("/v1/cards", json=named, headers=auth_headers)
+    ).json()
+    assert created["nickname"] == "ICICI Amazon Pay"
+    fetched = await client.get(f"/v1/cards/{named['id']}", headers=auth_headers)
+    assert fetched.json()["nickname"] == "ICICI Amazon Pay"
+
+    # And it is patchable.
+    patched = await client.patch(
+        f"/v1/cards/{named['id']}",
+        json={"nickname": "ICICI Coral", "updated_at": "2027-01-01T00:00:00Z"},
+        headers=auth_headers,
+    )
+    assert patched.json()["nickname"] == "ICICI Coral"
+
+
 async def test_create_replay_returns_200_same_row(client, auth_headers):
     payload = card_payload()
     first = await client.post("/v1/cards", json=payload, headers=auth_headers)

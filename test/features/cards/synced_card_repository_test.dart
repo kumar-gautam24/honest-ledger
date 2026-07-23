@@ -7,12 +7,13 @@ import 'package:recurring/features/cards/data/synced_card_repository.dart';
 import 'package:recurring/features/cards/domain/entities/card_account.dart';
 import 'package:recurring/features/cards/domain/entities/card_statement.dart';
 
-CardAccount _card({String id = 'c1'}) => CardAccount(
+CardAccount _card({String id = 'c1', String? nickname}) => CardAccount(
       id: id,
       lenderId: 'hdfc-swiggy',
       name: 'HDFC Swiggy',
       statementDay: 5,
       dueDay: 25,
+      nickname: nickname,
       creditLimit: 200000,
       createdAt: DateTime(2026, 1, 1),
     );
@@ -79,6 +80,13 @@ void main() {
     expect(sj['statement_amount_paise'], 1250075);
     final backCard = cardFromJson({...cardToJson(_card()), 'server_seq': 1});
     expect(backCard.creditLimit, 200000);
+    // Nickname round-trips (null and set).
+    expect(backCard.nickname, isNull);
+    final withNick = cardFromJson({
+      ...cardToJson(_card(nickname: 'ICICI Amazon')),
+      'server_seq': 1,
+    });
+    expect(withNick.nickname, 'ICICI Amazon');
     final backStmt =
         statementFromJson({...sj, 'card_id': 'c1', 'server_seq': 1});
     expect(backStmt.statementAmount, 12500.75);

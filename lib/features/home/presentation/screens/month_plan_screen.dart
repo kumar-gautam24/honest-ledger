@@ -302,10 +302,10 @@ class _DueRow extends ConsumerWidget {
                           style: context.text.bodySmall,
                         ),
                       ],
-                      if (due.foldedEmiAmount > 0) ...[
+                      if (due.foldedAmount > 0) ...[
                         const SizedBox(height: 2),
                         Text(
-                          'incl. ${Money.format(due.foldedEmiAmount)} EMIs',
+                          'incl. ${Money.format(due.foldedAmount)} EMIs & subs',
                           style: context.text.bodySmall,
                         ),
                       ],

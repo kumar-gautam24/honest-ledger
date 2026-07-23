@@ -47,6 +47,7 @@ class Borrowings extends Table {
   TextColumn get kind =>
       text().withDefault(const Constant('flexibleLoan'))();
   TextColumn get lenderId => text().nullable()();
+  TextColumn get cardId => text().nullable()();
   TextColumn get lenderName => text()();
   RealColumn get principal => real()();
   RealColumn get processingFee => real().withDefault(const Constant(0))();
@@ -100,6 +101,7 @@ class RecurringItems extends Table {
   TextColumn get frequency => text().withDefault(const Constant('monthly'))();
   DateTimeColumn get nextDueDate => dateTime()();
   TextColumn get category => text().nullable()();
+  TextColumn get cardId => text().nullable()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
@@ -121,6 +123,9 @@ class Cards extends Table {
 
   /// Day of month the bill is due (1–31, clamped).
   IntColumn get dueDay => integer()();
+
+  /// User-set label distinguishing same-bank cards; null uses the lender name.
+  TextColumn get nickname => text().nullable()();
   RealColumn get creditLimit => real().nullable()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   DateTimeColumn get createdAt => dateTime()();
@@ -165,7 +170,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -205,6 +210,12 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(lenders, lenders.foreclosureFreeWindowDays);
             await m.addColumn(lenders, lenders.foreclosureGst);
             await m.addColumn(lenders, lenders.foreclosureExtraInterestDays);
+          }
+          if (from < 9) {
+            // Explicit card links + per-card nickname.
+            await m.addColumn(borrowings, borrowings.cardId);
+            await m.addColumn(recurringItems, recurringItems.cardId);
+            await m.addColumn(cards, cards.nickname);
           }
         },
         beforeOpen: (details) async {

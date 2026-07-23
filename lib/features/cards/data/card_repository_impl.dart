@@ -22,10 +22,15 @@ class CardRepositoryImpl implements CardRepository {
       ]);
     return query.watch().map((rows) => [
           for (final row in rows)
-            cardFromRow(
-              row.readTable(_db.cards),
-              name: row.readTableOrNull(_db.lenders)?.name ?? 'Card',
-            ),
+            () {
+              final cardRow = row.readTable(_db.cards);
+              final lenderName = row.readTableOrNull(_db.lenders)?.name;
+              // A nickname distinguishes same-bank cards; else the lender name.
+              return cardFromRow(
+                cardRow,
+                name: cardRow.nickname ?? lenderName ?? 'Card',
+              );
+            }(),
         ]);
   }
 

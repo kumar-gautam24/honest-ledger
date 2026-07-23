@@ -23,7 +23,7 @@ class MonthDue {
     this.noPlan = false,
     this.installmentNo,
     this.installmentCount,
-    this.foldedEmiAmount = 0,
+    this.foldedAmount = 0,
   });
 
   /// Borrowing or recurring-item id — for navigation.
@@ -48,10 +48,10 @@ class MonthDue {
   final int? installmentNo;
   final int? installmentCount;
 
-  /// For a card-bill row: the slice of [amountDue] that is EMI installments
-  /// folded in from this card's borrowings ("incl. ₹X EMIs"). The folded
-  /// installments get no rows of their own — a rupee is counted once.
-  final double foldedEmiAmount;
+  /// For a card-bill row: the slice of [amountDue] folded in from this card's
+  /// linked EMIs and subscriptions ("incl. ₹X"). The folded obligations get no
+  /// rows of their own — a rupee is counted once.
+  final double foldedAmount;
 
   double get remaining =>
       (amountDue - amountPaid).clamp(0, double.infinity);
@@ -111,27 +111,47 @@ class MonthPlan {
     final dues = <MonthDue>[];
     var carriedOver = 0.0;
 
-    // Cycle windows of every entered statement, keyed by the card's lender:
-    // an EMI installment billed inside a window is paid through that card's
-    // bill, so it never gets a row of its own.
+    // Cycle windows of every entered statement, keyed by the card's id (with a
+    // lender index for the fallback): an EMI installment or linked subscription
+    // billed inside a window is paid through that card's bill, so it never gets
+    // a row of its own.
     final cardById = {for (final c in cards) c.id: c};
-    final windowsByLender = <String, List<(DateTime, DateTime)>>{};
+    final windowsByCard = <String, List<(DateTime, DateTime)>>{};
+    final cardsByLender = <String, List<CardAccount>>{};
+    for (final c in cards) {
+      cardsByLender.putIfAbsent(c.lenderId, () => []).add(c);
+    }
     for (final st in statements) {
       final card = cardById[st.cardId];
       if (card == null) continue;
-      windowsByLender.putIfAbsent(card.lenderId, () => []).add(
+      windowsByCard.putIfAbsent(card.id, () => []).add(
             CardCycle.window(
               cycleMonth: st.cycleMonth,
               statementDay: card.statementDay,
             ),
           );
     }
-    bool billedOnACard(String? lenderId, DateTime dueDate) {
-      final windows = windowsByLender[lenderId];
+    bool coveredBy(String cardId, DateTime dueDate) {
+      final windows = windowsByCard[cardId];
       if (windows == null) return false;
       return windows.any(
         (w) => dueDate.isAfter(w.$1) && !dueDate.isAfter(w.$2),
       );
+    }
+
+    // Explicit card link wins; else fall back to any same-lender card's window
+    // (borrowings only — recurring items carry no lender and pass null).
+    bool billedOnACard({
+      String? cardId,
+      String? lenderId,
+      required DateTime dueDate,
+    }) {
+      if (cardId != null) return coveredBy(cardId, dueDate);
+      if (lenderId == null) return false;
+      for (final c in cardsByLender[lenderId] ?? const <CardAccount>[]) {
+        if (coveredBy(c.id, dueDate)) return true;
+      }
+      return false;
     }
 
     for (final st in statements) {
@@ -145,11 +165,16 @@ class MonthPlan {
         dueDate: st.dueDate,
         amountDue: st.statementAmount,
         amountPaid: st.paidAmount,
-        foldedEmiAmount: CardCycle.emiPortion(
-          card: card,
-          cycleMonth: st.cycleMonth,
-          summaries: summaries,
-        ),
+        foldedAmount: CardCycle.emiPortion(
+              card: card,
+              cycleMonth: st.cycleMonth,
+              summaries: summaries,
+            ) +
+            CardCycle.recurringPortion(
+              card: card,
+              cycleMonth: st.cycleMonth,
+              items: items,
+            ),
       ));
     }
 
@@ -158,7 +183,13 @@ class MonthPlan {
       if (s.isEmi) {
         for (final e in s.schedule) {
           final paid = s.isInstallmentPaid(e.number);
-          if (billedOnACard(b.lenderId, e.dueDate)) continue;
+          if (billedOnACard(
+            cardId: b.cardId,
+            lenderId: b.lenderId,
+            dueDate: e.dueDate,
+          )) {
+            continue;
+          }
           if (inMonth(e.dueDate)) {
             // A closed (foreclosed) EMI keeps what was actually paid this
             // month but owes nothing further.
@@ -211,17 +242,21 @@ class MonthPlan {
         carriedOver += i.amount;
         continue;
       }
+      // A linked occurrence billed inside its card's statement window is paid
+      // through that bill — skip it so it is not counted twice.
+      bool onCard(DateTime date) =>
+          billedOnACard(cardId: i.cardId, dueDate: date);
       // Upcoming occurrences that land inside this month.
       var d = i.nextDueDate;
       while (d.isBefore(monthEnd)) {
-        if (inMonth(d)) dues.add(occurrence(d, paid: false));
+        if (inMonth(d) && !onCard(d)) dues.add(occurrence(d, paid: false));
         d = i.frequency.advance(d);
       }
       // Occurrences already rolled past = paid this month (inferred), bounded
       // by when the item was created.
       var prev = i.frequency.retreat(i.nextDueDate);
       while (inMonth(prev) && !prev.isBefore(i.createdAt.dateOnly)) {
-        dues.add(occurrence(prev, paid: true));
+        if (!onCard(prev)) dues.add(occurrence(prev, paid: true));
         prev = i.frequency.retreat(prev);
       }
     }

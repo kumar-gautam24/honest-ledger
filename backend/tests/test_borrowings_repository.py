@@ -15,6 +15,7 @@ def _data(**overrides) -> dict:
         "title": "Slice loan",
         "kind": "flexibleLoan",
         "lender_id": None,
+        "card_id": None,
         "lender_name": "Slice",
         "principal_paise": 500000,
         "processing_fee_paise": 0,

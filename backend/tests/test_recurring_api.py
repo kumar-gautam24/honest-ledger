@@ -15,6 +15,36 @@ async def test_create_returns_201_with_row(client, auth_headers):
     assert body["deleted_at"] is None
 
 
+async def test_card_id_round_trips_and_defaults_null(client, auth_headers):
+    # v1 client omits card_id → NULL; a newer client sends and patches it.
+    omitted = recurring_payload()
+    body = (
+        await client.post(
+            "/v1/recurring-items", json=omitted, headers=auth_headers
+        )
+    ).json()
+    assert body["card_id"] is None
+
+    linked = recurring_payload(card_id="card-abc")
+    created = (
+        await client.post(
+            "/v1/recurring-items", json=linked, headers=auth_headers
+        )
+    ).json()
+    assert created["card_id"] == "card-abc"
+    fetched = await client.get(
+        f"/v1/recurring-items/{linked['id']}", headers=auth_headers
+    )
+    assert fetched.json()["card_id"] == "card-abc"
+
+    patched = await client.patch(
+        f"/v1/recurring-items/{linked['id']}",
+        json={"card_id": "card-xyz", "updated_at": "2027-01-01T00:00:00Z"},
+        headers=auth_headers,
+    )
+    assert patched.json()["card_id"] == "card-xyz"
+
+
 async def test_create_replay_returns_200_same_row(client, auth_headers):
     payload = recurring_payload()
     first = await client.post("/v1/recurring-items", json=payload, headers=auth_headers)

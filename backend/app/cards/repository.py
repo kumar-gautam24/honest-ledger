@@ -10,12 +10,13 @@ from datetime import datetime
 import asyncpg
 
 CARD_COLUMNS = """
-    id, user_id, lender_id, statement_day, due_day, credit_limit_paise,
-    is_active, created_at, updated_at, deleted_at, server_seq
+    id, user_id, lender_id, statement_day, due_day, nickname,
+    credit_limit_paise, is_active, created_at, updated_at, deleted_at, server_seq
 """
 
 _PATCHABLE = {
-    "lender_id", "statement_day", "due_day", "credit_limit_paise", "is_active",
+    "lender_id", "statement_day", "due_day", "nickname",
+    "credit_limit_paise", "is_active",
 }
 
 
@@ -26,15 +27,15 @@ async def insert_card(
         f"""
         INSERT INTO cards (
             id, user_id, lender_id, statement_day, due_day, credit_limit_paise,
-            is_active, created_at, updated_at
+            is_active, created_at, updated_at, nickname
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         ON CONFLICT (id) DO NOTHING
         RETURNING {CARD_COLUMNS}
         """,
         data["id"], user_id, data["lender_id"], data["statement_day"],
         data["due_day"], data["credit_limit_paise"], data["is_active"],
-        data["created_at"], data["updated_at"],
+        data["created_at"], data["updated_at"], data["nickname"],
     )
 
 

@@ -59,7 +59,7 @@ final class AuthSessionProvider
   }
 }
 
-String _$authSessionHash() => r'91fe8c7092dacc88088411aa9fd071e386019c1c';
+String _$authSessionHash() => r'64bdb3ca9a764d7f939bb6bad5ddd02735a3e7b6';
 
 /// The signed-in state and the actions that change it. Collaborators come from
 /// get_it (`sl<T>()`), matching the app's other controllers.

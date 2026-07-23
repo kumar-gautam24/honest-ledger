@@ -11,6 +11,7 @@ import 'package:recurring/features/cards/domain/entities/card_statement.dart';
 import 'package:recurring/features/cards/presentation/controllers/card_providers.dart';
 import 'package:recurring/features/cards/presentation/screens/card_detail_screen.dart';
 import 'package:recurring/features/money_leak/presentation/controllers/money_leak_providers.dart';
+import 'package:recurring/features/recurring/presentation/controllers/recurring_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../home/fixtures.dart';
@@ -60,6 +61,7 @@ void main() {
               .overrideWith((ref) => Stream.value([statement])),
           borrowingSummariesProvider
               .overrideWith((ref) => Stream.value([emi])),
+          recurringItemsProvider.overrideWith((ref) => Stream.value(const [])),
         ],
         child: MaterialApp(
           theme: AppTheme.dark(),

@@ -9,6 +9,7 @@ class CardAccount {
     required this.statementDay,
     required this.dueDay,
     required this.createdAt,
+    this.nickname,
     this.creditLimit,
     this.isActive = true,
   });
@@ -16,8 +17,13 @@ class CardAccount {
   final String id;
   final String lenderId;
 
-  /// Display name resolved from the lender catalog.
+  /// Display name resolved on read: [nickname] when set, else the lender
+  /// catalog name. Not persisted — see [nickname] for the stored value.
   final String name;
+
+  /// User-set label that distinguishes cards from the same bank (two ICICI
+  /// cards, say). Null uses the lender name. This is the persisted value.
+  final String? nickname;
 
   /// Day of month the statement is generated (1–31, clamped to month end).
   final int statementDay;
@@ -33,6 +39,8 @@ class CardAccount {
     String? name,
     int? statementDay,
     int? dueDay,
+    String? nickname,
+    bool clearNickname = false,
     double? creditLimit,
     bool clearCreditLimit = false,
     bool? isActive,
@@ -43,6 +51,7 @@ class CardAccount {
       name: name ?? this.name,
       statementDay: statementDay ?? this.statementDay,
       dueDay: dueDay ?? this.dueDay,
+      nickname: clearNickname ? null : (nickname ?? this.nickname),
       creditLimit: clearCreditLimit ? null : (creditLimit ?? this.creditLimit),
       isActive: isActive ?? this.isActive,
       createdAt: createdAt,

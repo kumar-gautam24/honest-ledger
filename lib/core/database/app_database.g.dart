@@ -1086,6 +1086,15 @@ class $BorrowingsTable extends Borrowings
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _cardIdMeta = const VerificationMeta('cardId');
+  @override
+  late final GeneratedColumn<String> cardId = GeneratedColumn<String>(
+    'card_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _lenderNameMeta = const VerificationMeta(
     'lenderName',
   );
@@ -1317,6 +1326,7 @@ class $BorrowingsTable extends Borrowings
     title,
     kind,
     lenderId,
+    cardId,
     lenderName,
     principal,
     processingFee,
@@ -1372,6 +1382,12 @@ class $BorrowingsTable extends Borrowings
       context.handle(
         _lenderIdMeta,
         lenderId.isAcceptableOrUnknown(data['lender_id']!, _lenderIdMeta),
+      );
+    }
+    if (data.containsKey('card_id')) {
+      context.handle(
+        _cardIdMeta,
+        cardId.isAcceptableOrUnknown(data['card_id']!, _cardIdMeta),
       );
     }
     if (data.containsKey('lender_name')) {
@@ -1548,6 +1564,10 @@ class $BorrowingsTable extends Borrowings
         DriftSqlType.string,
         data['${effectivePrefix}lender_id'],
       ),
+      cardId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}card_id'],
+      ),
       lenderName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}lender_name'],
@@ -1638,6 +1658,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
   final String title;
   final String kind;
   final String? lenderId;
+  final String? cardId;
   final String lenderName;
   final double principal;
   final double processingFee;
@@ -1662,6 +1683,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     required this.title,
     required this.kind,
     this.lenderId,
+    this.cardId,
     required this.lenderName,
     required this.principal,
     required this.processingFee,
@@ -1690,6 +1712,9 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     map['kind'] = Variable<String>(kind);
     if (!nullToAbsent || lenderId != null) {
       map['lender_id'] = Variable<String>(lenderId);
+    }
+    if (!nullToAbsent || cardId != null) {
+      map['card_id'] = Variable<String>(cardId);
     }
     map['lender_name'] = Variable<String>(lenderName);
     map['principal'] = Variable<double>(principal);
@@ -1729,6 +1754,9 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       lenderId: lenderId == null && nullToAbsent
           ? const Value.absent()
           : Value(lenderId),
+      cardId: cardId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cardId),
       lenderName: Value(lenderName),
       principal: Value(principal),
       processingFee: Value(processingFee),
@@ -1769,6 +1797,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       title: serializer.fromJson<String>(json['title']),
       kind: serializer.fromJson<String>(json['kind']),
       lenderId: serializer.fromJson<String?>(json['lenderId']),
+      cardId: serializer.fromJson<String?>(json['cardId']),
       lenderName: serializer.fromJson<String>(json['lenderName']),
       principal: serializer.fromJson<double>(json['principal']),
       processingFee: serializer.fromJson<double>(json['processingFee']),
@@ -1798,6 +1827,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       'title': serializer.toJson<String>(title),
       'kind': serializer.toJson<String>(kind),
       'lenderId': serializer.toJson<String?>(lenderId),
+      'cardId': serializer.toJson<String?>(cardId),
       'lenderName': serializer.toJson<String>(lenderName),
       'principal': serializer.toJson<double>(principal),
       'processingFee': serializer.toJson<double>(processingFee),
@@ -1825,6 +1855,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     String? title,
     String? kind,
     Value<String?> lenderId = const Value.absent(),
+    Value<String?> cardId = const Value.absent(),
     String? lenderName,
     double? principal,
     double? processingFee,
@@ -1849,6 +1880,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     title: title ?? this.title,
     kind: kind ?? this.kind,
     lenderId: lenderId.present ? lenderId.value : this.lenderId,
+    cardId: cardId.present ? cardId.value : this.cardId,
     lenderName: lenderName ?? this.lenderName,
     principal: principal ?? this.principal,
     processingFee: processingFee ?? this.processingFee,
@@ -1879,6 +1911,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
       title: data.title.present ? data.title.value : this.title,
       kind: data.kind.present ? data.kind.value : this.kind,
       lenderId: data.lenderId.present ? data.lenderId.value : this.lenderId,
+      cardId: data.cardId.present ? data.cardId.value : this.cardId,
       lenderName: data.lenderName.present
           ? data.lenderName.value
           : this.lenderName,
@@ -1930,6 +1963,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
           ..write('title: $title, ')
           ..write('kind: $kind, ')
           ..write('lenderId: $lenderId, ')
+          ..write('cardId: $cardId, ')
           ..write('lenderName: $lenderName, ')
           ..write('principal: $principal, ')
           ..write('processingFee: $processingFee, ')
@@ -1959,6 +1993,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
     title,
     kind,
     lenderId,
+    cardId,
     lenderName,
     principal,
     processingFee,
@@ -1987,6 +2022,7 @@ class BorrowingRow extends DataClass implements Insertable<BorrowingRow> {
           other.title == this.title &&
           other.kind == this.kind &&
           other.lenderId == this.lenderId &&
+          other.cardId == this.cardId &&
           other.lenderName == this.lenderName &&
           other.principal == this.principal &&
           other.processingFee == this.processingFee &&
@@ -2013,6 +2049,7 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
   final Value<String> title;
   final Value<String> kind;
   final Value<String?> lenderId;
+  final Value<String?> cardId;
   final Value<String> lenderName;
   final Value<double> principal;
   final Value<double> processingFee;
@@ -2038,6 +2075,7 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     this.title = const Value.absent(),
     this.kind = const Value.absent(),
     this.lenderId = const Value.absent(),
+    this.cardId = const Value.absent(),
     this.lenderName = const Value.absent(),
     this.principal = const Value.absent(),
     this.processingFee = const Value.absent(),
@@ -2064,6 +2102,7 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     required String title,
     this.kind = const Value.absent(),
     this.lenderId = const Value.absent(),
+    this.cardId = const Value.absent(),
     required String lenderName,
     required double principal,
     this.processingFee = const Value.absent(),
@@ -2095,6 +2134,7 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     Expression<String>? title,
     Expression<String>? kind,
     Expression<String>? lenderId,
+    Expression<String>? cardId,
     Expression<String>? lenderName,
     Expression<double>? principal,
     Expression<double>? processingFee,
@@ -2121,6 +2161,7 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
       if (title != null) 'title': title,
       if (kind != null) 'kind': kind,
       if (lenderId != null) 'lender_id': lenderId,
+      if (cardId != null) 'card_id': cardId,
       if (lenderName != null) 'lender_name': lenderName,
       if (principal != null) 'principal': principal,
       if (processingFee != null) 'processing_fee': processingFee,
@@ -2149,6 +2190,7 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     Value<String>? title,
     Value<String>? kind,
     Value<String?>? lenderId,
+    Value<String?>? cardId,
     Value<String>? lenderName,
     Value<double>? principal,
     Value<double>? processingFee,
@@ -2175,6 +2217,7 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
       title: title ?? this.title,
       kind: kind ?? this.kind,
       lenderId: lenderId ?? this.lenderId,
+      cardId: cardId ?? this.cardId,
       lenderName: lenderName ?? this.lenderName,
       principal: principal ?? this.principal,
       processingFee: processingFee ?? this.processingFee,
@@ -2212,6 +2255,9 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
     }
     if (lenderId.present) {
       map['lender_id'] = Variable<String>(lenderId.value);
+    }
+    if (cardId.present) {
+      map['card_id'] = Variable<String>(cardId.value);
     }
     if (lenderName.present) {
       map['lender_name'] = Variable<String>(lenderName.value);
@@ -2283,6 +2329,7 @@ class BorrowingsCompanion extends UpdateCompanion<BorrowingRow> {
           ..write('title: $title, ')
           ..write('kind: $kind, ')
           ..write('lenderId: $lenderId, ')
+          ..write('cardId: $cardId, ')
           ..write('lenderName: $lenderName, ')
           ..write('principal: $principal, ')
           ..write('processingFee: $processingFee, ')
@@ -2847,6 +2894,15 @@ class $RecurringItemsTable extends RecurringItems
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _cardIdMeta = const VerificationMeta('cardId');
+  @override
+  late final GeneratedColumn<String> cardId = GeneratedColumn<String>(
+    'card_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _isActiveMeta = const VerificationMeta(
     'isActive',
   );
@@ -2891,6 +2947,7 @@ class $RecurringItemsTable extends RecurringItems
     frequency,
     nextDueDate,
     category,
+    cardId,
     isActive,
     notes,
     createdAt,
@@ -2957,6 +3014,12 @@ class $RecurringItemsTable extends RecurringItems
         category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
       );
     }
+    if (data.containsKey('card_id')) {
+      context.handle(
+        _cardIdMeta,
+        cardId.isAcceptableOrUnknown(data['card_id']!, _cardIdMeta),
+      );
+    }
     if (data.containsKey('is_active')) {
       context.handle(
         _isActiveMeta,
@@ -3014,6 +3077,10 @@ class $RecurringItemsTable extends RecurringItems
         DriftSqlType.string,
         data['${effectivePrefix}category'],
       ),
+      cardId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}card_id'],
+      ),
       isActive: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
@@ -3044,6 +3111,7 @@ class RecurringItemRow extends DataClass
   final String frequency;
   final DateTime nextDueDate;
   final String? category;
+  final String? cardId;
   final bool isActive;
   final String? notes;
   final DateTime createdAt;
@@ -3055,6 +3123,7 @@ class RecurringItemRow extends DataClass
     required this.frequency,
     required this.nextDueDate,
     this.category,
+    this.cardId,
     required this.isActive,
     this.notes,
     required this.createdAt,
@@ -3070,6 +3139,9 @@ class RecurringItemRow extends DataClass
     map['next_due_date'] = Variable<DateTime>(nextDueDate);
     if (!nullToAbsent || category != null) {
       map['category'] = Variable<String>(category);
+    }
+    if (!nullToAbsent || cardId != null) {
+      map['card_id'] = Variable<String>(cardId);
     }
     map['is_active'] = Variable<bool>(isActive);
     if (!nullToAbsent || notes != null) {
@@ -3090,6 +3162,9 @@ class RecurringItemRow extends DataClass
       category: category == null && nullToAbsent
           ? const Value.absent()
           : Value(category),
+      cardId: cardId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cardId),
       isActive: Value(isActive),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
@@ -3111,6 +3186,7 @@ class RecurringItemRow extends DataClass
       frequency: serializer.fromJson<String>(json['frequency']),
       nextDueDate: serializer.fromJson<DateTime>(json['nextDueDate']),
       category: serializer.fromJson<String?>(json['category']),
+      cardId: serializer.fromJson<String?>(json['cardId']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       notes: serializer.fromJson<String?>(json['notes']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -3127,6 +3203,7 @@ class RecurringItemRow extends DataClass
       'frequency': serializer.toJson<String>(frequency),
       'nextDueDate': serializer.toJson<DateTime>(nextDueDate),
       'category': serializer.toJson<String?>(category),
+      'cardId': serializer.toJson<String?>(cardId),
       'isActive': serializer.toJson<bool>(isActive),
       'notes': serializer.toJson<String?>(notes),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -3141,6 +3218,7 @@ class RecurringItemRow extends DataClass
     String? frequency,
     DateTime? nextDueDate,
     Value<String?> category = const Value.absent(),
+    Value<String?> cardId = const Value.absent(),
     bool? isActive,
     Value<String?> notes = const Value.absent(),
     DateTime? createdAt,
@@ -3152,6 +3230,7 @@ class RecurringItemRow extends DataClass
     frequency: frequency ?? this.frequency,
     nextDueDate: nextDueDate ?? this.nextDueDate,
     category: category.present ? category.value : this.category,
+    cardId: cardId.present ? cardId.value : this.cardId,
     isActive: isActive ?? this.isActive,
     notes: notes.present ? notes.value : this.notes,
     createdAt: createdAt ?? this.createdAt,
@@ -3167,6 +3246,7 @@ class RecurringItemRow extends DataClass
           ? data.nextDueDate.value
           : this.nextDueDate,
       category: data.category.present ? data.category.value : this.category,
+      cardId: data.cardId.present ? data.cardId.value : this.cardId,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       notes: data.notes.present ? data.notes.value : this.notes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -3183,6 +3263,7 @@ class RecurringItemRow extends DataClass
           ..write('frequency: $frequency, ')
           ..write('nextDueDate: $nextDueDate, ')
           ..write('category: $category, ')
+          ..write('cardId: $cardId, ')
           ..write('isActive: $isActive, ')
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt')
@@ -3199,6 +3280,7 @@ class RecurringItemRow extends DataClass
     frequency,
     nextDueDate,
     category,
+    cardId,
     isActive,
     notes,
     createdAt,
@@ -3214,6 +3296,7 @@ class RecurringItemRow extends DataClass
           other.frequency == this.frequency &&
           other.nextDueDate == this.nextDueDate &&
           other.category == this.category &&
+          other.cardId == this.cardId &&
           other.isActive == this.isActive &&
           other.notes == this.notes &&
           other.createdAt == this.createdAt);
@@ -3227,6 +3310,7 @@ class RecurringItemsCompanion extends UpdateCompanion<RecurringItemRow> {
   final Value<String> frequency;
   final Value<DateTime> nextDueDate;
   final Value<String?> category;
+  final Value<String?> cardId;
   final Value<bool> isActive;
   final Value<String?> notes;
   final Value<DateTime> createdAt;
@@ -3239,6 +3323,7 @@ class RecurringItemsCompanion extends UpdateCompanion<RecurringItemRow> {
     this.frequency = const Value.absent(),
     this.nextDueDate = const Value.absent(),
     this.category = const Value.absent(),
+    this.cardId = const Value.absent(),
     this.isActive = const Value.absent(),
     this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -3252,6 +3337,7 @@ class RecurringItemsCompanion extends UpdateCompanion<RecurringItemRow> {
     this.frequency = const Value.absent(),
     required DateTime nextDueDate,
     this.category = const Value.absent(),
+    this.cardId = const Value.absent(),
     this.isActive = const Value.absent(),
     this.notes = const Value.absent(),
     required DateTime createdAt,
@@ -3269,6 +3355,7 @@ class RecurringItemsCompanion extends UpdateCompanion<RecurringItemRow> {
     Expression<String>? frequency,
     Expression<DateTime>? nextDueDate,
     Expression<String>? category,
+    Expression<String>? cardId,
     Expression<bool>? isActive,
     Expression<String>? notes,
     Expression<DateTime>? createdAt,
@@ -3282,6 +3369,7 @@ class RecurringItemsCompanion extends UpdateCompanion<RecurringItemRow> {
       if (frequency != null) 'frequency': frequency,
       if (nextDueDate != null) 'next_due_date': nextDueDate,
       if (category != null) 'category': category,
+      if (cardId != null) 'card_id': cardId,
       if (isActive != null) 'is_active': isActive,
       if (notes != null) 'notes': notes,
       if (createdAt != null) 'created_at': createdAt,
@@ -3297,6 +3385,7 @@ class RecurringItemsCompanion extends UpdateCompanion<RecurringItemRow> {
     Value<String>? frequency,
     Value<DateTime>? nextDueDate,
     Value<String?>? category,
+    Value<String?>? cardId,
     Value<bool>? isActive,
     Value<String?>? notes,
     Value<DateTime>? createdAt,
@@ -3310,6 +3399,7 @@ class RecurringItemsCompanion extends UpdateCompanion<RecurringItemRow> {
       frequency: frequency ?? this.frequency,
       nextDueDate: nextDueDate ?? this.nextDueDate,
       category: category ?? this.category,
+      cardId: cardId ?? this.cardId,
       isActive: isActive ?? this.isActive,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
@@ -3341,6 +3431,9 @@ class RecurringItemsCompanion extends UpdateCompanion<RecurringItemRow> {
     if (category.present) {
       map['category'] = Variable<String>(category.value);
     }
+    if (cardId.present) {
+      map['card_id'] = Variable<String>(cardId.value);
+    }
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
@@ -3366,6 +3459,7 @@ class RecurringItemsCompanion extends UpdateCompanion<RecurringItemRow> {
           ..write('frequency: $frequency, ')
           ..write('nextDueDate: $nextDueDate, ')
           ..write('category: $category, ')
+          ..write('cardId: $cardId, ')
           ..write('isActive: $isActive, ')
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
@@ -3420,6 +3514,17 @@ class $CardsTable extends Cards with TableInfo<$CardsTable, CardRow> {
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _nicknameMeta = const VerificationMeta(
+    'nickname',
+  );
+  @override
+  late final GeneratedColumn<String> nickname = GeneratedColumn<String>(
+    'nickname',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _creditLimitMeta = const VerificationMeta(
     'creditLimit',
   );
@@ -3463,6 +3568,7 @@ class $CardsTable extends Cards with TableInfo<$CardsTable, CardRow> {
     lenderId,
     statementDay,
     dueDay,
+    nickname,
     creditLimit,
     isActive,
     createdAt,
@@ -3510,6 +3616,12 @@ class $CardsTable extends Cards with TableInfo<$CardsTable, CardRow> {
       );
     } else if (isInserting) {
       context.missing(_dueDayMeta);
+    }
+    if (data.containsKey('nickname')) {
+      context.handle(
+        _nicknameMeta,
+        nickname.isAcceptableOrUnknown(data['nickname']!, _nicknameMeta),
+      );
     }
     if (data.containsKey('credit_limit')) {
       context.handle(
@@ -3559,6 +3671,10 @@ class $CardsTable extends Cards with TableInfo<$CardsTable, CardRow> {
         DriftSqlType.int,
         data['${effectivePrefix}due_day'],
       )!,
+      nickname: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nickname'],
+      ),
       creditLimit: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}credit_limit'],
@@ -3589,6 +3705,9 @@ class CardRow extends DataClass implements Insertable<CardRow> {
 
   /// Day of month the bill is due (1–31, clamped).
   final int dueDay;
+
+  /// User-set label distinguishing same-bank cards; null uses the lender name.
+  final String? nickname;
   final double? creditLimit;
   final bool isActive;
   final DateTime createdAt;
@@ -3597,6 +3716,7 @@ class CardRow extends DataClass implements Insertable<CardRow> {
     required this.lenderId,
     required this.statementDay,
     required this.dueDay,
+    this.nickname,
     this.creditLimit,
     required this.isActive,
     required this.createdAt,
@@ -3608,6 +3728,9 @@ class CardRow extends DataClass implements Insertable<CardRow> {
     map['lender_id'] = Variable<String>(lenderId);
     map['statement_day'] = Variable<int>(statementDay);
     map['due_day'] = Variable<int>(dueDay);
+    if (!nullToAbsent || nickname != null) {
+      map['nickname'] = Variable<String>(nickname);
+    }
     if (!nullToAbsent || creditLimit != null) {
       map['credit_limit'] = Variable<double>(creditLimit);
     }
@@ -3622,6 +3745,9 @@ class CardRow extends DataClass implements Insertable<CardRow> {
       lenderId: Value(lenderId),
       statementDay: Value(statementDay),
       dueDay: Value(dueDay),
+      nickname: nickname == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nickname),
       creditLimit: creditLimit == null && nullToAbsent
           ? const Value.absent()
           : Value(creditLimit),
@@ -3640,6 +3766,7 @@ class CardRow extends DataClass implements Insertable<CardRow> {
       lenderId: serializer.fromJson<String>(json['lenderId']),
       statementDay: serializer.fromJson<int>(json['statementDay']),
       dueDay: serializer.fromJson<int>(json['dueDay']),
+      nickname: serializer.fromJson<String?>(json['nickname']),
       creditLimit: serializer.fromJson<double?>(json['creditLimit']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -3653,6 +3780,7 @@ class CardRow extends DataClass implements Insertable<CardRow> {
       'lenderId': serializer.toJson<String>(lenderId),
       'statementDay': serializer.toJson<int>(statementDay),
       'dueDay': serializer.toJson<int>(dueDay),
+      'nickname': serializer.toJson<String?>(nickname),
       'creditLimit': serializer.toJson<double?>(creditLimit),
       'isActive': serializer.toJson<bool>(isActive),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -3664,6 +3792,7 @@ class CardRow extends DataClass implements Insertable<CardRow> {
     String? lenderId,
     int? statementDay,
     int? dueDay,
+    Value<String?> nickname = const Value.absent(),
     Value<double?> creditLimit = const Value.absent(),
     bool? isActive,
     DateTime? createdAt,
@@ -3672,6 +3801,7 @@ class CardRow extends DataClass implements Insertable<CardRow> {
     lenderId: lenderId ?? this.lenderId,
     statementDay: statementDay ?? this.statementDay,
     dueDay: dueDay ?? this.dueDay,
+    nickname: nickname.present ? nickname.value : this.nickname,
     creditLimit: creditLimit.present ? creditLimit.value : this.creditLimit,
     isActive: isActive ?? this.isActive,
     createdAt: createdAt ?? this.createdAt,
@@ -3684,6 +3814,7 @@ class CardRow extends DataClass implements Insertable<CardRow> {
           ? data.statementDay.value
           : this.statementDay,
       dueDay: data.dueDay.present ? data.dueDay.value : this.dueDay,
+      nickname: data.nickname.present ? data.nickname.value : this.nickname,
       creditLimit: data.creditLimit.present
           ? data.creditLimit.value
           : this.creditLimit,
@@ -3699,6 +3830,7 @@ class CardRow extends DataClass implements Insertable<CardRow> {
           ..write('lenderId: $lenderId, ')
           ..write('statementDay: $statementDay, ')
           ..write('dueDay: $dueDay, ')
+          ..write('nickname: $nickname, ')
           ..write('creditLimit: $creditLimit, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt')
@@ -3712,6 +3844,7 @@ class CardRow extends DataClass implements Insertable<CardRow> {
     lenderId,
     statementDay,
     dueDay,
+    nickname,
     creditLimit,
     isActive,
     createdAt,
@@ -3724,6 +3857,7 @@ class CardRow extends DataClass implements Insertable<CardRow> {
           other.lenderId == this.lenderId &&
           other.statementDay == this.statementDay &&
           other.dueDay == this.dueDay &&
+          other.nickname == this.nickname &&
           other.creditLimit == this.creditLimit &&
           other.isActive == this.isActive &&
           other.createdAt == this.createdAt);
@@ -3734,6 +3868,7 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
   final Value<String> lenderId;
   final Value<int> statementDay;
   final Value<int> dueDay;
+  final Value<String?> nickname;
   final Value<double?> creditLimit;
   final Value<bool> isActive;
   final Value<DateTime> createdAt;
@@ -3743,6 +3878,7 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
     this.lenderId = const Value.absent(),
     this.statementDay = const Value.absent(),
     this.dueDay = const Value.absent(),
+    this.nickname = const Value.absent(),
     this.creditLimit = const Value.absent(),
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -3753,6 +3889,7 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
     required String lenderId,
     required int statementDay,
     required int dueDay,
+    this.nickname = const Value.absent(),
     this.creditLimit = const Value.absent(),
     this.isActive = const Value.absent(),
     required DateTime createdAt,
@@ -3767,6 +3904,7 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
     Expression<String>? lenderId,
     Expression<int>? statementDay,
     Expression<int>? dueDay,
+    Expression<String>? nickname,
     Expression<double>? creditLimit,
     Expression<bool>? isActive,
     Expression<DateTime>? createdAt,
@@ -3777,6 +3915,7 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
       if (lenderId != null) 'lender_id': lenderId,
       if (statementDay != null) 'statement_day': statementDay,
       if (dueDay != null) 'due_day': dueDay,
+      if (nickname != null) 'nickname': nickname,
       if (creditLimit != null) 'credit_limit': creditLimit,
       if (isActive != null) 'is_active': isActive,
       if (createdAt != null) 'created_at': createdAt,
@@ -3789,6 +3928,7 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
     Value<String>? lenderId,
     Value<int>? statementDay,
     Value<int>? dueDay,
+    Value<String?>? nickname,
     Value<double?>? creditLimit,
     Value<bool>? isActive,
     Value<DateTime>? createdAt,
@@ -3799,6 +3939,7 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
       lenderId: lenderId ?? this.lenderId,
       statementDay: statementDay ?? this.statementDay,
       dueDay: dueDay ?? this.dueDay,
+      nickname: nickname ?? this.nickname,
       creditLimit: creditLimit ?? this.creditLimit,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
@@ -3820,6 +3961,9 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
     }
     if (dueDay.present) {
       map['due_day'] = Variable<int>(dueDay.value);
+    }
+    if (nickname.present) {
+      map['nickname'] = Variable<String>(nickname.value);
     }
     if (creditLimit.present) {
       map['credit_limit'] = Variable<double>(creditLimit.value);
@@ -3843,6 +3987,7 @@ class CardsCompanion extends UpdateCompanion<CardRow> {
           ..write('lenderId: $lenderId, ')
           ..write('statementDay: $statementDay, ')
           ..write('dueDay: $dueDay, ')
+          ..write('nickname: $nickname, ')
           ..write('creditLimit: $creditLimit, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt, ')
@@ -4878,6 +5023,7 @@ typedef $$BorrowingsTableCreateCompanionBuilder =
       required String title,
       Value<String> kind,
       Value<String?> lenderId,
+      Value<String?> cardId,
       required String lenderName,
       required double principal,
       Value<double> processingFee,
@@ -4905,6 +5051,7 @@ typedef $$BorrowingsTableUpdateCompanionBuilder =
       Value<String> title,
       Value<String> kind,
       Value<String?> lenderId,
+      Value<String?> cardId,
       Value<String> lenderName,
       Value<double> principal,
       Value<double> processingFee,
@@ -4976,6 +5123,11 @@ class $$BorrowingsTableFilterComposer
 
   ColumnFilters<String> get lenderId => $composableBuilder(
     column: $table.lenderId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cardId => $composableBuilder(
+    column: $table.cardId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5129,6 +5281,11 @@ class $$BorrowingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get cardId => $composableBuilder(
+    column: $table.cardId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get lenderName => $composableBuilder(
     column: $table.lenderName,
     builder: (column) => ColumnOrderings(column),
@@ -5245,6 +5402,9 @@ class $$BorrowingsTableAnnotationComposer
 
   GeneratedColumn<String> get lenderId =>
       $composableBuilder(column: $table.lenderId, builder: (column) => column);
+
+  GeneratedColumn<String> get cardId =>
+      $composableBuilder(column: $table.cardId, builder: (column) => column);
 
   GeneratedColumn<String> get lenderName => $composableBuilder(
     column: $table.lenderName,
@@ -5383,6 +5543,7 @@ class $$BorrowingsTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<String> kind = const Value.absent(),
                 Value<String?> lenderId = const Value.absent(),
+                Value<String?> cardId = const Value.absent(),
                 Value<String> lenderName = const Value.absent(),
                 Value<double> principal = const Value.absent(),
                 Value<double> processingFee = const Value.absent(),
@@ -5408,6 +5569,7 @@ class $$BorrowingsTableTableManager
                 title: title,
                 kind: kind,
                 lenderId: lenderId,
+                cardId: cardId,
                 lenderName: lenderName,
                 principal: principal,
                 processingFee: processingFee,
@@ -5435,6 +5597,7 @@ class $$BorrowingsTableTableManager
                 required String title,
                 Value<String> kind = const Value.absent(),
                 Value<String?> lenderId = const Value.absent(),
+                Value<String?> cardId = const Value.absent(),
                 required String lenderName,
                 required double principal,
                 Value<double> processingFee = const Value.absent(),
@@ -5460,6 +5623,7 @@ class $$BorrowingsTableTableManager
                 title: title,
                 kind: kind,
                 lenderId: lenderId,
+                cardId: cardId,
                 lenderName: lenderName,
                 principal: principal,
                 processingFee: processingFee,
@@ -5905,6 +6069,7 @@ typedef $$RecurringItemsTableCreateCompanionBuilder =
       Value<String> frequency,
       required DateTime nextDueDate,
       Value<String?> category,
+      Value<String?> cardId,
       Value<bool> isActive,
       Value<String?> notes,
       required DateTime createdAt,
@@ -5919,6 +6084,7 @@ typedef $$RecurringItemsTableUpdateCompanionBuilder =
       Value<String> frequency,
       Value<DateTime> nextDueDate,
       Value<String?> category,
+      Value<String?> cardId,
       Value<bool> isActive,
       Value<String?> notes,
       Value<DateTime> createdAt,
@@ -5966,6 +6132,11 @@ class $$RecurringItemsTableFilterComposer
 
   ColumnFilters<String> get category => $composableBuilder(
     column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cardId => $composableBuilder(
+    column: $table.cardId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6029,6 +6200,11 @@ class $$RecurringItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get cardId => $composableBuilder(
+    column: $table.cardId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get isActive => $composableBuilder(
     column: $table.isActive,
     builder: (column) => ColumnOrderings(column),
@@ -6076,6 +6252,9 @@ class $$RecurringItemsTableAnnotationComposer
 
   GeneratedColumn<String> get category =>
       $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<String> get cardId =>
+      $composableBuilder(column: $table.cardId, builder: (column) => column);
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
@@ -6131,6 +6310,7 @@ class $$RecurringItemsTableTableManager
                 Value<String> frequency = const Value.absent(),
                 Value<DateTime> nextDueDate = const Value.absent(),
                 Value<String?> category = const Value.absent(),
+                Value<String?> cardId = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -6143,6 +6323,7 @@ class $$RecurringItemsTableTableManager
                 frequency: frequency,
                 nextDueDate: nextDueDate,
                 category: category,
+                cardId: cardId,
                 isActive: isActive,
                 notes: notes,
                 createdAt: createdAt,
@@ -6157,6 +6338,7 @@ class $$RecurringItemsTableTableManager
                 Value<String> frequency = const Value.absent(),
                 required DateTime nextDueDate,
                 Value<String?> category = const Value.absent(),
+                Value<String?> cardId = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 required DateTime createdAt,
@@ -6169,6 +6351,7 @@ class $$RecurringItemsTableTableManager
                 frequency: frequency,
                 nextDueDate: nextDueDate,
                 category: category,
+                cardId: cardId,
                 isActive: isActive,
                 notes: notes,
                 createdAt: createdAt,
@@ -6205,6 +6388,7 @@ typedef $$CardsTableCreateCompanionBuilder =
       required String lenderId,
       required int statementDay,
       required int dueDay,
+      Value<String?> nickname,
       Value<double?> creditLimit,
       Value<bool> isActive,
       required DateTime createdAt,
@@ -6216,6 +6400,7 @@ typedef $$CardsTableUpdateCompanionBuilder =
       Value<String> lenderId,
       Value<int> statementDay,
       Value<int> dueDay,
+      Value<String?> nickname,
       Value<double?> creditLimit,
       Value<bool> isActive,
       Value<DateTime> createdAt,
@@ -6270,6 +6455,11 @@ class $$CardsTableFilterComposer extends Composer<_$AppDatabase, $CardsTable> {
 
   ColumnFilters<int> get dueDay => $composableBuilder(
     column: $table.dueDay,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nickname => $composableBuilder(
+    column: $table.nickname,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6343,6 +6533,11 @@ class $$CardsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get nickname => $composableBuilder(
+    column: $table.nickname,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get creditLimit => $composableBuilder(
     column: $table.creditLimit,
     builder: (column) => ColumnOrderings(column),
@@ -6381,6 +6576,9 @@ class $$CardsTableAnnotationComposer
 
   GeneratedColumn<int> get dueDay =>
       $composableBuilder(column: $table.dueDay, builder: (column) => column);
+
+  GeneratedColumn<String> get nickname =>
+      $composableBuilder(column: $table.nickname, builder: (column) => column);
 
   GeneratedColumn<double> get creditLimit => $composableBuilder(
     column: $table.creditLimit,
@@ -6451,6 +6649,7 @@ class $$CardsTableTableManager
                 Value<String> lenderId = const Value.absent(),
                 Value<int> statementDay = const Value.absent(),
                 Value<int> dueDay = const Value.absent(),
+                Value<String?> nickname = const Value.absent(),
                 Value<double?> creditLimit = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -6460,6 +6659,7 @@ class $$CardsTableTableManager
                 lenderId: lenderId,
                 statementDay: statementDay,
                 dueDay: dueDay,
+                nickname: nickname,
                 creditLimit: creditLimit,
                 isActive: isActive,
                 createdAt: createdAt,
@@ -6471,6 +6671,7 @@ class $$CardsTableTableManager
                 required String lenderId,
                 required int statementDay,
                 required int dueDay,
+                Value<String?> nickname = const Value.absent(),
                 Value<double?> creditLimit = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 required DateTime createdAt,
@@ -6480,6 +6681,7 @@ class $$CardsTableTableManager
                 lenderId: lenderId,
                 statementDay: statementDay,
                 dueDay: dueDay,
+                nickname: nickname,
                 creditLimit: creditLimit,
                 isActive: isActive,
                 createdAt: createdAt,
