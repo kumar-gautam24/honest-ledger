@@ -5,8 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:recurring/core/database/app_database.dart';
 import 'package:recurring/core/di/injector.dart';
 import 'package:recurring/core/theme/app_theme.dart';
+import 'package:recurring/features/cards/presentation/controllers/card_providers.dart';
 import 'package:recurring/features/money_leak/presentation/screens/add_edit_borrowing_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// The card picker watches [cardsProvider]; override it with a static empty
+/// list so tests don't open a live DB stream (which leaves a pending timer).
+final _noCards = cardsProvider.overrideWith((ref) => Stream.value(const []));
 
 /// `_save()` pops via go_router's `context.pop()`, so the save-flow test
 /// needs a real GoRouter in the tree (a plain `MaterialApp(home: ...)` has
@@ -23,6 +28,7 @@ Widget _routedApp() {
     ],
   );
   return ProviderScope(
+    overrides: [_noCards],
     child: MaterialApp.router(
       theme: AppTheme.dark(),
       routerConfig: router,
@@ -40,6 +46,7 @@ void main() {
   testWidgets('empty submit surfaces validation errors', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [_noCards],
         child: MaterialApp(
           theme: AppTheme.dark(),
           home: const AddEditBorrowingScreen(),
@@ -63,6 +70,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [_noCards],
         child: MaterialApp(
           theme: AppTheme.dark(),
           home: const AddEditBorrowingScreen(),
@@ -110,6 +118,7 @@ void main() {
       'field empty (no floored ghost fee)', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [_noCards],
         child: MaterialApp(
           theme: AppTheme.dark(),
           home: const AddEditBorrowingScreen(),

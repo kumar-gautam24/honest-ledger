@@ -254,7 +254,7 @@ void main() {
       expect(due.source, MonthDueSource.cardBill);
       expect(due.category, ObligationCategory.card);
       expect(due.amountDue, 18400);
-      expect(due.foldedEmiAmount, closeTo(1000, 0.001));
+      expect(due.foldedAmount, closeTo(1000, 0.001));
       expect(due.dueDate, DateTime(2026, 7, 20));
       expect(plan.totalDue, 18400);
     });
@@ -348,6 +348,49 @@ void main() {
         containsAll([MonthDueSource.cardBill, MonthDueSource.emiInstallment]),
       );
       expect(plan.totalDue, closeTo(18400 + 1000, 0.001));
+    });
+
+    test('a subscription linked to the card is folded out, not double-counted',
+        () {
+      // Netflix due 1 Jul, inside the July window, billed on this card. It is
+      // already inside the 18400 statement, so it must NOT add its own row.
+      final linkedSub = recurringItem(
+        id: 'netflix',
+        amount: 499,
+        nextDueDate: DateTime(2026, 7, 1),
+        cardId: 'c1',
+      );
+      final plan = MonthPlan.from(
+        summaries: const [],
+        items: [linkedSub],
+        now: now,
+        cards: [icici],
+        statements: [julyStatement],
+      );
+      final due = plan.dues.single;
+      expect(due.source, MonthDueSource.cardBill);
+      expect(due.foldedAmount, closeTo(499, 0.001));
+      expect(plan.totalDue, 18400); // not 18400 + 499
+    });
+
+    test('an unlinked subscription still shows its own row', () {
+      final freeSub = recurringItem(
+        id: 'spotify',
+        amount: 199,
+        nextDueDate: DateTime(2026, 7, 1),
+      );
+      final plan = MonthPlan.from(
+        summaries: const [],
+        items: [freeSub],
+        now: now,
+        cards: [icici],
+        statements: [julyStatement],
+      );
+      expect(
+        plan.dues.map((d) => d.source),
+        containsAll([MonthDueSource.cardBill, MonthDueSource.recurring]),
+      );
+      expect(plan.totalDue, closeTo(18400 + 199, 0.001));
     });
   });
 

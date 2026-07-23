@@ -93,6 +93,7 @@ Map<String, dynamic> cardFields(CardAccount c) => {
       'lender_id': c.lenderId,
       'statement_day': c.statementDay,
       'due_day': c.dueDay,
+      'nickname': c.nickname,
       'credit_limit_paise':
           c.creditLimit == null ? null : rupeesToPaise(c.creditLimit!),
       'is_active': c.isActive,
@@ -111,6 +112,7 @@ CardAccount cardFromJson(Map<String, dynamic> j) => CardAccount(
       name: '',
       statementDay: j['statement_day'] as int,
       dueDay: j['due_day'] as int,
+      nickname: j['nickname'] as String?,
       creditLimit: j['credit_limit_paise'] == null
           ? null
           : paiseToRupees(j['credit_limit_paise'] as int),

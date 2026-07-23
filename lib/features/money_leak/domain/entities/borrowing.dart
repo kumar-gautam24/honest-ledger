@@ -38,6 +38,7 @@ class Borrowing {
     required this.createdAt,
     this.kind = BorrowingKind.flexibleLoan,
     this.lenderId,
+    this.cardId,
     this.processingFee = 0,
     this.gstOnFee = 0,
     this.foreclosureFee = 0,
@@ -59,6 +60,10 @@ class Borrowing {
   final String title;
   final BorrowingKind kind;
   final String? lenderId;
+
+  /// The specific card this borrowing is billed on, when the user has linked
+  /// it. Null falls back to [lenderId] matching for card fold-in.
+  final String? cardId;
   final String lenderName;
 
   /// Amount actually borrowed.
@@ -134,6 +139,8 @@ class Borrowing {
     String? title,
     BorrowingKind? kind,
     String? lenderId,
+    String? cardId,
+    bool clearCardId = false,
     String? lenderName,
     double? principal,
     double? processingFee,
@@ -158,6 +165,7 @@ class Borrowing {
       title: title ?? this.title,
       kind: kind ?? this.kind,
       lenderId: lenderId ?? this.lenderId,
+      cardId: clearCardId ? null : (cardId ?? this.cardId),
       lenderName: lenderName ?? this.lenderName,
       principal: principal ?? this.principal,
       processingFee: processingFee ?? this.processingFee,

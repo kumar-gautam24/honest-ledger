@@ -11,6 +11,7 @@ class BorrowingCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     kind: str = Field(default="flexibleLoan", max_length=40)
     lender_id: str | None = Field(default=None, max_length=100)
+    card_id: str | None = Field(default=None, max_length=100)
     lender_name: str = Field(default="", max_length=200)
     principal_paise: int = Field(ge=0)
     processing_fee_paise: int = Field(default=0, ge=0)
@@ -39,6 +40,7 @@ class BorrowingPatch(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=200)
     kind: str | None = Field(default=None, max_length=40)
     lender_id: str | None = Field(default=None, max_length=100)
+    card_id: str | None = Field(default=None, max_length=100)
     lender_name: str | None = Field(default=None, max_length=200)
     principal_paise: int | None = Field(default=None, ge=0)
     processing_fee_paise: int | None = Field(default=None, ge=0)
@@ -64,6 +66,7 @@ class BorrowingResponse(BaseModel):
     title: str
     kind: str
     lender_id: str | None
+    card_id: str | None
     lender_name: str
     principal_paise: int
     processing_fee_paise: int

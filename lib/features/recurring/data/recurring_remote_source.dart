@@ -62,6 +62,7 @@ Map<String, dynamic> recurringFields(RecurringItem i) => {
       'frequency': i.frequency.name,
       'next_due_date': formatApiDate(i.nextDueDate),
       'category': i.category,
+      'card_id': i.cardId,
       'is_active': i.isActive,
       'notes': i.notes,
     };
@@ -80,6 +81,7 @@ RecurringItem recurringFromJson(Map<String, dynamic> j) => RecurringItem(
       frequency: _enumByName(Frequency.values, j['frequency'], Frequency.monthly),
       nextDueDate: parseApiDate(j['next_due_date'] as String),
       category: j['category'] as String?,
+      cardId: j['card_id'] as String?,
       isActive: (j['is_active'] as bool?) ?? true,
       notes: j['notes'] as String?,
       createdAt: parseApiDate(j['created_at'] as String),

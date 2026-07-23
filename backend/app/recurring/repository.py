@@ -11,12 +11,13 @@ import asyncpg
 
 RECURRING_COLUMNS = """
     id, user_id, title, type, amount_paise, frequency, next_due_date,
-    category, is_active, notes, created_at, updated_at, deleted_at, server_seq
+    category, card_id, is_active, notes, created_at, updated_at, deleted_at,
+    server_seq
 """
 
 _PATCHABLE = {
     "title", "type", "amount_paise", "frequency", "next_due_date",
-    "category", "is_active", "notes",
+    "category", "card_id", "is_active", "notes",
 }
 
 
@@ -27,15 +28,16 @@ async def insert_recurring(
         f"""
         INSERT INTO recurring_items (
             id, user_id, title, type, amount_paise, frequency, next_due_date,
-            category, is_active, notes, created_at, updated_at
+            category, is_active, notes, created_at, updated_at, card_id
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         ON CONFLICT (id) DO NOTHING
         RETURNING {RECURRING_COLUMNS}
         """,
         data["id"], user_id, data["title"], data["type"], data["amount_paise"],
         data["frequency"], data["next_due_date"], data["category"],
         data["is_active"], data["notes"], data["created_at"], data["updated_at"],
+        data["card_id"],
     )
 
 

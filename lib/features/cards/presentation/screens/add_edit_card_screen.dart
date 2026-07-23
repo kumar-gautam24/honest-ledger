@@ -30,6 +30,7 @@ class AddEditCardScreen extends ConsumerStatefulWidget {
 
 class _AddEditCardScreenState extends ConsumerState<AddEditCardScreen> {
   late final TextEditingController _limit;
+  late final TextEditingController _nickname;
   String? _lenderId;
   int _statementDay = 1;
   int _dueDay = 20;
@@ -47,11 +48,13 @@ class _AddEditCardScreenState extends ConsumerState<AddEditCardScreen> {
     _limit = TextEditingController(
       text: e?.creditLimit == null ? '' : Money.input(e!.creditLimit!),
     );
+    _nickname = TextEditingController(text: e?.nickname ?? '');
   }
 
   @override
   void dispose() {
     _limit.dispose();
+    _nickname.dispose();
     super.dispose();
   }
 
@@ -61,12 +64,14 @@ class _AddEditCardScreenState extends ConsumerState<AddEditCardScreen> {
     final limit =
         double.tryParse(_limit.text.replaceAll(',', '').trim()) ?? 0;
     final existing = widget.existing;
+    final nickname = _nickname.text.trim();
     final card = CardAccount(
       id: existing?.id ?? _uuid.v4(),
       lenderId: _lenderId!,
       name: '', // resolved from the catalog on read
       statementDay: _statementDay,
       dueDay: _dueDay,
+      nickname: nickname.isEmpty ? null : nickname,
       creditLimit: limit <= 0 ? null : limit,
       isActive: existing?.isActive ?? true,
       createdAt: existing?.createdAt ?? DateTime.now(),
@@ -101,6 +106,14 @@ class _AddEditCardScreenState extends ConsumerState<AddEditCardScreen> {
                 setState(() => _lenderId = lender.id);
               },
             ),
+          const SizedBox(height: AppSpacing.xl),
+          const SectionHeader('Nickname (optional)'),
+          AppTextField(
+            label: 'Nickname',
+            controller: _nickname,
+            hint: 'e.g. ICICI Amazon Pay — tells same-bank cards apart',
+            textInputAction: TextInputAction.next,
+          ),
           const SizedBox(height: AppSpacing.xl),
           const SectionHeader('Billing cycle'),
           _DayPickerRow(

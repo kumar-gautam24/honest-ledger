@@ -14,6 +14,7 @@ class RecurringCreate(BaseModel):
     frequency: str = Field(default="monthly", max_length=40)
     next_due_date: datetime
     category: str | None = Field(default=None, max_length=100)
+    card_id: str | None = Field(default=None, max_length=100)
     is_active: bool = True
     notes: str | None = Field(default=None, max_length=2000)
     created_at: datetime | None = None
@@ -29,6 +30,7 @@ class RecurringPatch(BaseModel):
     frequency: str | None = Field(default=None, max_length=40)
     next_due_date: datetime | None = None
     category: str | None = Field(default=None, max_length=100)
+    card_id: str | None = Field(default=None, max_length=100)
     is_active: bool | None = None
     notes: str | None = Field(default=None, max_length=2000)
 
@@ -41,6 +43,7 @@ class RecurringResponse(BaseModel):
     frequency: str
     next_due_date: datetime
     category: str | None
+    card_id: str | None
     is_active: bool
     notes: str | None
     created_at: datetime

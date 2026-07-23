@@ -49,6 +49,7 @@ class RecurringItem {
     this.type = RecurringType.subscription,
     this.frequency = Frequency.monthly,
     this.category,
+    this.cardId,
     this.isActive = true,
     this.notes,
   });
@@ -60,6 +61,11 @@ class RecurringItem {
   final Frequency frequency;
   final DateTime nextDueDate;
   final String? category;
+
+  /// The specific card this item is billed on, when the user has linked it.
+  /// A linked item is folded out of the monthly total (it is already inside
+  /// that card's entered statement). Null means it stands on its own.
+  final String? cardId;
   final bool isActive;
   final String? notes;
   final DateTime createdAt;
@@ -77,6 +83,8 @@ class RecurringItem {
     Frequency? frequency,
     DateTime? nextDueDate,
     String? category,
+    String? cardId,
+    bool clearCardId = false,
     bool? isActive,
     String? notes,
   }) {
@@ -88,6 +96,7 @@ class RecurringItem {
       frequency: frequency ?? this.frequency,
       nextDueDate: nextDueDate ?? this.nextDueDate,
       category: category ?? this.category,
+      cardId: clearCardId ? null : (cardId ?? this.cardId),
       isActive: isActive ?? this.isActive,
       notes: notes ?? this.notes,
       createdAt: createdAt,

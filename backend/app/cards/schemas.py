@@ -16,6 +16,7 @@ class CardCreate(BaseModel):
     lender_id: str = Field(min_length=1, max_length=100)
     statement_day: int = Field(ge=1, le=31)
     due_day: int = Field(ge=1, le=31)
+    nickname: str | None = Field(default=None, max_length=100)
     credit_limit_paise: int | None = Field(default=None, ge=0)
     is_active: bool = True
     created_at: datetime | None = None
@@ -27,6 +28,7 @@ class CardPatch(BaseModel):
     lender_id: str | None = Field(default=None, min_length=1, max_length=100)
     statement_day: int | None = Field(default=None, ge=1, le=31)
     due_day: int | None = Field(default=None, ge=1, le=31)
+    nickname: str | None = Field(default=None, max_length=100)
     credit_limit_paise: int | None = Field(default=None, ge=0)
     is_active: bool | None = None
 
@@ -36,6 +38,7 @@ class CardResponse(BaseModel):
     lender_id: str
     statement_day: int
     due_day: int
+    nickname: str | None
     credit_limit_paise: int | None
     is_active: bool
     created_at: datetime

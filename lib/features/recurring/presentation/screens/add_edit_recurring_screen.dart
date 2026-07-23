@@ -11,6 +11,9 @@ import '../../../../core/utils/date_x.dart';
 import '../../../../core/utils/money_formatter.dart';
 import '../../../../core/validation/validators.dart';
 import '../../../../shared/widgets/widgets.dart';
+import '../../../cards/domain/entities/card_account.dart';
+import '../../../cards/presentation/controllers/card_providers.dart';
+import '../../../cards/presentation/widgets/card_picker.dart';
 import '../../domain/entities/recurring_item.dart';
 import '../controllers/recurring_providers.dart';
 
@@ -40,6 +43,9 @@ class _AddEditRecurringScreenState
   RecurringType _type = RecurringType.subscription;
   Frequency _frequency = Frequency.monthly;
   late DateTime _due;
+
+  /// The card this item is billed on, when linked. Null stands on its own.
+  String? _cardId;
   bool _saving = false;
 
   bool get _isEditing => widget.existing != null;
@@ -59,6 +65,7 @@ class _AddEditRecurringScreenState
         : e?.type ?? widget.initialType ?? RecurringType.subscription;
     _frequency = e?.frequency ?? Frequency.monthly;
     _due = e?.nextDueDate ?? DateTime.now().add(const Duration(days: 1));
+    _cardId = e?.cardId;
   }
 
   @override
@@ -67,6 +74,12 @@ class _AddEditRecurringScreenState
       c.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _pickCard() async {
+    final result = await showCardPicker(context);
+    if (result == null) return; // dismissed — leave selection untouched
+    setState(() => _cardId = result.card?.id);
   }
 
   Future<void> _pickDate() async {
@@ -94,6 +107,7 @@ class _AddEditRecurringScreenState
       frequency: _frequency,
       nextDueDate: _due,
       category: _category.text.trim().isEmpty ? null : _category.text.trim(),
+      cardId: _cardId,
       isActive: e?.isActive ?? true,
       notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
       createdAt: e?.createdAt ?? DateTime.now(),
@@ -115,6 +129,12 @@ class _AddEditRecurringScreenState
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final cards =
+        ref.watch(cardsProvider).asData?.value ?? const <CardAccount>[];
+    CardAccount? selectedCard;
+    for (final cc in cards) {
+      if (cc.id == _cardId) selectedCard = cc;
+    }
     return AppScaffold(
       title: _isEditing ? 'Edit item' : 'Add item',
       body: AppForm(
@@ -158,6 +178,34 @@ class _AddEditRecurringScreenState
                   Icon(Icons.calendar_today_rounded, size: 18, color: c.textMid),
                   const SizedBox(width: AppSpacing.md),
                   Text(_due.dayMonthYear, style: context.text.titleMedium),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text('Billed on card (optional)', style: AppTypography.eyebrow(c)),
+            const SizedBox(height: AppSpacing.sm),
+            AppCard(
+              onTap: _pickCard,
+              child: Row(
+                children: [
+                  Icon(
+                    selectedCard != null
+                        ? Icons.credit_card_rounded
+                        : Icons.credit_card_off_outlined,
+                    color: selectedCard != null ? c.accent : c.textLow,
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Text(
+                      selectedCard != null
+                          ? 'Billed on ${selectedCard.name}'
+                          : 'Not billed on a card',
+                      style: selectedCard != null
+                          ? context.text.titleMedium
+                          : context.text.bodyMedium,
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: c.textLow),
                 ],
               ),
             ),

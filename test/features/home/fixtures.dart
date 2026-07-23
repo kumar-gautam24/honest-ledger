@@ -15,11 +15,13 @@ BorrowingSummary emiSummary({
   int paidInstallments = 0,
   BorrowingStatus status = BorrowingStatus.active,
   String? lenderId,
+  String? cardId,
 }) {
   final b = Borrowing(
     id: id,
     title: title,
     lenderId: lenderId,
+    cardId: cardId,
     lenderName: 'Test Bank',
     principal: principal,
     startDate: startDate,
@@ -83,6 +85,7 @@ RecurringItem recurringItem({
   required DateTime nextDueDate,
   DateTime? createdAt,
   bool isActive = true,
+  String? cardId,
 }) {
   return RecurringItem(
     id: id,
@@ -92,6 +95,7 @@ RecurringItem recurringItem({
     frequency: frequency,
     nextDueDate: nextDueDate,
     isActive: isActive,
+    cardId: cardId,
     createdAt: createdAt ?? nextDueDate.subtract(const Duration(days: 365)),
   );
 }

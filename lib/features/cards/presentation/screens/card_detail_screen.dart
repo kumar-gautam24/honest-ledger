@@ -10,6 +10,8 @@ import '../../../../core/utils/money_formatter.dart';
 import '../../../../shared/widgets/widgets.dart';
 import '../../../money_leak/domain/entities/borrowing_summary.dart';
 import '../../../money_leak/presentation/controllers/money_leak_providers.dart';
+import '../../../recurring/domain/entities/recurring_item.dart';
+import '../../../recurring/presentation/controllers/recurring_providers.dart';
 import '../../domain/entities/card_account.dart';
 import '../../domain/entities/card_cycle.dart';
 import '../../domain/entities/card_statement.dart';
@@ -32,6 +34,8 @@ class CardDetailScreen extends ConsumerWidget {
         ref.watch(cardStatementsProvider(cardId)).asData?.value ?? const [];
     final summaries =
         ref.watch(borrowingSummariesProvider).asData?.value ?? const [];
+    final recurringItems =
+        ref.watch(recurringItemsProvider).asData?.value ?? const [];
 
     CardAccount? card;
     for (final c in cards) {
@@ -46,7 +50,18 @@ class CardDetailScreen extends ConsumerWidget {
 
     final linkedEmis = [
       for (final s in summaries)
-        if (s.isEmi && s.borrowing.lenderId == card.lenderId) s,
+        if (s.isEmi &&
+            CardCycle.linksTo(
+              card,
+              itemCardId: s.borrowing.cardId,
+              itemLenderId: s.borrowing.lenderId,
+            ))
+          s,
+    ];
+    // Subscriptions/bills fold only on an explicit link (no lender fallback).
+    final linkedSubs = [
+      for (final item in recurringItems)
+        if (item.cardId == card.id) item,
     ];
 
     return AppScaffold(
@@ -100,6 +115,18 @@ class CardDetailScreen extends ConsumerWidget {
               EntranceFade(
                 index: 3 + statements.length + i,
                 child: _LinkedEmiRow(summary: s),
+              ),
+          ],
+          if (linkedSubs.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xxl),
+            EntranceFade(
+              index: 3 + statements.length + linkedEmis.length,
+              child: const SectionHeader('Subscriptions on this card'),
+            ),
+            for (final (i, item) in linkedSubs.indexed)
+              EntranceFade(
+                index: 4 + statements.length + linkedEmis.length + i,
+                child: _LinkedSubRow(item: item),
               ),
           ],
         ],
@@ -382,6 +409,51 @@ class _LinkedEmiRow extends StatelessWidget {
                 ),
                 if (summary.nextDueInstallment != null)
                   MoneyText(summary.nextDueInstallment!.total),
+                Icon(Icons.chevron_right_rounded, color: c.textLow),
+              ],
+            ),
+          ),
+          Container(height: 1, color: c.hairline),
+        ],
+      ),
+    );
+  }
+}
+
+class _LinkedSubRow extends StatelessWidget {
+  const _LinkedSubRow({required this.item});
+
+  final RecurringItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return InkWell(
+      onTap: () {
+        sl<HapticService>().select();
+        context.push('/home/add-recurring', extra: item);
+      },
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(item.title, style: context.text.bodyLarge),
+                      const SizedBox(height: 2),
+                      Text(
+                        item.type.label,
+                        style: AppTypography.eyebrow(c)
+                            .copyWith(color: c.textLow),
+                      ),
+                    ],
+                  ),
+                ),
+                MoneyText(item.amount),
                 Icon(Icons.chevron_right_rounded, color: c.textLow),
               ],
             ),

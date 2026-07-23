@@ -1,8 +1,22 @@
 import '../../../money_leak/domain/entities/borrowing_summary.dart';
+import '../../../recurring/domain/entities/recurring_item.dart';
 import 'card_account.dart';
 
 /// Pure billing-cycle math for statement-level cards. No I/O, fully tested.
 abstract final class CardCycle {
+  /// Whether an obligation carrying [itemCardId] / [itemLenderId] belongs to
+  /// [card]. An explicit card link wins; otherwise fall back to matching the
+  /// lender (the pre-link behaviour — keeps existing borrowings folding). A
+  /// null [itemLenderId] with no card link never matches (recurring items have
+  /// no lender, so they fold only when explicitly linked).
+  static bool linksTo(
+    CardAccount card, {
+    String? itemCardId,
+    String? itemLenderId,
+  }) {
+    if (itemCardId != null) return itemCardId == card.id;
+    return itemLenderId != null && itemLenderId == card.lenderId;
+  }
   /// [day] in [year]/[month], clamped to the month's last day (a "31st"
   /// statement lands on the 28th/29th of February).
   static DateTime _clamped(int year, int month, int day) {
@@ -37,8 +51,9 @@ abstract final class CardCycle {
   }
 
   /// The EMI part of a statement: installment totals of this card's
-  /// borrowings (matched by lender id) due inside the cycle window. This is
-  /// what makes "other spends" derivable from one entered number.
+  /// borrowings (linked by card id, else lender id) due inside the cycle
+  /// window. This is what makes "other spends" derivable from one entered
+  /// number.
   static double emiPortion({
     required CardAccount card,
     required DateTime cycleMonth,
@@ -50,7 +65,14 @@ abstract final class CardCycle {
     );
     var total = 0.0;
     for (final s in summaries) {
-      if (!s.isEmi || s.borrowing.lenderId != card.lenderId) continue;
+      if (!s.isEmi) continue;
+      if (!linksTo(
+        card,
+        itemCardId: s.borrowing.cardId,
+        itemLenderId: s.borrowing.lenderId,
+      )) {
+        continue;
+      }
       for (final e in s.schedule) {
         if (e.dueDate.isAfter(start) && !e.dueDate.isAfter(end)) {
           total += e.total;
@@ -58,6 +80,46 @@ abstract final class CardCycle {
       }
     }
     return total;
+  }
+
+  /// The subscription/bill part of a statement: amounts of recurring items
+  /// explicitly linked to this card whose occurrences fall inside the cycle
+  /// window. Recurring items carry no lender, so only an explicit link folds.
+  static double recurringPortion({
+    required CardAccount card,
+    required DateTime cycleMonth,
+    required List<RecurringItem> items,
+  }) {
+    final (start, end) = window(
+      cycleMonth: cycleMonth,
+      statementDay: card.statementDay,
+    );
+    var total = 0.0;
+    for (final i in items) {
+      if (!i.isActive) continue;
+      if (!linksTo(card, itemCardId: i.cardId)) continue;
+      total += i.amount * _occurrencesIn(i, start, end);
+    }
+    return total;
+  }
+
+  /// How many occurrences of [i] fall inside `(start, end]`. Walks back to at
+  /// or before [start], then steps forward counting hits. Guarded against a
+  /// runaway loop.
+  static int _occurrencesIn(RecurringItem i, DateTime start, DateTime end) {
+    var d = i.nextDueDate;
+    var guard = 0;
+    while (d.isAfter(start) && guard++ < 10000) {
+      d = i.frequency.retreat(d);
+    }
+    var count = 0;
+    guard = 0;
+    while (guard++ < 10000) {
+      d = i.frequency.advance(d);
+      if (d.isAfter(end)) break;
+      if (d.isAfter(start)) count++;
+    }
+    return count;
   }
 
   /// What the statement holds beyond EMIs. Never negative.

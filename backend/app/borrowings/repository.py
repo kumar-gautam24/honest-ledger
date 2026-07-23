@@ -11,7 +11,7 @@ from datetime import datetime
 import asyncpg
 
 BORROWING_COLUMNS = """
-    id, user_id, title, kind, lender_id, lender_name,
+    id, user_id, title, kind, lender_id, card_id, lender_name,
     principal_paise, processing_fee_paise, gst_on_fee_paise, foreclosure_fee_paise,
     gst_on_interest, is_no_cost_emi, fee_financed, interest_rate_pct, rate_type,
     tenure_months, min_payment_paise, day_count, first_due_date, first_period_days,
@@ -19,7 +19,7 @@ BORROWING_COLUMNS = """
 """
 
 _PATCHABLE = {
-    "title", "kind", "lender_id", "lender_name",
+    "title", "kind", "lender_id", "card_id", "lender_name",
     "principal_paise", "processing_fee_paise", "gst_on_fee_paise",
     "foreclosure_fee_paise", "gst_on_interest", "is_no_cost_emi",
     "fee_financed", "interest_rate_pct",
@@ -43,11 +43,11 @@ async def insert_borrowing(
             interest_rate_pct,
             rate_type, tenure_months, min_payment_paise,
             day_count, first_due_date, first_period_days,
-            start_date, status, notes, created_at, updated_at
+            start_date, status, notes, created_at, updated_at, card_id
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
                 $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-                $21, $22, $23, $24, $25)
+                $21, $22, $23, $24, $25, $26)
         ON CONFLICT (id) DO NOTHING
         RETURNING {BORROWING_COLUMNS}
         """,
@@ -60,7 +60,7 @@ async def insert_borrowing(
         data["rate_type"], data["tenure_months"], data["min_payment_paise"],
         data["day_count"], data["first_due_date"], data["first_period_days"],
         data["start_date"], data["status"], data["notes"],
-        data["created_at"], data["updated_at"],
+        data["created_at"], data["updated_at"], data["card_id"],
     )
 
 

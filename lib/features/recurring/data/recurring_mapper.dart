@@ -12,6 +12,7 @@ RecurringItem recurringFromRow(RecurringItemRow r) => RecurringItem(
       frequency: enumByName(Frequency.values, r.frequency, Frequency.monthly),
       nextDueDate: r.nextDueDate,
       category: r.category,
+      cardId: r.cardId,
       isActive: r.isActive,
       notes: r.notes,
       createdAt: r.createdAt,
@@ -27,6 +28,7 @@ RecurringItemsCompanion recurringToCompanion(RecurringItem i) =>
       type: Value(i.type.name),
       frequency: Value(i.frequency.name),
       category: Value(i.category),
+      cardId: Value(i.cardId),
       isActive: Value(i.isActive),
       notes: Value(i.notes),
     );
