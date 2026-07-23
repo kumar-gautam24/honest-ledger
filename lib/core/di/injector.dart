@@ -64,7 +64,13 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   // user is signed out; remote calls simply no-op without a token.
   if (!sl.isRegistered<AuthTokenStore>()) {
     sl.registerSingleton<AuthTokenStore>(
-      SharedPrefsAuthTokenStore(sl<SharedPreferences>()),
+      // Tokens live in the OS secure enclave. On first launch after upgrading,
+      // any tokens previously kept in plain SharedPreferences are migrated in
+      // and their plaintext copies wiped, so the user stays signed in.
+      await SecureAuthTokenStore.create(
+        secure: FlutterSecureKvStore(),
+        migrateFrom: sl<SharedPreferences>(),
+      ),
     );
   }
   if (!sl.isRegistered<ApiClient>()) {
