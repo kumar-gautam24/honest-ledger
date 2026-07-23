@@ -38,6 +38,16 @@ class Settings(BaseSettings):
     # cookies. In production set this to your app's exact origin(s).
     cors_allow_origins: str = "*"
 
+    # AI assistant (/v1/ai/chat). The provider key lives ONLY here on the server —
+    # never in the client. `fake` (default) is a deterministic no-network stub so
+    # the app runs with no key; set `anthropic` + a key to use a real model.
+    llm_provider: Literal["fake", "anthropic"] = "fake"
+    llm_api_key: str = ""
+    llm_model: str = "claude-3-5-haiku-latest"
+    # Per-user throttle on the shared paid key (defends the wallet, not just abuse).
+    ai_rate_limit_max_requests: int = 30
+    ai_rate_limit_window_seconds: int = 60
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_allow_origins.split(",") if o.strip()]

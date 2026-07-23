@@ -42,6 +42,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return AppScaffold(
       title: 'Home',
+      actions: [
+        IconButton(
+          tooltip: 'Ask the assistant',
+          icon: Icon(Icons.auto_awesome_rounded, color: context.colors.accent),
+          onPressed: () {
+            sl<HapticService>().select();
+            context.push('/home/assistant');
+          },
+        ),
+      ],
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showAddObligationSheet(context),
         icon: const Icon(Icons.add_rounded),
