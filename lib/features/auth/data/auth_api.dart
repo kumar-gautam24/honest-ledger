@@ -45,6 +45,17 @@ class AuthApi {
     }
   }
 
+  /// Permanently deletes the signed-in account and all its server-side data
+  /// (`DELETE /v1/me`, 204). The access token is attached by the client's auth
+  /// interceptor. The caller clears local tokens + data afterwards.
+  Future<void> deleteAccount() async {
+    try {
+      await _dio.delete<dynamic>('/v1/me');
+    } on DioException catch (e) {
+      throw _toApiException(e);
+    }
+  }
+
   Future<void> logout(String refreshToken) async {
     try {
       await _dio.post<dynamic>(

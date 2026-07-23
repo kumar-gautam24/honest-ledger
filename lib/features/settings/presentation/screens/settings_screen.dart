@@ -88,7 +88,7 @@ class SettingsScreen extends ConsumerWidget {
                     style: context.text.titleMedium,
                   ),
                 ),
-                Text('v0.1.0', style: context.text.bodySmall),
+                Text('v1.0.0', style: context.text.bodySmall),
               ],
             ),
           ),

@@ -83,6 +83,24 @@ class AuthSession extends _$AuthSession {
     state = const AuthState();
   }
 
+  /// Permanently delete the account on the server, then clear the local session
+  /// and wipe this account's data from the device — the same local teardown as
+  /// [signOut], minus the best-effort push/logout (there's nothing to preserve).
+  /// Returns whether it succeeded; on failure the local session is left intact so
+  /// the user can retry. Required by App Store Guideline 5.1.1(v): an account made
+  /// in-app must be deletable in-app.
+  Future<bool> deleteAccount() async {
+    return _run(() async {
+      await _api.deleteAccount();
+      await _tokens.clear();
+      if (sl.isRegistered<LocalDataWiper>()) {
+        await sl<LocalDataWiper>().wipe();
+      }
+      ref.invalidate(incomeControllerProvider);
+      state = const AuthState();
+    });
+  }
+
   /// Runs [action] with busy/phase/error bookkeeping. Returns whether it
   /// succeeded. Starts in the [AuthPhase.authenticating] phase; [action] moves
   /// it to [AuthPhase.syncing] itself once credentials are accepted.

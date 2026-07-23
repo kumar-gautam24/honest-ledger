@@ -51,3 +51,6 @@ devtools_options.yaml
 docs/superpowers/
 docs/
 .superpowers/
+
+# App Store release working files (guides, store copy, screenshots, prompts) — local only
+/release/

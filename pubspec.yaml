@@ -1,7 +1,7 @@
 name: recurring
 description: "Recurring — personal finance tracker: recurring obligations, EMI/no-cost-EMI calculators, and a money-leak borrowing tracker."
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.0+2
 
 environment:
   sdk: ^3.12.2

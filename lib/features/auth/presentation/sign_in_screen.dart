@@ -138,15 +138,16 @@ class _PasswordField extends StatelessWidget {
   }
 }
 
-class _SignedIn extends StatelessWidget {
+class _SignedIn extends ConsumerWidget {
   const _SignedIn({required this.email, required this.onSignOut});
 
   final String email;
   final VoidCallback onSignOut;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
+    final busy = ref.watch(authSessionProvider).isBusy;
     return AppScaffold(
       title: 'Account',
       body: ListView(
@@ -174,10 +175,70 @@ class _SignedIn extends StatelessWidget {
           AppButton(
             label: 'Sign out',
             variant: AppButtonVariant.secondary,
-            onPressed: onSignOut,
+            onPressed: busy ? null : onSignOut,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          Text(
+            'Deleting your account permanently removes it and all its data from '
+            'the cloud, and clears it from this device. This can’t be undone.',
+            style: context.text.bodySmall?.copyWith(color: c.textMid),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: busy ? null : () => _confirmDelete(context, ref),
+              style: TextButton.styleFrom(foregroundColor: c.cost),
+              child: busy
+                  ? SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: c.cost,
+                      ),
+                    )
+                  : const Text('Delete account'),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  /// Two-step, destructive confirmation before calling the delete endpoint, so a
+  /// stray tap can't wipe an account. On success the session flips to signed-out
+  /// and this screen rebuilds into the sign-in form.
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final c = context.colors;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete account?'),
+        content: const Text(
+          'This permanently deletes your account and all your data from the '
+          'cloud and removes it from this device. This can’t be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: c.cost),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final ok = await ref.read(authSessionProvider.notifier).deleteAccount();
+    if (!context.mounted) return;
+    final message = ok
+        ? 'Your account and data were deleted.'
+        : (ref.read(authSessionProvider).error ??
+            'Could not delete your account. Please try again.');
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }
