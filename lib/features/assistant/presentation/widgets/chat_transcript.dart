@@ -54,9 +54,14 @@ class _ChatTranscriptState extends State<ChatTranscript>
 
   final _sc = ScrollController();
 
-  /// Ids present at mount (restored history) — these never re-animate.
+  /// Ids present at mount (restored history) — these never animate.
   late final Set<String> _initialIds =
       widget.entries.map((e) => e.id).toSet();
+
+  /// Ids that have already begun their entrance/reveal this session. A list this
+  /// long recycles off-screen rows, so without this a message would replay its
+  /// animation every time it scrolls back into view.
+  final Set<String> _seen = {};
 
   bool _pinned = true;
   bool _hasUnread = false;
@@ -161,24 +166,32 @@ class _ChatTranscriptState extends State<ChatTranscript>
   List<Widget> _rows() {
     final rows = <Widget>[];
     for (final entry in widget.entries) {
-      final isNew = !_initialIds.contains(entry.id);
+      // Animate only the first time a genuinely new turn appears; restored
+      // history and rows that have already played render instantly.
+      final firstTime =
+          !_initialIds.contains(entry.id) && !_seen.contains(entry.id);
+      if (firstTime) {
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => _seen.add(entry.id));
+      }
       final Widget row = switch (entry.role) {
         ChatRole.user => UserMessage(text: entry.text),
         ChatRole.assistant => AssistantMessage(
             key: ValueKey(entry.id),
             entry: entry,
-            animate: isNew,
+            animate: firstTime,
             onReveal: _onReveal,
           ),
         ChatRole.status => StatusLine(text: entry.text),
       };
-      // Fade restored turns in? No — only genuinely new user/status turns get
-      // the entrance; the assistant animates via its own reveal.
-      rows.add(
-        isNew && entry.role != ChatRole.assistant
-            ? EntranceFade(index: 0, child: row)
-            : row,
-      );
+      // Only new user/status turns get the entrance fade; the assistant animates
+      // via its own reveal.
+      final animated = firstTime && entry.role != ChatRole.assistant
+          ? EntranceFade(index: 0, child: row)
+          : row;
+      // A stable outer key keeps identity when transient rows (typing, error,
+      // pending) toggle above/below, so nothing needlessly remounts.
+      rows.add(KeyedSubtree(key: ValueKey('row_${entry.id}'), child: animated));
     }
 
     if (widget.error != null) {
