@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:recurring/core/api/local_data_wiper.dart';
 import 'package:recurring/core/database/app_database.dart';
+import 'package:recurring/features/assistant/application/assistant_state.dart';
+import 'package:recurring/features/assistant/data/assistant_repository.dart';
+import 'package:recurring/features/assistant/domain/entities/ai_message.dart';
 import 'package:recurring/features/cards/data/card_repository_impl.dart';
 import 'package:recurring/features/cards/domain/entities/card_account.dart';
 import 'package:recurring/features/cards/domain/entities/card_statement.dart';
@@ -72,7 +75,14 @@ void main() {
       createdAt: DateTime(2026, 1, 1),
     ));
 
-    await LocalDataWiperImpl(db, prefs).wipe();
+    // A saved assistant conversation — per-account, must not survive sign-out.
+    final assistant = AssistantRepository(prefs);
+    await assistant.save(
+      entries: [const ChatEntry(id: '1', role: ChatRole.user, text: 'hi')],
+      wire: [const AiChatMessage.user('hi')],
+    );
+
+    await LocalDataWiperImpl(db, prefs, assistant).wipe();
 
     // Account tables are empty.
     expect(await db.select(db.borrowings).get(), isEmpty);
@@ -88,5 +98,8 @@ void main() {
     // Income pref cleared; device pref untouched.
     expect(prefs.getDouble(IncomeController.prefsKey), isNull);
     expect(prefs.getString('theme_mode'), 'dark');
+
+    // The assistant conversation is forgotten so the next account can't see it.
+    expect(assistant.load(), isNull);
   });
 }
