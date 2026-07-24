@@ -37,6 +37,9 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   }
 
   Future<void> _newChat() async {
+    // Clearing mid-request would let the in-flight loop append onto empty state;
+    // the controller guards it, so don't even offer the dialog while busy.
+    if (ref.read(assistantControllerProvider).isBusy) return;
     _focus.unfocus();
     final ok = await showDialog<bool>(
       context: context,

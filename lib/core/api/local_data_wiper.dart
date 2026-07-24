@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../features/assistant/data/assistant_repository.dart';
 import '../../features/settings/presentation/controllers/income_controller.dart';
 import '../database/app_database.dart';
 
@@ -12,10 +13,11 @@ abstract interface class LocalDataWiper {
 }
 
 class LocalDataWiperImpl implements LocalDataWiper {
-  LocalDataWiperImpl(this._db, this._prefs);
+  LocalDataWiperImpl(this._db, this._prefs, this._assistant);
 
   final AppDatabase _db;
   final SharedPreferences _prefs;
+  final AssistantRepository _assistant;
 
   @override
   Future<void> wipe() async {
@@ -30,5 +32,8 @@ class LocalDataWiperImpl implements LocalDataWiper {
       await (_db.delete(_db.lenders)..where((t) => t.isMine.equals(true))).go();
     });
     await _prefs.remove(IncomeController.prefsKey);
+    // The assistant transcript is per-account — forget it so the next sign-in
+    // can't rehydrate the previous user's conversation.
+    await _assistant.clear();
   }
 }

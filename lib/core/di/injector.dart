@@ -156,7 +156,11 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   // Clears the account's local rows on sign-out (keeps the built-in catalog).
   if (!sl.isRegistered<LocalDataWiper>()) {
     sl.registerSingleton<LocalDataWiper>(
-      LocalDataWiperImpl(sl<AppDatabase>(), sl<SharedPreferences>()),
+      LocalDataWiperImpl(
+        sl<AppDatabase>(),
+        sl<SharedPreferences>(),
+        sl<AssistantRepository>(),
+      ),
     );
   }
   // Refreshes the built-in catalog from the server (public read) so term
