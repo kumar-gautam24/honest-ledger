@@ -27,10 +27,16 @@ import '../../features/recurring/presentation/screens/add_edit_recurring_screen.
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/tools/presentation/screens/tools_screen.dart';
 
+/// The root navigator — routes placed here render above the bottom-nav shell
+/// (full-screen, no tab bar). The assistant uses it.
+final GlobalKey<NavigatorState> _rootNavigatorKey =
+    GlobalKey<NavigatorState>();
+
 /// App routes. A persistent bottom-nav shell hosts the three top-level tabs
 /// (Home · Tools · Settings). Home is the unified obligations hub; adding a
 /// borrowing or recurring item lives under it with the kind/type preset.
 final GoRouter appRouter = GoRouter(
+  navigatorKey: _rootNavigatorKey,
   initialLocation: '/home',
   routes: [
     StatefulShellRoute.indexedStack(
@@ -52,6 +58,9 @@ final GoRouter appRouter = GoRouter(
                 ),
                 GoRoute(
                   path: 'assistant',
+                  // Push on the root navigator so the assistant is full-screen,
+                  // above the bottom-nav shell (no tab bar).
+                  parentNavigatorKey: _rootNavigatorKey,
                   builder: (_, _) => const AssistantScreen(),
                 ),
                 GoRoute(
