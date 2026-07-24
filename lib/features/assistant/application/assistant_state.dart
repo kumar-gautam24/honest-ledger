@@ -12,6 +12,21 @@ class ChatEntry {
   final String id;
   final ChatRole role;
   final String text;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'role': role.name,
+        'text': text,
+      };
+
+  factory ChatEntry.fromJson(Map<String, dynamic> j) => ChatEntry(
+        id: j['id'] as String? ?? '',
+        role: ChatRole.values.firstWhere(
+          (r) => r.name == j['role'],
+          orElse: () => ChatRole.assistant,
+        ),
+        text: j['text'] as String? ?? '',
+      );
 }
 
 /// The assistant screen's state: what's rendered ([entries]), the raw protocol
