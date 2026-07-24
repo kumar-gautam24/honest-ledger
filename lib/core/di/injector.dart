@@ -21,6 +21,7 @@ import '../../features/money_leak/data/synced_borrowing_repository.dart';
 import '../../features/money_leak/domain/repositories/borrowing_repository.dart';
 import '../../features/assistant/assistant_config.dart';
 import '../../features/assistant/data/ai_service.dart';
+import '../../features/assistant/data/assistant_repository.dart';
 import '../../features/assistant/data/demo_ai_service.dart';
 import '../../features/auth/data/auth_api.dart';
 import '../../features/recurring/data/recurring_remote_source.dart';
@@ -88,6 +89,11 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   if (!sl.isRegistered<AiService>()) {
     sl.registerSingleton<AiService>(
       kAssistantDemoMode ? DemoAiService() : AiServiceDio(sl<ApiClient>()),
+    );
+  }
+  if (!sl.isRegistered<AssistantRepository>()) {
+    sl.registerSingleton<AssistantRepository>(
+      AssistantRepository(sl<SharedPreferences>()),
     );
   }
   if (!sl.isRegistered<SettingsRemoteSource>()) {

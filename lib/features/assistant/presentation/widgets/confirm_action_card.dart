@@ -63,19 +63,23 @@ class _ConfirmActionCardState extends State<ConfirmActionCard> {
   Widget build(BuildContext context) {
     final c = context.colors;
     final a = widget.action;
+    final tint = a.destructive ? c.cost : c.accent;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: AppCard(
         bordered: true,
         color: c.surfaceHigh,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              a.destructive ? 'CONFIRM — THIS CANNOT BE UNDONE' : 'REVIEW BEFORE SAVING',
+              style: AppTypography.eyebrow(c).copyWith(color: tint),
+            ),
+            const SizedBox(height: AppSpacing.md),
             Row(
               children: [
-                Icon(_icon(a.kind),
-                    color: a.destructive ? c.cost : c.accent, size: 20),
+                Icon(_icon(a.kind), color: tint, size: 20),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(a.title, style: context.text.titleMedium),

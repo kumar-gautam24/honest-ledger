@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/di/injector.dart';
 import '../data/ai_service.dart';
+import '../data/assistant_repository.dart';
 import '../domain/entities/ai_message.dart';
 import '../domain/entities/proposed_action.dart';
 import 'assistant_prompt.dart';
@@ -25,7 +28,31 @@ class AssistantController extends _$AssistantController {
   static const _maxIterations = 6;
 
   @override
-  AssistantState build() => const AssistantState();
+  AssistantState build() {
+    // Rehydrate synchronously so the first frame already shows past turns
+    // (the transcript marks them as already-revealed, so they don't re-animate).
+    final saved = sl<AssistantRepository>().load();
+    if (saved == null) return const AssistantState();
+    return AssistantState(entries: saved.entries, wire: saved.wire);
+  }
+
+  /// Persists the conversation once it has settled (answered, nothing pending).
+  void _persistIfSettled() {
+    if (!ref.mounted) return;
+    final s = state;
+    if (!s.isBusy && s.pending == null && s.entries.isNotEmpty) {
+      unawaited(
+        sl<AssistantRepository>().save(entries: s.entries, wire: s.wire),
+      );
+    }
+  }
+
+  /// Clears the conversation and forgets the saved copy — the "new chat" action.
+  void newChat() {
+    if (state.isBusy) return;
+    sl<AssistantRepository>().clear();
+    state = const AssistantState();
+  }
 
   Future<void> send(String text) async {
     final trimmed = text.trim();
@@ -104,6 +131,9 @@ class AssistantController extends _$AssistantController {
           messages: wire,
           tools: kAllTools,
         );
+        // The user may have left the screen mid-request (auto-dispose); stop
+        // before touching state if so.
+        if (!ref.mounted) return;
 
         wire = [
           ...wire,
@@ -151,6 +181,7 @@ class AssistantController extends _$AssistantController {
               paused = action;
           }
         }
+        if (!ref.mounted) return;
 
         if (paused != null) {
           // Wait for confirm()/cancel(); the write's tool call is unanswered.
@@ -174,6 +205,9 @@ class AssistantController extends _$AssistantController {
         isBusy: false,
         error: 'Something went wrong. Please try again.',
       );
+    } finally {
+      // Every settled exit (answered, capped, or errored) runs through here.
+      _persistIfSettled();
     }
   }
 

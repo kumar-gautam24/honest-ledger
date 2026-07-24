@@ -62,6 +62,13 @@ class AiChatMessage {
   })  : role = AiRole.tool,
         toolCalls = null;
 
+  const AiChatMessage._({
+    required this.role,
+    this.content,
+    this.toolCalls,
+    this.toolCallId,
+  });
+
   final AiRole role;
   final String? content;
   final List<AiToolCall>? toolCalls;
@@ -74,6 +81,20 @@ class AiChatMessage {
           'tool_calls': toolCalls!.map((c) => c.toJson()).toList(),
         if (toolCallId != null) 'tool_call_id': toolCallId,
       };
+
+  /// Rebuilds a turn from its [toJson] shape — used to rehydrate persisted
+  /// conversation history so a reopened chat keeps its full context.
+  factory AiChatMessage.fromJson(Map<String, dynamic> j) => AiChatMessage._(
+        role: AiRole.values.firstWhere(
+          (r) => r.name == j['role'],
+          orElse: () => AiRole.user,
+        ),
+        content: j['content'] as String?,
+        toolCalls: (j['tool_calls'] as List?)
+            ?.map((e) => AiToolCall.fromJson((e as Map).cast<String, dynamic>()))
+            .toList(),
+        toolCallId: j['tool_call_id'] as String?,
+      );
 }
 
 /// A tool the model may call. [parameters] is a JSON-Schema object.
